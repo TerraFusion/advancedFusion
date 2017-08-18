@@ -1,0 +1,10 @@
+file_path=/projects/TDataFus/kent/temp/40-orbit-file/Jun15.2/TERRA_BF_L1B_O69365_F000_V000.h5
+output_file_path=misr_on_modis_test.h5
+project_instrument=MISR
+resolution=L
+camera_angle=AN
+radiance=Blue_Radiance
+method=nnInterpolate
+base_instrument=MODIS
+resolution=1KM
+bands=13L
