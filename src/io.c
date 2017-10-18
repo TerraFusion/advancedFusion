@@ -14,7 +14,7 @@
 */
 
 #include "io.h"
-#include <hdf5.h>
+#include "hdf5.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <strings.h>
@@ -1668,9 +1668,10 @@ double* get_ast_lat(hid_t file, char* subsystem, char* d_name, int*size){
 	herr_t err = H5Gget_num_objs(group, &num_groups);
 	char names[(int)num_groups][50];
 	int i;
+//This function is problematic
 	for(i = 0; i < num_groups; i++){
 		char* name = malloc(50*sizeof(char));
-		H5Gget_objname_by_idx(group, (hsize_t)i, name, 50);
+		H5Gget_objname_by_idx(group, (hsize_t)i, name, 50); //Highly likely to be this line
 		char* rad_group_name;
 		const char* d_arr[] = {name, subsystem, d_name};
 		concat_by_sep(&rad_group_name, d_arr, "/", strlen(name) + strlen(subsystem) + strlen(d_name), 3);
@@ -1683,7 +1684,8 @@ double* get_ast_lat(hid_t file, char* subsystem, char* d_name, int*size){
 		strcpy(names[i], name);
 		free(name);
 	}
-	
+
+//This part may also be problematic	
 	//Get total data size
 	printf("Get total data size\n");
 	int k;

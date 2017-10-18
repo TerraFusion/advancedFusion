@@ -326,13 +326,13 @@ int main(int argc, char ** argv) {
 	//TODO change last argument based on resolution
 	if(strstr(base_instrument, "MODIS") != NULL){
 		if(strstr(modis_args[0], "_1KM") != NULL){
-			nearestNeighbor(p_src_lat, p_src_lon, nCellsrc, dest_lat, dest_long, tarNNSouID, nCelldest, 1000);
+			nearestNeighbor(p_src_lat, p_src_lon, nCellsrc, dest_lat, dest_long, tarNNSouID, NULL, nCelldest, 1000);
 		}
 		else if(strstr(modis_args[0], "_250m") != NULL){
-			nearestNeighbor(p_src_lat, p_src_lon, nCellsrc, dest_lat, dest_long, tarNNSouID, nCelldest, 300);
+			nearestNeighbor(p_src_lat, p_src_lon, nCellsrc, dest_lat, dest_long, tarNNSouID, NULL, nCelldest, 300);
 		}
 		else if(strstr(modis_args[0], "_500m") != NULL){
-			nearestNeighbor(p_src_lat, p_src_lon, nCellsrc, dest_lat, dest_long, tarNNSouID, nCelldest, 600);
+			nearestNeighbor(p_src_lat, p_src_lon, nCellsrc, dest_lat, dest_long, tarNNSouID, NULL, nCelldest, 600);
 		}
 	}
 	
