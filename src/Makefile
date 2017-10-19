@@ -41,4 +41,5 @@ test_aster: test_aster.o reproject.o io.o
 test_aster_allOrbit: test_aster_allOrbit.o reproject.o io.o
 	$(H5CC) -o ../$@ $+ -lm
 clean:
-	rm *.o ../testRepro ../testRepro2 ../testRepro3 ../testReproHDF5 ../test_aster ../test_aster_allOrbit ../af_run
+	rm *.o ../test_read_area ../test_aster ../test_aster_allOrbit ../af_run
+#	rm *.o ../testRepro ../testRepro2 ../testRepro3 ../testReproHDF5
