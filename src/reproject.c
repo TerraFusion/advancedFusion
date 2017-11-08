@@ -258,7 +258,13 @@ void nearestNeighborBlockIndex(double ** psouLat, double ** psouLon, int nSou, d
 
 	const double earthRadius = 6367444;
 	double maxradian = maxR / earthRadius;
-	int nBlockY = M_PI / maxradian;
+
+	double blockSizeRadian = maxradian;
+	if(maxR > 1000) {
+		blockSizeRadian = 1000 / earthRadius;
+	}
+
+	int nBlockY = M_PI / blockSizeRadian;
 
 	double latBlockR = M_PI / nBlockY;
 
@@ -279,7 +285,7 @@ void nearestNeighborBlockIndex(double ** psouLat, double ** psouLon, int nSou, d
 		exit(1);
 	}
 
-	struct LonBlocks * souIndex = pointIndexOnLatLon(psouLat, psouLon, souID, nSou, nBlockY, maxradian);
+	struct LonBlocks * souIndex = pointIndexOnLatLon(psouLat, psouLon, souID, nSou, nBlockY, blockSizeRadian);
 
 	souLat = *psouLat;
 	souLon = *psouLon;
