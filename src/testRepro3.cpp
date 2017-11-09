@@ -10,7 +10,8 @@
 #include <sys/time.h>
 #include "reproject.h"
 
-int main(int argc, char ** argv) {
+int main(int argc, char ** argv) 
+{
 
 	double * MODISLat, * MODISLon, * MODISVal;
 	double * MISRLat, * MISRLon, * MISRVal;

@@ -18,7 +18,8 @@
 #include "reproject.h"
 #include "io.h"
 
-int main(int argc, char ** argv) {
+int main(int argc, char ** argv) 
+{
 	hid_t output_file = H5Fcreate("misr_modis_test_repro.h5", H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
 	
 	char* file_path = "/projects/TDataFus/kent/temp/40-orbit-file/Jun15.2/TERRA_BF_L1B_O69365_F000_V000.h5";
@@ -50,7 +51,12 @@ int main(int argc, char ** argv) {
 	return 0;*/
 	char bands[5][50] = {"8", "9", "12", "14L", "20"};
 	int size;
+#if 1 //JKTEST
+	double* modis_test = NULL;
+	modis_test = get_modis_rad(file, "_1KM", bands, 5, &size);
+#else
 	double* modis_test = get_modis_rad(file, "_1KM", bands, 5, &size);
+#endif
 	printf("test modis size: %d\n", size);
 	printf("test data: %f\n", modis_test[0]);
 	/*int rad_size;

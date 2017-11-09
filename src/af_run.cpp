@@ -26,13 +26,14 @@
 
 void deleteSpaces(char* src, char* dst);
 
-int main(int argc, char ** argv) {
+int main(int argc, char ** argv) 
+{
 	//Input variables
-	char* file_path = calloc(100, sizeof(char));
-	char* output_file = calloc(100, sizeof(char));
-	char* project_instrument = calloc(20, sizeof(char));
-	char* base_instrument = calloc(20, sizeof(char)); 
-	char* method = calloc(20, sizeof(char));
+	char* file_path = (char*)calloc(100, sizeof(char));
+	char* output_file = (char*)calloc(100, sizeof(char));
+	char* project_instrument = (char*)calloc(20, sizeof(char));
+	char* base_instrument = (char*)calloc(20, sizeof(char)); 
+	char* method = (char*) calloc(20, sizeof(char));
 	char misr_args[3][50];
 	int misr_args_size = 3;
 	char modis_args[1][50];
@@ -405,7 +406,8 @@ int main(int argc, char ** argv) {
 
 
 //Inputs formatting utilities
-void deleteSpaces(char* src, char* dst){
+void deleteSpaces(char* src, char* dst)
+{
   int s, d=0;
   for (s=0; src[s] != 0; s++)
     if (src[s] != ' ') {

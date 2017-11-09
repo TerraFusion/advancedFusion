@@ -10,7 +10,8 @@
 #include <sys/time.h>
 #include "reproject.h"
 
-int main(int argc, char ** argv) {
+int main(int argc, char ** argv) 
+{
 
 //In 10
 	double inLat[100] = {

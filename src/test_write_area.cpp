@@ -19,7 +19,8 @@
 #include "reproject.h"
 #include "io.h"
 
-int main(int argc, char ** argv) {
+int main(int argc, char ** argv) 
+{
 	hid_t output_file = H5Fcreate("test_write.h5", H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
 	
 	char* file_path = "/projects/sciteam/jq0/TerraFusion/testFiles/TERRA_BF_L1B_O69400_20130104000439_F000_V000.h5";

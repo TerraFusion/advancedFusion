@@ -54,7 +54,8 @@ char* kme_1_list[16] = {"20", "21", "22", "23", "24", "25", "27", "28", "29", "3
 		
 */
 
-double* get_misr_rad(hid_t file, char* camera_angle, char* resolution, char* radiance, int* size){
+double* get_misr_rad(hid_t file, char* camera_angle, char* resolution, char* radiance, int* size)
+{
 	//Path to dataset proccessing 
 	int down_sampling = 0;
 	char* instrument = "MISR";
@@ -90,7 +91,7 @@ double* get_misr_rad(hid_t file, char* camera_angle, char* resolution, char* rad
 		printf("Undergoing downsampling\n");
 		hsize_t* dims = af_read_size(file, rad_dataset_name);
 		*size = dims[0] * (dims[1]/4) * (dims[2]/4);
-		down_data = malloc(dims[0] * (dims[1]/4) * (dims[2]/4) * sizeof(double));
+		down_data = (double*) malloc(dims[0] * (dims[1]/4) * (dims[2]/4) * sizeof(double));
 		int i, j, k;
 		for(i = 0; i < dims[0]; i++){
 			for(j = 0; j < dims[1]; j = j + 4){
@@ -101,7 +102,7 @@ double* get_misr_rad(hid_t file, char* camera_angle, char* resolution, char* rad
 					int a,b;
 					int max_x = j + 4;
 					int max_z = k + 4; 
-					int* index_array = malloc(16*sizeof(int));
+					int* index_array = (int*) malloc(16*sizeof(int));
 					int index_iter = 0;
 					for(a = j; a < max_x; a++){
 						for(b = k; b < max_z; b++){
@@ -109,7 +110,7 @@ double* get_misr_rad(hid_t file, char* camera_angle, char* resolution, char* rad
 							index_iter += 1;
 						}
 					}
-					double* window = malloc(16*sizeof(double));
+					double* window = (double*) malloc(16*sizeof(double));
 					int c;
 					for(c = 0; c < 16; c++){
 						window[c] = data[index_array[c]];
@@ -158,7 +159,8 @@ double* get_misr_rad(hid_t file, char* camera_angle, char* resolution, char* rad
 */
 
 
-double* get_misr_lat(hid_t file, char* resolution, int* size){
+double* get_misr_lat(hid_t file, char* resolution, int* size)
+{
 	//Path to dataset proccessing 
 	char* instrument = "MISR";
 	char* location;
@@ -206,7 +208,8 @@ double* get_misr_lat(hid_t file, char* resolution, int* size){
 */
 
 
-double* get_misr_long(hid_t file, char* resolution, int* size){
+double* get_misr_long(hid_t file, char* resolution, int* size)
+{
 	//Path to dataset proccessing 
 	char* instrument = "MISR";
 	char* location;
@@ -259,7 +262,8 @@ double* get_misr_long(hid_t file, char* resolution, int* size){
 
 
 //geo - 0:not geolocation attributes, 1:lat, 2:long
-void* get_misr_attr(hid_t file, char* camera_angle, char* resolution, char* radiance, char* attr_name, int geo, void* attr_pt){
+void* get_misr_attr(hid_t file, char* camera_angle, char* resolution, char* radiance, char* attr_name, int geo, void* attr_pt)
+{
 	//Path variables
 	char* instrument = "MISR";
 	char* d_fields = "Data_Fields";
@@ -328,7 +332,8 @@ void* get_misr_attr(hid_t file, char* camera_angle, char* resolution, char* radi
 */
 
 
-double* get_modis_rad(hid_t file, char* resolution, char bands[38][50], int band_size, int* size){
+double* get_modis_rad(hid_t file, char* resolution, char bands[38][50], int band_size, int* size)
+{
 	printf("Reading MODIS rad\n");
 	
 	//Path variables
@@ -348,7 +353,7 @@ double* get_modis_rad(hid_t file, char* resolution, char bands[38][50], int band
 	int i;
 	int store_count = 0;
 	for(i = 0; i < num_groups; i++){
-		char* name = malloc(50*sizeof(char));
+		char* name = (char*) malloc(50*sizeof(char));
 		H5Gget_objname_by_idx(group, (hsize_t)i, name, 50);
 		
 		//Check if it has all resolutions
@@ -412,7 +417,7 @@ double* get_modis_rad(hid_t file, char* resolution, char bands[38][50], int band
 		}
 	}
 	
-	double* result_data = calloc(total_size, sizeof(double));
+	double* result_data = (double*) calloc(total_size, sizeof(double));
 	int start_point = 0;
 	
 	//Start reading data
@@ -459,7 +464,8 @@ double* get_modis_rad(hid_t file, char* resolution, char bands[38][50], int band
 */
 
 
-double* get_modis_rad_by_band(hid_t file, char* resolution, char* d_name, int* band_index, int* size){
+double* get_modis_rad_by_band(hid_t file, char* resolution, char* d_name, int* band_index, int* size)
+{
 	printf("Reading MODIS rad by band\n");
 	char* instrument = "MODIS";
 	char* d_fields = "Data_Fields";
@@ -477,7 +483,7 @@ double* get_modis_rad_by_band(hid_t file, char* resolution, char* d_name, int* b
 	int i;
 	int store_count = 0;
 	for(i = 0; i < num_groups; i++){
-		char* name = malloc(50*sizeof(char));
+		char* name = (char*) malloc(50*sizeof(char));
 		H5Gget_objname_by_idx(group, (hsize_t)i, name, 50);
 		
 		//Check if it has all resolutions
@@ -521,7 +527,7 @@ double* get_modis_rad_by_band(hid_t file, char* resolution, char* d_name, int* b
 	}
 	
 	//Allocate data size
-	double* result_data = calloc(total_size, sizeof(double));
+	double* result_data = (double*)calloc(total_size, sizeof(double));
 	
 	//Retreving data
 	int h;
@@ -581,7 +587,8 @@ double* get_modis_rad_by_band(hid_t file, char* resolution, char* d_name, int* b
 */
 
 
-double* get_modis_lat(hid_t file, char* resolution, int* size){
+double* get_modis_lat(hid_t file, char* resolution, int* size)
+{
 	printf("Reading MODIS lat\n");
 	//Path variables
 	char* instrument = "MODIS";
@@ -603,7 +610,7 @@ double* get_modis_lat(hid_t file, char* resolution, int* size){
 	int i;
 	int store_count = 0;
 	for(i = 0; i < num_groups; i++){
-		char* name = malloc(50*sizeof(char));
+		char* name = (char*) malloc(50*sizeof(char));
 		H5Gget_objname_by_idx(group, (hsize_t)i, name, 50);
 		
 		//Check if it has all resolutions
@@ -654,7 +661,7 @@ double* get_modis_lat(hid_t file, char* resolution, int* size){
 			double new_lat_size = dim_sum(af_read_size(file, lat_dataset_name), 2);
 			
 			//Reallocating arrays of data
-			lat_data = realloc(lat_data, sizeof(double)*(curr_lat_size + new_lat_size));
+			lat_data = (double*)realloc(lat_data, sizeof(double)*(curr_lat_size + new_lat_size));
 			memcpy(&lat_data[(int)curr_lat_size], adding_lat, sizeof(double)*new_lat_size);
 			curr_lat_size += new_lat_size;
 			
@@ -695,7 +702,8 @@ double* get_modis_lat(hid_t file, char* resolution, int* size){
 */
 
 
-double* get_modis_long(hid_t file, char* resolution, int* size){
+double* get_modis_long(hid_t file, char* resolution, int* size)
+{
 	printf("Reading MODIS long\n");
 	//Path variables
 	char* instrument = "MODIS";
@@ -717,7 +725,7 @@ double* get_modis_long(hid_t file, char* resolution, int* size){
 	int i;
 	int store_count = 0;
 	for(i = 0; i < num_groups; i++){
-		char* name = malloc(50*sizeof(char));
+		char* name = (char*)malloc(50*sizeof(char));
 		H5Gget_objname_by_idx(group, (hsize_t)i, name, 50);
 		
 		//Check if it has all resolutions
@@ -766,7 +774,7 @@ double* get_modis_long(hid_t file, char* resolution, int* size){
 			double new_long_size = dim_sum(af_read_size(file, long_dataset_name), 2);
 			
 			//Reallocating arrays of data
-			long_data = realloc(long_data, sizeof(double)*(curr_long_size + new_long_size));
+			long_data = (double*)realloc(long_data, sizeof(double)*(curr_long_size + new_long_size));
 			memcpy(&long_data[(int)curr_long_size], adding_long, sizeof(double)*new_long_size);
 			curr_long_size += new_long_size;
 
@@ -811,7 +819,8 @@ double* get_modis_long(hid_t file, char* resolution, int* size){
 
 
 //geo - 0:not geolocation attributes, 1:lat, 2:long
-double* get_modis_attr(hid_t file, char* resolution, char* d_name, char* attr_name, int geo, void* attr_pt){
+void* get_modis_attr(hid_t file, char* resolution, char* d_name, char* attr_name, int geo, void* attr_pt)
+{
 	//Path variables
 	char* instrument = "MODIS";
 	char* d_fields = "Data_Fields";
@@ -827,7 +836,7 @@ double* get_modis_attr(hid_t file, char* resolution, char* d_name, char* attr_na
 	hsize_t num_groups;
 	herr_t err = H5Gget_num_objs(group, &num_groups);
 	char* rad_dataset_name;
-	char* name = malloc(50*sizeof(char));
+	char* name = (char*) malloc(50*sizeof(char));
 	int h;
 	for(h = 0; h < num_groups; h++){
 		H5Gget_objname_by_idx(group, (hsize_t)h, name, 50);
@@ -902,7 +911,8 @@ double* get_modis_attr(hid_t file, char* resolution, char* d_name, char* attr_na
 */
 
 
-char* get_modis_filename(char* resolution, char* band, int* band_index){
+char* get_modis_filename(char* resolution, char* band, int* band_index)
+{
 	if(strcmp(resolution, "_1KM") == 0){
 		int i;
 		for(i = 0; i < 15; i++){
@@ -986,7 +996,8 @@ char* get_modis_filename(char* resolution, char* band, int* band_index){
 */
 
 
-double* get_ceres_rad(hid_t file, char* camera, char* d_name, int* size){
+double* get_ceres_rad(hid_t file, char* camera, char* d_name, int* size)
+{
 	printf("Reading CERES radiance\n");
 	//Path variables
 	char* instrument = "CERES";
@@ -1003,7 +1014,7 @@ double* get_ceres_rad(hid_t file, char* camera, char* d_name, int* size){
 	char names[(int)num_groups][50];
 	int i;
 	for(i = 0; i < num_groups; i++){
-		char* name = malloc(50*sizeof(char));
+		char* name = (char*)malloc(50*sizeof(char));
 		H5Gget_objname_by_idx(group, (hsize_t)i, name, 50);
 		strcpy(names[i], name);
 		free(name);
@@ -1035,7 +1046,7 @@ double* get_ceres_rad(hid_t file, char* camera, char* d_name, int* size){
 			}
 			double new_d_size = dim_sum(af_read_size(file, dataset_name), 1);
 			//Reallocating arrays of data
-			data = realloc(data, sizeof(double)*(curr_size + new_d_size));
+			data = (double*)realloc(data, sizeof(double)*(curr_size + new_d_size));
 			memcpy(&data[(int)curr_size], adding_data, sizeof(double)*new_d_size);
 			curr_size += new_d_size;
 			
@@ -1075,7 +1086,8 @@ double* get_ceres_rad(hid_t file, char* camera, char* d_name, int* size){
 */
 
 
-double* get_ceres_lat(hid_t file, char* camera, char* d_name, int* size){
+double* get_ceres_lat(hid_t file, char* camera, char* d_name, int* size)
+{
 	printf("Reading CERES lat\n");
 	//Path variables
 	char* instrument = "CERES";
@@ -1095,7 +1107,7 @@ double* get_ceres_lat(hid_t file, char* camera, char* d_name, int* size){
 	char names[(int)num_groups][50];
 	int i;
 	for(i = 0; i < num_groups; i++){
-		char* name = malloc(50*sizeof(char));
+		char* name = (char*)malloc(50*sizeof(char));
 		H5Gget_objname_by_idx(group, (hsize_t)i, name, 50);
 		strcpy(names[i], name);
 		free(name);
@@ -1134,7 +1146,7 @@ double* get_ceres_lat(hid_t file, char* camera, char* d_name, int* size){
 			double new_lat_size = dim_sum(af_read_size(file, lat_dataset_name), 1);
 			
 			//Reallocating arrays of data
-			lat_data = realloc(lat_data, sizeof(double)*(curr_lat_size + new_lat_size));
+			lat_data = (double*)realloc(lat_data, sizeof(double)*(curr_lat_size + new_lat_size));
 			memcpy(&lat_data[(int)curr_lat_size], adding_lat, sizeof(double)*new_lat_size);
 			curr_lat_size += new_lat_size;
 			
@@ -1173,7 +1185,8 @@ double* get_ceres_lat(hid_t file, char* camera, char* d_name, int* size){
 */
 
 
-double* get_ceres_long(hid_t file, char* camera, char* d_name, int* size){
+double* get_ceres_long(hid_t file, char* camera, char* d_name, int* size)
+{
 	printf("Reading CERES long\n");
 	//Path variables
 	char* instrument = "CERES";
@@ -1193,7 +1206,7 @@ double* get_ceres_long(hid_t file, char* camera, char* d_name, int* size){
 	char names[(int)num_groups][50];
 	int i;
 	for(i = 0; i < num_groups; i++){
-		char* name = malloc(50*sizeof(char));
+		char* name = (char*)malloc(50*sizeof(char));
 		H5Gget_objname_by_idx(group, (hsize_t)i, name, 50);
 		strcpy(names[i], name);
 		free(name);
@@ -1231,7 +1244,7 @@ double* get_ceres_long(hid_t file, char* camera, char* d_name, int* size){
 			double* adding_long = af_read(file, long_dataset_name);
 			double new_long_size = dim_sum(af_read_size(file, long_dataset_name), 1);
 			//Reallocating arrays of data
-			long_data = realloc(long_data, sizeof(double)*(curr_long_size + new_long_size));
+			long_data = (double*)realloc(long_data, sizeof(double)*(curr_long_size + new_long_size));
 			memcpy(&long_data[(int)curr_long_size], adding_long, sizeof(double)*new_long_size);
 			curr_long_size += new_long_size;
 
@@ -1269,7 +1282,8 @@ double* get_ceres_long(hid_t file, char* camera, char* d_name, int* size){
 */
 
 
-double* get_mop_rad(hid_t file, int* size){
+double* get_mop_rad(hid_t file, int* size)
+{
 	printf("Reading MOPITT radiance\n");
 	//Path variables
 	char* instrument = "MOPITT";
@@ -1287,7 +1301,7 @@ double* get_mop_rad(hid_t file, int* size){
 	char names[(int)num_groups][50];
 	int i;
 	for(i = 0; i < num_groups; i++){
-		char* name = malloc(50*sizeof(char));
+		char* name = (char*)malloc(50*sizeof(char));
 		H5Gget_objname_by_idx(group, (hsize_t)i, name, 50);
 		strcpy(names[i], name);
 		free(name);
@@ -1319,7 +1333,7 @@ double* get_mop_rad(hid_t file, int* size){
 			}
 			double new_d_size = dim_sum(af_read_size(file, dataset_name), 1);
 			//Reallocating arrays of data
-			data = realloc(data, sizeof(double)*(curr_size + new_d_size));
+			data = (double*)realloc(data, sizeof(double)*(curr_size + new_d_size));
 			memcpy(&data[(int)curr_size], adding_data, sizeof(double)*new_d_size);
 			curr_size += new_d_size;
 			
@@ -1358,7 +1372,8 @@ double* get_mop_rad(hid_t file, int* size){
 
 
 
-double* get_mop_lat(hid_t file, int* size){
+double* get_mop_lat(hid_t file, int* size)
+{
 	printf("Reading MOPITT lat\n");
 	//Path variables
 	char* instrument = "MOPITT";
@@ -1379,7 +1394,7 @@ double* get_mop_lat(hid_t file, int* size){
 	char names[(int)num_groups][50];
 	int i;
 	for(i = 0; i < num_groups; i++){
-		char* name = malloc(50*sizeof(char));
+		char* name = (char*)malloc(50*sizeof(char));
 		H5Gget_objname_by_idx(group, (hsize_t)i, name, 50);
 		strcpy(names[i], name);
 		free(name);
@@ -1417,7 +1432,7 @@ double* get_mop_lat(hid_t file, int* size){
 			double* adding_lat = af_read(file, lat_dataset_name);
 			double new_lat_size = dim_sum(af_read_size(file, lat_dataset_name), 3);
 			//Reallocating arrays of data
-			lat_data = realloc(lat_data, sizeof(double)*(curr_lat_size + new_lat_size));
+			lat_data = (double*)realloc(lat_data, sizeof(double)*(curr_lat_size + new_lat_size));
 			memcpy(&lat_data[(int)curr_lat_size], adding_lat, sizeof(double)*new_lat_size);
 			curr_lat_size += new_lat_size;
 
@@ -1455,7 +1470,8 @@ double* get_mop_lat(hid_t file, int* size){
 */
 
 
-double* get_mop_long(hid_t file, int* size){
+double* get_mop_long(hid_t file, int* size)
+{
 	printf("Reading MOPITT longitude\n");
 	//Path variables
 	char* instrument = "MOPITT";
@@ -1476,7 +1492,7 @@ double* get_mop_long(hid_t file, int* size){
 	char names[(int)num_groups][50];
 	int i;
 	for(i = 0; i < num_groups; i++){
-		char* name = malloc(50*sizeof(char));
+		char* name = (char*)malloc(50*sizeof(char));
 		H5Gget_objname_by_idx(group, (hsize_t)i, name, 50);
 		strcpy(names[i], name);
 		free(name);
@@ -1515,7 +1531,7 @@ double* get_mop_long(hid_t file, int* size){
 			double* adding_long = af_read(file, long_dataset_name);
 			double new_long_size = dim_sum(af_read_size(file, long_dataset_name), 3);
 			//Reallocating arrays of data
-			long_data = realloc(long_data, sizeof(double)*(curr_long_size + new_long_size));
+			long_data = (double*)realloc(long_data, sizeof(double)*(curr_long_size + new_long_size));
 			memcpy(&long_data[(int)curr_long_size], adding_long, sizeof(double)*new_long_size);
 			curr_long_size += new_long_size;
 
@@ -1555,7 +1571,8 @@ double* get_mop_long(hid_t file, int* size){
 */
 
 
-double* get_ast_rad(hid_t file, char* subsystem, char* d_name, int*size){
+double* get_ast_rad(hid_t file, char* subsystem, char* d_name, int*size)
+{
 	printf("Reading ASTER radiance\n");
 	//Path variables
 	char* instrument = "ASTER";
@@ -1571,7 +1588,7 @@ double* get_ast_rad(hid_t file, char* subsystem, char* d_name, int*size){
 	char names[(int)num_groups][50];
 	int i;
 	for(i = 0; i < num_groups; i++){
-		char* name = malloc(50*sizeof(char));
+		char* name = (char*)malloc(50*sizeof(char));
 		H5Gget_objname_by_idx(group, (hsize_t)i, name, 50);
 		strcpy(names[i], name);
 		free(name);
@@ -1596,7 +1613,7 @@ double* get_ast_rad(hid_t file, char* subsystem, char* d_name, int*size){
 		free(curr_dim);
 	}
 	
-	double* result_data = calloc(total_size, sizeof(double));
+	double* result_data = (double*)calloc(total_size, sizeof(double));
 	
 	int h;
 	int curr_size = 0;
@@ -1651,7 +1668,8 @@ double* get_ast_rad(hid_t file, char* subsystem, char* d_name, int*size){
 		Returns NULL upon error
 */
 
-double* get_ast_lat(hid_t file, char* subsystem, char* d_name, int*size){
+double* get_ast_lat(hid_t file, char* subsystem, char* d_name, int*size)
+{
 	printf("Reading ASTER lat\n");
 	//Path variables
 	char* instrument = "ASTER";
@@ -1670,7 +1688,7 @@ double* get_ast_lat(hid_t file, char* subsystem, char* d_name, int*size){
 	int i;
 //This function is problematic
 	for(i = 0; i < num_groups; i++){
-		char* name = malloc(50*sizeof(char));
+		char* name = (char*)malloc(50*sizeof(char));
 		H5Gget_objname_by_idx(group, (hsize_t)i, name, 50); //Highly likely to be this line
 		char* rad_group_name;
 		const char* d_arr[] = {name, subsystem, d_name};
@@ -1706,7 +1724,7 @@ double* get_ast_lat(hid_t file, char* subsystem, char* d_name, int*size){
 	}
 	
 	int h;
-	double* lat_data = calloc(total_size, sizeof(double));
+	double* lat_data = (double*)calloc(total_size, sizeof(double));
 	int curr_lat_size = 0;
 	int read_first = -1;
 	for(h = 0; h < store_count; h++){
@@ -1759,7 +1777,8 @@ double* get_ast_lat(hid_t file, char* subsystem, char* d_name, int*size){
 */
 
 
-double* get_ast_long(hid_t file, char* subsystem, char* d_name, int* size){
+double* get_ast_long(hid_t file, char* subsystem, char* d_name, int* size)
+{
 	printf("Reading ASTER long\n");
 	//Path variables
 	char* instrument = "ASTER";
@@ -1777,7 +1796,7 @@ double* get_ast_long(hid_t file, char* subsystem, char* d_name, int* size){
 	char names[(int)num_groups][50];
 	int i;
 	for(i = 0; i < num_groups; i++){
-		char* name = malloc(50*sizeof(char));
+		char* name = (char*)malloc(51*sizeof(char));
 		H5Gget_objname_by_idx(group, (hsize_t)i, name, 50);
 		char* rad_group_name;
 		const char* d_arr[] = {name, subsystem, d_name};
@@ -1812,7 +1831,7 @@ double* get_ast_long(hid_t file, char* subsystem, char* d_name, int* size){
 	}
 	
 	int h;
-	double* long_data = calloc(total_size, sizeof(double));
+	double* long_data = (double*)calloc(total_size, sizeof(double));
 	int curr_long_size = 0;
 	for(h = 0; h < store_count; h++){
 		//Path formation
@@ -1864,7 +1883,8 @@ double* get_ast_long(hid_t file, char* subsystem, char* d_name, int* size){
 		Returns NULL upon error
 */
 
-double* get_ast_rad_by_gran(hid_t file, char* subsystem, char* d_name, char* gran_name, int*size){
+double* get_ast_rad_by_gran(hid_t file, char* subsystem, char* d_name, char* gran_name, int*size)
+{
 	printf("Reading ASTER radiance by gran\n");
 	//Path variables
 	char* instrument = "ASTER";
@@ -1882,7 +1902,7 @@ double* get_ast_rad_by_gran(hid_t file, char* subsystem, char* d_name, char* gra
 		printf("Retrieve current dimension error\n");
 	}
 	*size = curr_dim[0] * curr_dim[1];
-	double* result_data = calloc(curr_dim[0]*curr_dim[1], sizeof(double));
+	double* result_data = (double*)calloc(curr_dim[0]*curr_dim[1], sizeof(double));
 	double* data = af_read(file, dataset_name);
 	if(data == NULL){
 		printf("Read error\n");
@@ -1920,7 +1940,8 @@ double* get_ast_rad_by_gran(hid_t file, char* subsystem, char* d_name, char* gra
 		Returns NULL upon error
 */
 
-double* get_ast_lat_by_gran(hid_t file, char* subsystem, char* d_name, char* gran_name, int*size){
+double* get_ast_lat_by_gran(hid_t file, char* subsystem, char* d_name, char* gran_name, int*size)
+{
 	printf("Reading ASTER lat by gran\n");
 	//Path variables
 	char* instrument = "ASTER";
@@ -1933,7 +1954,7 @@ double* get_ast_lat_by_gran(hid_t file, char* subsystem, char* d_name, char* gra
 	printf("dataset name: %s\n", lat_dataset_name);	
 	hsize_t* curr_dim = af_read_size(file, lat_dataset_name);
 	*size = curr_dim[0] * curr_dim[1];
-	double* result_data = calloc(curr_dim[0]*curr_dim[1], sizeof(double));
+	double* result_data = (double*)calloc(curr_dim[0]*curr_dim[1], sizeof(double));
 	double* data = af_read(file, lat_dataset_name);
 	if(data == NULL){
 		return NULL;
@@ -1970,7 +1991,8 @@ double* get_ast_lat_by_gran(hid_t file, char* subsystem, char* d_name, char* gra
 */
 
 
-double* get_ast_long_by_gran(hid_t file, char* subsystem, char* d_name, char* gran_name, int*size){
+double* get_ast_long_by_gran(hid_t file, char* subsystem, char* d_name, char* gran_name, int*size)
+{
 	printf("Reading ASTER long by gran\n");
 	//Path variables
 	char* instrument = "ASTER";
@@ -1983,7 +2005,7 @@ double* get_ast_long_by_gran(hid_t file, char* subsystem, char* d_name, char* gr
 	printf("dataset name: %s\n", long_dataset_name);	
 	hsize_t* curr_dim = af_read_size(file, long_dataset_name);
 	*size = curr_dim[0] * curr_dim[1];
-	double* result_data = calloc(curr_dim[0]*curr_dim[1], sizeof(double));
+	double* result_data = (double*)calloc(curr_dim[0]*curr_dim[1], sizeof(double));
 	double* data = af_read(file, long_dataset_name);
 	if(data == NULL){
 			return NULL;
@@ -2019,7 +2041,8 @@ double* get_ast_long_by_gran(hid_t file, char* subsystem, char* d_name, char* gr
 */
 
 
-hsize_t* af_read_size(hid_t file, char* dataset_name){
+hsize_t* af_read_size(hid_t file, char* dataset_name)
+{
 	hid_t dataset = H5Dopen2(file, dataset_name, H5P_DEFAULT);
 	if(dataset < 0){
 		printf("Dataset open error\n");
@@ -2031,7 +2054,7 @@ hsize_t* af_read_size(hid_t file, char* dataset_name){
 		return NULL;	
 	}
 	const int ndims = H5Sget_simple_extent_ndims(dataspace);
-	hsize_t* dims = malloc(sizeof(hsize_t) * ndims);
+	hsize_t* dims = (hsize_t*)malloc(sizeof(hsize_t) * ndims);
 	H5Sget_simple_extent_dims(dataspace, dims, NULL);
 	H5Dclose(dataset);	
 	H5Sclose(dataspace);
@@ -2059,7 +2082,8 @@ hsize_t* af_read_size(hid_t file, char* dataset_name){
 */
 
 
-double* af_read(hid_t file, char* dataset_name){
+double* af_read(hid_t file, char* dataset_name)
+{
 	hid_t dataset = H5Dopen2(file, dataset_name, H5P_DEFAULT);
 	if(dataset < 0){
 		printf("Dataset open error\n");
@@ -2079,7 +2103,7 @@ double* af_read(hid_t file, char* dataset_name){
 	hid_t ndtype = H5Tget_native_type(dtype, H5T_DIR_DESCEND);
 	if(strstr(dataset_name, "ASTER") != NULL && strstr(dataset_name, "Geolocation") != NULL){
 		//Special case for ASTER geolocation because they are 64bit floating point numbers
-		double* data = calloc ( dim_sum(dims, sizeof(dims)/sizeof(hsize_t)) , sizeof(double) );
+		double* data = (double*)calloc ( dim_sum(dims, sizeof(dims)/sizeof(hsize_t)) , sizeof(double) );
 		herr_t status = H5Dread(dataset, ndtype, memspace, memspace, H5P_DEFAULT, data);
 		H5Dclose(dataset);	
 		H5Sclose(dataspace);
@@ -2091,8 +2115,8 @@ double* af_read(hid_t file, char* dataset_name){
 		return data;
 	}
 	else{
-		float* data = calloc ( dim_sum(dims, sizeof(dims)/sizeof(hsize_t)) , sizeof(ndtype) );
-		double* converted_data = calloc ( dim_sum(dims, sizeof(dims)/sizeof(hsize_t)) , sizeof(double) );
+		float* data = (float*)calloc ( dim_sum(dims, sizeof(dims)/sizeof(hsize_t)) , sizeof(ndtype) );
+		double* converted_data = (double*)calloc ( dim_sum(dims, sizeof(dims)/sizeof(hsize_t)) , sizeof(double) );
 		herr_t status = H5Dread(dataset, ndtype, memspace, memspace, H5P_DEFAULT, data);
 		int i;
 		for(i=0;i < dim_sum(dims, sizeof(dims)/sizeof(hsize_t)); i++){
@@ -2133,7 +2157,8 @@ double* af_read(hid_t file, char* dataset_name){
 */
 
 
-int af_write_misr_on_modis(hid_t output_file, double* misr_out, double* modis, int modis_size, int modis_band_size, int misr_size){
+int af_write_misr_on_modis(hid_t output_file, double* misr_out, double* modis, int modis_size, int modis_band_size, int misr_size)
+{
 	//Create datafield group
 	hid_t group_id = H5Gcreate2(output_file, "/Data_Fields", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
 	
@@ -2199,7 +2224,8 @@ int af_write_misr_on_modis(hid_t output_file, double* misr_out, double* modis, i
 */
 
 
-int af_write_mm_geo(hid_t output_file, int geo_flag, double* geo_data, int geo_size){
+int af_write_mm_geo(hid_t output_file, int geo_flag, double* geo_data, int geo_size)
+{
 	//Check if geolocation group exists --- TODO - change it to H5Lexists
 	printf("test: %f\n", geo_data[0]);
 	printf("test: %f\n", geo_data[1]);
@@ -2250,7 +2276,8 @@ int af_write_mm_geo(hid_t output_file, int geo_flag, double* geo_data, int geo_s
 */
 
 
-hid_t af_open(char* file_path){
+hid_t af_open(char* file_path)
+{
 	hid_t f = H5Fopen(file_path, H5F_ACC_RDONLY, H5P_DEFAULT);
 	return f;
 }
@@ -2273,14 +2300,16 @@ hid_t af_open(char* file_path){
 */
 
 
-herr_t af_close(hid_t file){
+herr_t af_close(hid_t file)
+{
 	herr_t ret = H5Fclose(file);
 	return ret;
 }
 
 
 //Deprecated -- the original main function for reading data, check af_run.c for the latest version
-/*int main (int argc, char *argv[]){
+/*int main (int argc, char *argv[])
+{
 	//Preset filename here for easy testing 
 	char* file_path = "/projects/TDataFus/kent/temp/40-orbit-file/Jun15.2/TERRA_BF_L1B_O69365_F000_V000.h5";
 	hid_t file;
@@ -2542,9 +2571,10 @@ herr_t af_close(hid_t file){
 */
 
 
-void concat_by_sep(char** source, const char** w, char* sep, size_t length, int arr_size){
+void concat_by_sep(char** source, const char** w, char* sep, size_t length, int arr_size)
+{
 	int i;
-	*source = calloc(length+20, sizeof(char));
+	*source = (char*)calloc(length+20, sizeof(char));
 	for(i = 0; i < arr_size; i++){
 		if(i == 0){
 			strncpy(*source, sep, strlen(sep));
@@ -2575,7 +2605,8 @@ void concat_by_sep(char** source, const char** w, char* sep, size_t length, int 
 
 
 //Summing up dimensions
-double dim_sum(hsize_t* dims, int arr_len){
+double dim_sum(hsize_t* dims, int arr_len)
+{
 	double sum = 0.0;
 	int i;
 	for(i = 0; i < arr_len; i++){
@@ -2608,7 +2639,8 @@ double dim_sum(hsize_t* dims, int arr_len){
 */
 
 
-double misr_averaging(double window[16]){
+double misr_averaging(double window[16])
+{
 	double sum = 0.0;
 	double count = 0.0;
 	int i;

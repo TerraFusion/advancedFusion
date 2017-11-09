@@ -34,7 +34,7 @@ double* get_modis_rad(hid_t file, char* resolution, char bands[38][50], int band
 double* get_modis_rad_by_band(hid_t file, char* resolution, char* d_name, int* band_index, int* size);
 double* get_modis_lat(hid_t file, char* resolution, int* size);
 double* get_modis_long(hid_t file, char* resolution, int* size);
-double* get_modis_attr(hid_t file, char* resolution, char* d_name, char* attr_name, int geo, void* attr_pt);
+void* get_modis_attr(hid_t file, char* resolution, char* d_name, char* attr_name, int geo, void* attr_pt);
 char* get_modis_filename(char* resolution, char* band, int* band_index);
 double* get_ceres_rad(hid_t file, char* camera, char* d_name, int* size);
 double* get_ceres_lat(hid_t file, char* camera, char* d_name, int* size);

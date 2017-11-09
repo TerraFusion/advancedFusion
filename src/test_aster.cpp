@@ -2,10 +2,10 @@
 
 
     AUTHOR:
-        Yat Long Lo; Yizhao Gao
+        Yat Long Lo
 
     EMAIL:
-        yllo2@illinois.edu; ygao29@illinois.edu
+        yllo2@illinois.edu
 
 	PROGRAM DESCRIPTION:
 		This is a program that makes use of the IO module and reprojection module to produce reprojected data of ASTER onto MODIS
@@ -19,8 +19,9 @@
 #include "reproject.h"
 #include "io.h"
 
-int main(int argc, char ** argv){
-	hid_t output_file = H5Fcreate("aster_on_modis_3N_Test.h5", H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
+int main(int argc, char ** argv)
+{
+	hid_t output_file = H5Fcreate("aster_on_modis_test.h5", H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
 	char* file_path = "/projects/TDataFus/gyzhao/BF_Sample/TERRA_BF_L1B_O69400_20130104000439_F000_V000.h5";
 	hid_t src_file;
 	if(0 > (src_file = af_open(file_path))) {
@@ -31,8 +32,8 @@ int main(int argc, char ** argv){
 	int nCellsrc;
 	double* src_lat;
 	double* src_long;
-	src_lat = get_ast_lat(src_file, "VNIR", "ImageData3N", &nCellsrc);
-	src_long = get_ast_long(src_file, "VNIR", "ImageData3N", &nCellsrc);
+	src_lat = get_ast_lat_by_gran(src_file, "TIR", "ImageData10", "granule_01042013010101", &nCellsrc);
+	src_long = get_ast_long_by_gran(src_file, "TIR", "ImageData10", "granule_01042013010101", &nCellsrc);
 	
 	int nCelldest;
 	double* dest_lat;
@@ -60,7 +61,7 @@ int main(int argc, char ** argv){
 	
 	printf("nearest neighbor\n");
 	//nearestNeighbor(p_src_lat, p_src_lon, nCellsrc, dest_lat, dest_long, tarNNSouID, nCelldest, 1000);
-	nearestNeighborBlockIndex(p_dest_lat, p_dest_lon, nCelldest, src_lat, src_long, tarNNSouID, NULL, nCellsrc, 1000);
+	nearestNeighbor(p_dest_lat, p_dest_lon, nCelldest, src_lat, src_long, tarNNSouID, NULL, nCellsrc, 1000);
 	dest_lat = *p_dest_lat;
 	dest_long = *p_dest_lon;
 	
@@ -73,7 +74,7 @@ int main(int argc, char ** argv){
 	printf("getting source rad\n");
 	double* src_rad;
 	
-	src_rad = get_ast_rad(src_file, "VNIR", "ImageData3N", &nCellsrc);
+	src_rad = get_ast_rad_by_gran(src_file, "TIR", "ImageData10", "granule_01042013010101", &nCellsrc);
 	
 	int nCelldest_rad;
 	double* dest_rad;
@@ -89,11 +90,11 @@ int main(int argc, char ** argv){
 	summaryInterpolate(src_rad, tarNNSouID, nCellsrc, src_rad_out, nsrcPixels, nCelldest);
 
 	printf("No nodata values: \n");
-//	for(int i = 0; i < nCelldest; i++) {
-//		if(nsrcPixels[i] > 0) {
-//			printf("%d,\t%lf\n", nsrcPixels[i], src_rad_out[i]);
-//		}
-//	}
+	for(int i = 0; i < nCelldest; i++) {
+		if(nsrcPixels[i] > 0) {
+			printf("%d,\t%lf\n", nsrcPixels[i], src_rad_out[i]);
+		}
+	}
 
 	
 	//Writing

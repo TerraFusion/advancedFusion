@@ -12,7 +12,8 @@
 #include "reproject.h"
 #include "io.h"
 
-int main(int argc, char ** argv) {
+int main(int argc, char ** argv) 
+{
 	hid_t output_file = H5Fcreate("misr_modis_test_repro.h5", H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
 	
 	char* file_path = "/projects/TDataFus/kent/temp/40-orbit-file/Jun15.2/TERRA_BF_L1B_O69365_F000_V000.h5";
@@ -76,17 +77,12 @@ int main(int argc, char ** argv) {
 	printf("writing data fields\n");
 	int data_write_status = af_write_misr_on_modis(output_file, MODIS_Rad_Out, MODIS_Rad, nCellMODIS_rad, nCellMODIS);
 
-	
 	free(MISR_Rad);
 	free(MODIS_Rad_Out);
 
 	free(tarNNSouID);
 
-
-
-
 	herr_t ret = af_close(file);
-
 
 	return 0;
 }
