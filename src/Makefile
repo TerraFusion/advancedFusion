@@ -1,6 +1,12 @@
-CXXFLAGS=-Wno-write-strings
-CXX=g++
-H5CXX=HDF5_CC=/usr/bin/g++ h5cc $(CXXFLAGS)
+
+# Use this on BW
+CXX=CC
+H5CXX=CC
+
+# Use this set for local build
+#CXXFLAGS=-Wno-write-strings
+#CXX=g++
+#H5CXX=HDF5_CC=/usr/bin/g++ h5cc $(CXXFLAGS)
 
 #all: testRepro testRepro2 testRepro3 testReproHDF5
 all: af_run test_aster test_aster_allOrbit test_read_area
