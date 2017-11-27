@@ -9,7 +9,7 @@ H5CXX=CC
 #H5CXX=HDF5_CC=/usr/bin/g++ h5cc $(CXXFLAGS)
 
 #all: testRepro testRepro2 testRepro3 testReproHDF5
-all: af_run test_aster test_aster_allOrbit test_read_area
+all: af_run test_aster test_aster_allOrbit test_read_area test_MISR_MODIS
 
 #testRepro.o: testRepro.cpp
 #	$(CXX) -o $@ -c $<
@@ -30,6 +30,9 @@ af_run.o: af_run.cpp
 	$(H5CXX) -c $< -o $@
 
 test_aster.o: test_aster.cpp
+	$(H5CXX) -c $< -o $@
+
+test_MISR_MODIS.o: test_MISR_MODIS.cpp
 	$(H5CXX) -c $< -o $@
 
 test_aster_allOrbit.o: test_aster_allOrbit.cpp
@@ -62,9 +65,12 @@ af_run: af_run.o reproject.o io.o
 test_aster: test_aster.o reproject.o io.o
 	$(H5CXX) -o ../$@ $+ -lm
 
+test_MISR_MODIS: test_MISR_MODIS.o reproject.o io.o
+	$(H5CXX) -o ../$@ $+ -lm
+
 test_aster_allOrbit: test_aster_allOrbit.o reproject.o io.o
 	$(H5CXX) -o ../$@ $+ -lm
 
 clean:
-	rm *.o ../test_read_area ../test_aster ../test_aster_allOrbit ../af_run
+	rm *.o ../test_read_area ../test_aster ../test_aster_allOrbit ../af_run ../test_MISR_MODIS
 #	rm *.o ../testRepro ../testRepro2 ../testRepro3 ../testReproHDF5
