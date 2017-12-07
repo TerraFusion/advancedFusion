@@ -142,6 +142,6 @@ int main(int argc, char ** argv)
 	printf("Writing done\n");
 	//Closing file
 	herr_t ret = af_close(src_file);
-	
+	ret = af_close(output_file);
 	return 0;
 }
