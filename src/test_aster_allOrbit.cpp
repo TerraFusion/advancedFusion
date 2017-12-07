@@ -21,8 +21,8 @@
 
 int main(int argc, char ** argv)
 {
-	hid_t output_file = H5Fcreate("aster_on_modis_3N_Test.h5", H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
-	char* file_path = "/projects/TDataFus/gyzhao/BF_Sample/TERRA_BF_L1B_O69400_20130104000439_F000_V000.h5";
+	hid_t output_file = H5Fcreate("/projects/sciteam/jq0/TerraFusion/yizhao/aster_on_modis_3N_Test.h5", H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
+	char* file_path = "/projects/sciteam/jq0/TerraFusion/yizhao/TERRA_BF_L1B_O69400_20130104000439_F000_V000.h5";
 	hid_t src_file;
 	if(0 > (src_file = af_open(file_path))) {
 		printf("File not found\n");
