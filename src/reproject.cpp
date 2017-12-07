@@ -1,13 +1,14 @@
 /**
- * reproject.c
+ * reproject.cpp
  * Authors: Yizhao Gao <ygao29@illinois.edu>
- * Date: {10/10/2017}
+ * Date: {12/06/2017}
  */
 
 
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
+#include <omp.h>
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -73,6 +74,7 @@ struct LonBlocks * pointIndexOnLatLon(double ** plat, double ** plon, int * oriI
 			highestLat = -M_PI/2 + latBlockR * (i + 1);
 		}
 		blockIndex[i].nBlocks = (int)(2 * M_PI * cos(highestLat)/ maxradian);
+//		printf("%d,%d\n", i, blockIndex[i].nBlocks);
 		if(blockIndex[i].nBlocks < 4) {
 			blockIndex[i].nBlocks = 1;
 		}
@@ -158,7 +160,6 @@ struct LonBlocks * pointIndexOnLatLon(double ** plat, double ** plon, int * oriI
 	*plat = newLat;
 
 	return blockIndex;
-
 }
 
 
@@ -290,19 +291,21 @@ void nearestNeighborBlockIndex(double ** psouLat, double ** psouLon, int nSou, d
 	souLat = *psouLat;
 	souLon = *psouLon;
 
-	double tLat, tLon;
-	double sLat, sLon;
-	int rowID, colID;
-
-	double pDis;
-	double nnDis;
-	int nnSouID;
-
+#pragma omp parallel for private(j, k, kk, l)
 	for(i = 0; i < nTar; i ++) {
 		
-		tLat = tarLat[i];
-		tLon = tarLon[i];
-
+		double tLat = tarLat[i];
+		double tLon = tarLon[i];
+		double sLat, sLon;
+		int rowID, colID;
+		double pDis;
+		double nnDis;
+		int nnSouID;
+/*
+		if(i == 0) {
+			printf("%d\n", omp_get_num_threads());
+		}
+*/
 		rowID = (tLat + M_PI / 2) / latBlockR;
 
 		nnDis = -1;
@@ -369,11 +372,7 @@ void nearestNeighborBlockIndex(double ** psouLat, double ** psouLon, int nSou, d
 			}
 		}
 			
-	}
-
-	
-	
-
+	}	
 
 	free(souID);
 	for(i = 0; i < nBlockY; i++) {

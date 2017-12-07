@@ -20,8 +20,8 @@
 #include "io.h"
 
 int main(int argc, char ** argv){
-	hid_t output_file = H5Fcreate("misr_on_modis_3N_Test_3.h5", H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
-	char* file_path = "/projects/TDataFus/kent/valid_test/tmp/BF_sample/TERRA_BF_L1B_O69626_20130119123228_F000_V001.h5";
+	hid_t output_file = H5Fcreate("/projects/sciteam/jq0/TerraFusion/yizhao/misr_on_modis_3N_TestOMP2.h5", H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
+	char* file_path = "/projects/sciteam/jq0/TerraFusion/yizhao/TERRA_BF_L1B_O69626_20130119123228_F000_V001.h5";
 	hid_t src_file;
 	if(0 > (src_file = af_open(file_path))) {
 		printf("File not found\n");
@@ -143,6 +143,7 @@ int main(int argc, char ** argv){
 	printf("Writing done\n");
 	//Closing file
 	herr_t ret = af_close(src_file);
+	ret = af_close(output_file);
 	
 	return 0;
 }
