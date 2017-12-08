@@ -270,11 +270,13 @@ void nearestNeighborBlockIndex(double ** psouLat, double ** psouLon, int nSou, d
 	double latBlockR = M_PI / nBlockY;
 
 	int i, j, k, kk, l;
+#pragma omp parallel for
 	for(i = 0; i < nSou; i++) {
 		souLat[i] = souLat[i] * M_PI / 180;
 		souLon[i] = souLon[i] * M_PI / 180;
 	}
 
+#pragma omp parallel for
 	for(i = 0; i < nTar; i++) {
 		tarLat[i] = tarLat[i] * M_PI / 180;
 		tarLon[i] = tarLon[i] * M_PI / 180;
@@ -398,13 +400,15 @@ void nearestNeighbor(double ** psouLat, double ** psouLon, int nSou, double * ta
 
 	double blockR = M_PI / nBlockY;
 	
-
-	for(int i = 0; i < nSou; i++) {
+	int i, j;
+#pragma omp parallel for
+	for(i = 0; i < nSou; i++) {
 		souLat[i] = souLat[i] * M_PI / 180;
 		souLon[i] = souLon[i] * M_PI / 180;
 	}
 
-	for(int i = 0; i < nTar; i++) {
+#pragma omp parallel for
+	for(i = 0; i < nTar; i++) {
 		tarLat[i] = tarLat[i] * M_PI / 180;
 		tarLon[i] = tarLon[i] * M_PI / 180;
 	}
@@ -427,7 +431,7 @@ void nearestNeighbor(double ** psouLat, double ** psouLon, int nSou, double * ta
 	double nnDis;
 	int nnSouID;
 
-	for(int i = 0; i < nTar; i ++) {
+	for(i = 0; i < nTar; i ++) {
 
 		tLat = tarLat[i];
 		tLon = tarLon[i];
@@ -445,7 +449,7 @@ void nearestNeighbor(double ** psouLat, double ** psouLon, int nSou, double * ta
 
 		nnDis = -1;
 		
-		for(int j = souIndex[startBlock]; j < souIndex[endBlock+1]; j++) {
+		for(j = souIndex[startBlock]; j < souIndex[endBlock+1]; j++) {
 			
 			sLat = souLat[j];
 			sLon = souLon[j];
