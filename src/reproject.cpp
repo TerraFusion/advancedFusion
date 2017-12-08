@@ -422,23 +422,21 @@ void nearestNeighbor(double ** psouLat, double ** psouLon, int nSou, double * ta
 	souLat = *psouLat;
 	souLon = *psouLon;
 
-	double tLat, tLon;
-	double sLat, sLon;
-	int blockID;
-	int startBlock, endBlock;
 
-	double pDis;	
-	double nnDis;
-	int nnSouID;
-
+#pragma omp parallel for private(j)
 	for(i = 0; i < nTar; i ++) {
 
-		tLat = tarLat[i];
-		tLon = tarLon[i];
+		double tLat = tarLat[i];
+		double tLon = tarLon[i];
+		double sLat, sLon;
+		
+		double pDis;	
+		double nnDis;
+		int nnSouID;
 
-		blockID = (tLat + M_PI / 2) / blockR;
-		startBlock = blockID - 1;
-		endBlock = blockID + 1;
+		int blockID = (tLat + M_PI / 2) / blockR;
+		int startBlock = blockID - 1;
+		int endBlock = blockID + 1;
 
 		if(startBlock < 0) {
 			startBlock = 0;
@@ -577,8 +575,10 @@ void nearestNeighbor(double ** psouLat, double ** psouLon, int nSou, double * ta
 void nnInterpolate(double * souVal, double * tarVal, int * tarNNSouID, int nTar) {
 
 	int nnSouID;
+	int i;
 
-	for(int i = 0; i < nTar; i++) {
+#pragma omp parallel for private(nnSouID)
+	for(i = 0; i < nTar; i++) {
 		nnSouID = tarNNSouID[i];
 		if(nnSouID < 0) {
 			tarVal[i] = -999;
