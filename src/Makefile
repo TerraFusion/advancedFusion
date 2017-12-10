@@ -9,7 +9,10 @@ H5CXX=CC
 #H5CXX=HDF5_CC=/usr/bin/g++ h5cc $(CXXFLAGS)
 
 #all: testRepro testRepro2 testRepro3 testReproHDF5
-all: af_run test_aster test_aster_allOrbit test_read_area test_MISR_MODIS
+all: AFtool test_aster test_aster_allOrbit test_read_area test_MISR_MODIS
+
+AFtool.o: AFtool.cpp
+	$(H5CXX) -c $< -o $@
 
 #testRepro.o: testRepro.cpp
 #	$(CXX) -o $@ -c $<
@@ -26,8 +29,8 @@ all: af_run test_aster test_aster_allOrbit test_read_area test_MISR_MODIS
 test_read_area.o: test_read_area.cpp
 	$(H5CXX) -c $< -o $@
 
-af_run.o: af_run.cpp
-	$(H5CXX) -c $< -o $@
+#af_run.o: af_run.cpp
+#	$(H5CXX) -c $< -o $@
 
 test_aster.o: test_aster.cpp
 	$(H5CXX) -c $< -o $@
@@ -56,11 +59,14 @@ io.o: io.cpp
 # testReproHDF5: testReproHDF5.o reproject.o io.o
 #	$(H5CXX) -o ../$@ $+ -lm
 
+AFtool: AFtool.o AF_InputParmeterFile.o reproject.o io.o
+	$(H5CXX) -o ../$@ $+ -lm
+
 test_read_area: test_read_area.o reproject.o io.o
 	$(H5CXX) -o ../$@ $+ -lm
 
-af_run: af_run.o reproject.o io.o
-	$(H5CXX) -o ../$@ $+ -lm
+#af_run: af_run.o reproject.o io.o
+#	$(H5CXX) -o ../$@ $+ -lm
 
 test_aster: test_aster.o reproject.o io.o
 	$(H5CXX) -o ../$@ $+ -lm
@@ -72,5 +78,5 @@ test_aster_allOrbit: test_aster_allOrbit.o reproject.o io.o
 	$(H5CXX) -o ../$@ $+ -lm
 
 clean:
-	rm *.o ../test_read_area ../test_aster ../test_aster_allOrbit ../af_run ../test_MISR_MODIS
+	rm *.o ../AFtool ../test_read_area ../test_aster ../test_aster_allOrbit ../test_MISR_MODIS
 #	rm *.o ../testRepro ../testRepro2 ../testRepro3 ../testReproHDF5
