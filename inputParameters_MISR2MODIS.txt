@@ -1,5 +1,25 @@
+#=============================================================
+# Example of resampling of MISR to MODIS.
+# Using MISR as source instrument and MODIS as target instrument.
+#
+# Refer to below specification.
+#
+# INPUT_FILE_PATH: <specify a full path to BF HDF5 data file>
+# OUTPUT_FILE_PATH: <specify a path to result AF file>
+# RESAMPLE_METHOD: nnInterpolate
+#
+# SOURCE_INSTRUMENT: MISR
+# MISR_RESOLUTION: < L or H >
+# MISR_CAMERA_ANGLE: < AN, AA, AF, BA, BF, CA, CF, DA or DF >
+# MISR_RADIANCE: < Blue_Radiance, Green_Radiance, Red_Radiance or NIR_Radiance >
+#
+# TARGET_INSTRUMENT: MODIS
+# MODIS_RESOLUTION: < 1KM, 500M or 250M >
+# MODIS_BANDS: < 1 ~ 36 >
+#=============================================================
+
 INPUT_FILE_PATH: /u/staff/jkm/DATA/TASKS/TerraFusion/Data/TERRA_BF_L1B_O69626_20130119123228_F000_V000.h5
-OUTPUT_FILE_PATH: misr_on_modis_AF.h5
+OUTPUT_FILE_PATH: misr_on_modis_3N_Test.h5
 
 RESAMPLE_METHOD: nnInterpolate
 
