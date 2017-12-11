@@ -18,6 +18,7 @@
 #include <stdio.h>
 
 #include "AF_InputParmeterFile.h"
+#include "AF_debug.h"
 
 
 AF_InputParmeterFile::AF_InputParmeterFile()
@@ -81,7 +82,7 @@ void AF_InputParmeterFile::ParseByLine()
 	while(headerFile.good() && isValidInput)
 	{
 		std::getline(headerFile, line);
-		#if DEBUG_TOOL
+		#if 0 // DEBUG_TOOL
 		std::cout << "DBG ParseByLine()> line: " <<  line << std::endl;
 		std::cout << "DBG> line size: " <<  line.size() << std::endl;
 		#endif

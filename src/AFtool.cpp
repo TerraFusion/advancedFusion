@@ -25,6 +25,7 @@
 #include "io.h"
 #include "reproject.h"
 #include "AF_InputParmeterFile.h"
+#include "AF_debug.h"
 
 const hsize_t RESAMPLE_DATA_WIDTH = 1354;
 
