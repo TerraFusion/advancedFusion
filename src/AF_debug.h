@@ -9,5 +9,5 @@
 
 // options
 // 1 will show extra info for quick debugging info for the tool code
-#define DEBUG_TOOL  1
+#define DEBUG_TOOL  0
 
