@@ -14,6 +14,13 @@
 #define M_PI 3.14159265358979323846
 #endif
 
+/**
+ * struct LonBlocks: data structure for grid-based spatial indexing. Each "struct LonBlocks" holds one row (latitude) of the spatial indexing
+ * ITEMS:
+ * 	double blockSizeR:	the longtitude range of each block
+ * 	int nBlocks:		the number of longtitude blocks in this row
+ *	int * indexID:		the starting and ending index (of the long arrays of data) of locations in each block
+ */
 struct LonBlocks {
 	double blockSizeR;
 	int nBlocks;
@@ -251,7 +258,23 @@ int * pointIndexOnLat(double ** plat, double ** plon,  int * oriID, int count, i
 	return index;
 }
 
-//Finding the nearest neiboring point's ID 
+ /**
+ * NAME:	nearestNeighborBlockIndex
+ * DESCRIPTION:	Find the nearest neighboring source cell's ID for each target cell
+ * PARAMETERS:
+ *	double ** psouLat:	the pointer to the array of latitudes of source cells (the data are changed during in the function, so please do the output before this function)
+ *	double ** psouLon:	the pointer to the array of longitudes of source cells (the data are changed during in the function, so please do the output before this function)
+ *	int nSou:		the number of source cells
+ *	double * tarLat:	the latitudes of target cells
+ *	double * tarLon:	the longitudes of target cells
+ *	int * tarNNSouID:	the output IDs of nearest neighboring source cells 
+ *	double * tarNNDis	the output nearest distance for each target cell (input NULL if you don't need this field)
+ *	int nTar:		the number of target cells
+ *	double maxR:		the maximum distance (in meters) to define neighboring cells
+ * Output: 	
+ *	int * tarNNSouID:	the output IDs of nearest neighboring source cells 
+ *	double * tarNNDis	the output nearest distance for each target cell (input NULL if you don't need this field)
+ */
 void nearestNeighborBlockIndex(double ** psouLat, double ** psouLon, int nSou, double * tarLat, double * tarLon, int * tarNNSouID, double * tarNNDis, int nTar, double maxR) {
 
 	double * souLat = *psouLat;
@@ -387,7 +410,23 @@ void nearestNeighborBlockIndex(double ** psouLat, double ** psouLon, int nSou, d
 }
 
 
-//Finding the nearest neiboring point's ID 
+/**
+ * NAME:	nearestNeighbor
+ * DESCRIPTION:	Find the nearest neighboring source cell's ID for each target cell
+ * PARAMETERS:
+ *	double ** psouLat:	the pointer to the array of latitudes of source cells (the data are changed during in the function, so please do the output before this function)
+ *	double ** psouLon:	the pointer to the array of longitudes of source cells (the data are changed during in the function, so please do the output before this function)
+ *	int nSou:		the number of source cells
+ *	double * tarLat:	the latitudes of target cells
+ *	double * tarLon:	the longitudes of target cells
+ *	int * tarNNSouID:	the output IDs of nearest neighboring source cells 
+ *	double * tarNNDis	the output nearest distance for each target cell (input NULL if you don't need this field)
+ *	int nTar:		the number of target cells
+ *	double maxR:		the maximum distance (in meters) to define neighboring cells
+ * Output: 	
+ *	int * tarNNSouID:	the output IDs of nearest neighboring source cells 
+ *	double * tarNNDis	the output nearest distance for each target cell (input NULL if you don't need this field)
+ */ 
 void nearestNeighbor(double ** psouLat, double ** psouLon, int nSou, double * tarLat, double * tarLon, int * tarNNSouID, double * tarNNDis, int nTar, double maxR) {
 
 	//printf("%0x\n", souLat);
@@ -483,8 +522,8 @@ void nearestNeighbor(double ** psouLat, double ** psouLon, int nSou, double * ta
 	return;	
 }
 
-/*
-//Finding the nearest neiboring point's ID 
+/* Old version of "nearestNeighbor", no longer in use
+ 
 void nearestNeighbor(double ** psouLat, double ** psouLon, int nSou, double * tarLat, double * tarLon, int * tarNNSouID, int nTar, double maxR) {
 
 	//printf("%0x\n", souLat);
@@ -568,10 +607,25 @@ void nearestNeighbor(double ** psouLat, double ** psouLon, int nSou, double * ta
 		 
 	}
 	
+	free(souID);
+	free(souIndex);
+	
 	return;	
 }
 */
 
+
+/**
+ * NAME:	nnInterpolate
+ * DESCRIPTION:	Nearest neighbor interpolation
+ * PARAMETERS:
+ * 	double * souVal:	the input values at source cells
+ * 	double * tarVal:	the output values at target cells
+ * 	int * tarNNSouID:	the IDs of nearest neighboring source cells for each target cells (generated from "nearestNeighbor") 
+ *	int nTar:		the number of target cells
+ * Output: 	
+ * 	double * tarVal:	the output values at target cells
+ */ 
 void nnInterpolate(double * souVal, double * tarVal, int * tarNNSouID, int nTar) {
 
 	int nnSouID;
@@ -589,6 +643,21 @@ void nnInterpolate(double * souVal, double * tarVal, int * tarNNSouID, int nTar)
 	}
 }
 
+
+/**
+ * NAME:	summaryInterpolate
+ * DESCRIPTION:	Interpolation (summary) from fine resolution to coarse resolution
+ * PARAMETERS:
+ * 	double * souVal:	the input values at source cells
+ * 	int * souNNTarID:	the IDs of nearest neighboring target cells for each source cells (generated from "nearestNeighbor")
+ * 	int nSou:		the number of source cells
+ * 	double * tarVal:	the output values at target cells
+ * 	int * nSouPixels:	the output numbers of contributing source cells to each target cell
+ *	int nTar:		the number of target cells
+ * Output:
+ * 	double * tarVal:	the output values at target cells
+ * 	int * nSouPixels:	the output numbers of contributing source cells to each target cell
+ */
 void summaryInterpolate(double * souVal, int * souNNTarID, int nSou, double * tarVal, int * nSouPixels, int nTar) {
 
 	for(int i = 0; i < nTar; i++) {
