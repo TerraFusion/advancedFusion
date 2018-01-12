@@ -2,6 +2,8 @@
 # Use this on BW
 CXX=CC
 H5CXX=CC
+GDALDIR = /projects/sciteam/jq0/TerraFusion/gdal
+
 
 # Use this set for local build
 #CXXFLAGS=-Wno-write-strings
@@ -9,7 +11,7 @@ H5CXX=CC
 #H5CXX=HDF5_CC=/usr/bin/g++ h5cc $(CXXFLAGS)
 
 #all: testRepro testRepro2 testRepro3 testReproHDF5
-all: AFtool test_aster test_aster_allOrbit test_read_area test_MISR_MODIS
+all: AFtool test_aster test_aster_allOrbit test_read_area test_MISR_MODIS test_userdefinedgrids
 
 AFtool.o: AFtool.cpp
 	$(H5CXX) -c $< -o $@
@@ -41,11 +43,17 @@ test_MISR_MODIS.o: test_MISR_MODIS.cpp
 test_aster_allOrbit.o: test_aster_allOrbit.cpp
 	$(H5CXX) -c $< -o $@
 
+test_userdefinedgrids.o: test_userdefinedgrids.cpp
+	$(H5CXX) -c $< -o $@
+
 reproject.o: reproject.cpp
 	$(CXX) -o $@ -c $<
 
 io.o: io.cpp
 	$(H5CXX) -c $< -o $@
+
+gdalio.o: gdalio.cpp
+	$(CXX) -I. -I$(GDALDIR)/include -o $@ -c $< 	
 
 # testRepro: testRepro.o reproject.o
 #	$(CXX) -o ../$@ $+ -lm
@@ -77,6 +85,9 @@ test_MISR_MODIS: test_MISR_MODIS.o reproject.o io.o
 test_aster_allOrbit: test_aster_allOrbit.o reproject.o io.o
 	$(H5CXX) -o ../$@ $+ -lm
 
+test_userdefinedgrids: test_userdefinedgrids.o reproject.o io.o gdalio.o
+	$(H5CXX) -o ../$@ $+ -lm -L$(GDALDIR)/lib -lgdal
+
 clean:
-	rm *.o ../AFtool ../test_read_area ../test_aster ../test_aster_allOrbit ../test_MISR_MODIS
+	rm *.o ../AFtool ../test_read_area ../test_aster ../test_aster_allOrbit ../test_MISR_MODIS ../test_userdefinedgrids
 #	rm *.o ../testRepro ../testRepro2 ../testRepro3 ../testReproHDF5

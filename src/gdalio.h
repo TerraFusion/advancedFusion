@@ -8,6 +8,6 @@
 #define GDALIOH
 
 void gdalIORegister();
-int getCellCenterLatLon(int inputEPSG, double xMin, double yMin, double xMax, double yMax, double cellSize, double ** px, double ** py);
+int getCellCenterLatLon(int outputEPSG, double xMin, double yMin, double xMax, double yMax, double cellSize, double ** px, double ** py);
 
 #endif

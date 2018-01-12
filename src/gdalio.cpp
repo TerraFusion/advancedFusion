@@ -18,7 +18,7 @@ void gdalIORegister()
 	OGRRegisterAll();
 }
 
-int getCellCenterLatLon(int inputEPSG, double xMin, double yMin, double xMax, double yMax, double cellSize, double ** px, double ** py) 
+int getCellCenterLatLon(int outputEPSG, double xMin, double yMin, double xMax, double yMax, double cellSize, double ** px, double ** py) 
 {
 
 	int nRow = ceil((yMax - yMin) / cellSize);
@@ -43,8 +43,8 @@ int getCellCenterLatLon(int inputEPSG, double xMin, double yMin, double xMax, do
 		exit(1);	
 	}
 
-	x = *px;
-	y = *py;
+	double * x = *px;
+	double * y = *py;
 
 	int i, j;
 	double rowY;
@@ -65,7 +65,7 @@ int getCellCenterLatLon(int inputEPSG, double xMin, double yMin, double xMax, do
 	sourceSRS = OSRNewSpatialReference(NULL);
 	targetSRS = OSRNewSpatialReference(NULL);
 
-	OSRImportFromEPSG(sourceSRS, inputEPSG);
+	OSRImportFromEPSG(sourceSRS, outputEPSG);
 	OSRImportFromEPSG(targetSRS, 4326);
 
 	cTransform = OCTNewCoordinateTransformation(sourceSRS, targetSRS);
