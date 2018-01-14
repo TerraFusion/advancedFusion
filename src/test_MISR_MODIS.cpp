@@ -84,9 +84,9 @@ int main(int argc, char ** argv){
 	double* src_rad_out = (double *)malloc(sizeof(double) * nCelldest);
 	int new_ast_size = nCelldest;
 	//Interpolating
-	int * nsrcPixels;
+//	int * nsrcPixels;
 	printf("interpolating\n");
-	nsrcPixels = (int *) malloc(sizeof(int) * nCelldest);
+//	nsrcPixels = (int *) malloc(sizeof(int) * nCelldest);
 //	summaryInterpolate(src_rad, tarNNSouID, nCellsrc, src_rad_out, nsrcPixels, nCelldest);
 	nnInterpolate(src_rad, src_rad_out, tarNNSouID, nCelldest);
 
