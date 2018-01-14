@@ -1,7 +1,7 @@
 /**
  * gdalio.cpp
  * Authors: Yizhao Gao <ygao29@illinois.edu>
- * Date: {01/04/2018}
+ * Date: {01/14/2018}
  */
 
 #include <stdio.h>
@@ -59,21 +59,60 @@ int getCellCenterLatLon(int outputEPSG, double xMin, double yMin, double xMax, d
 		}
 	}
 
-	OGRSpatialReferenceH sourceSRS, targetSRS;
-	OGRCoordinateTransformationH cTransform;
+	if(outputEPSG != 4326) 
+	{
 
-	sourceSRS = OSRNewSpatialReference(NULL);
-	targetSRS = OSRNewSpatialReference(NULL);
+		OGRSpatialReferenceH sourceSRS, targetSRS;
+		OGRCoordinateTransformationH cTransform;
 
-	OSRImportFromEPSG(sourceSRS, outputEPSG);
-	OSRImportFromEPSG(targetSRS, 4326);
+		sourceSRS = OSRNewSpatialReference(NULL);
+		targetSRS = OSRNewSpatialReference(NULL);
 
-	cTransform = OCTNewCoordinateTransformation(sourceSRS, targetSRS);
+		OSRImportFromEPSG(sourceSRS, outputEPSG);
+		OSRImportFromEPSG(targetSRS, 4326);
 
-	OCTTransform(cTransform, nPoints, x, y, NULL);		
+		cTransform = OCTNewCoordinateTransformation(sourceSRS, targetSRS);
 
-	OCTDestroyCoordinateTransformation(cTransform);	
+		OCTTransform(cTransform, nPoints, x, y, NULL);		
+
+		OCTDestroyCoordinateTransformation(cTransform);
+	}
 
 	return nPoints;
 
+}
+
+void writeGeoTiff(char * fileName, double * grid, int nRow, int nCol, double xMin, double yMax, double cellSize)
+{	
+	GDALDriverH hDriver;
+	if(NULL == (hDriver = GDALGetDriverByName("GTiff")))
+	{
+		printf("ERROR: cannot get driver for GTiff\n");
+		exit(1);
+	}
+
+	GDALDatasetH hDstDS;
+	char *papszOptions[] = {"COMPRESS=LZW",NULL};
+	hDstDS = GDALCreate(hDriver, fileName, nCol, nRow, 1, GDT_Float64, papszOptions);
+
+	
+	double adfGeoTransform[6];
+	adfGeoTransform[0] = xMin;
+	adfGeoTransform[1] = cellSize;
+	adfGeoTransform[2] = 0;
+	adfGeoTransform[3] = yMax;
+	adfGeoTransform[4] = 0;
+	adfGeoTransform[5] = -cellSize;
+
+	GDALSetGeoTransform(hDstDS,adfGeoTransform);
+
+
+	GDALRasterBandH hBand;
+	hBand=GDALGetRasterBand(hDstDS,1);
+	GDALSetRasterNoDataValue(hBand,-999.0);
+	GDALRasterIO(hBand, GF_Write, 0, 0, nCol, nRow, grid, nCol, nRow, GDT_Float64, 0, 0 );
+
+	GDALClose(hDstDS);
+
+	return;
 }
