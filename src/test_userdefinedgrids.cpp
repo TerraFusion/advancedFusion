@@ -12,10 +12,13 @@ int main(int argc, char ** argv) {
 	double xMax = 180;
 	double yMin = -90;
 	double yMax = 90;
-	double cellSize = 10;
+	double cellSize = 1;
 
 	double * targetX;
 	double * targetY;
+
+	
+	gdalIORegister();
 
 	int nPoints = getCellCenterLatLon(outputEPSG, xMin, yMin, xMax, yMax, cellSize, &targetX, &targetY);
 
@@ -27,7 +30,7 @@ int main(int argc, char ** argv) {
 */
 
 	char* file_path = "/projects/sciteam/jq0/TerraFusion/yizhao/TERRA_BF_L1B_O69626_20130119123228_F000_V001.h5";
-	char* outfileName = "test.tif";
+	char* outfileName = "test4326.tif";
 	
 	hid_t src_file;
 	if(0 > (src_file = af_open(file_path))) {
@@ -75,7 +78,7 @@ int main(int argc, char ** argv) {
 	
 	printf("writing data fields\n");
 	
-	writeGeoTiff(outfileName, src_rad_out, xMin, yMin, xMax, yMax, cellSize);
+	writeGeoTiff(outfileName, src_rad_out, outputEPSG, xMin, yMin, xMax, yMax, cellSize);
 	
 
 	free(src_rad);

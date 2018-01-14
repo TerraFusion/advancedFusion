@@ -9,6 +9,6 @@
 
 void gdalIORegister();
 int getCellCenterLatLon(int outputEPSG, double xMin, double yMin, double xMax, double yMax, double cellSize, double ** px, double ** py);
-void writeGeoTiff(char * fileName, double * grid, double xMin, double yMin, double xMax, double yMax, double cellSize);
+void writeGeoTiff(char * fileName, double * grid, int outputEPSG, double xMin, double yMin, double xMax, double yMax, double cellSize);
 
 #endif

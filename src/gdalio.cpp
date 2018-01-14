@@ -82,7 +82,7 @@ int getCellCenterLatLon(int outputEPSG, double xMin, double yMin, double xMax, d
 
 }
 
-void writeGeoTiff(char * fileName, double * grid, double xMin, double yMin, double xMax, double yMax, double cellSize)
+void writeGeoTiff(char * fileName, double * grid, int outputEPSG, double xMin, double yMin, double xMax, double yMax, double cellSize)
 {	
 	int nRow = ceil((yMax - yMin) / cellSize);
 	int nCol = ceil((xMax - xMin) / cellSize);
@@ -100,7 +100,6 @@ void writeGeoTiff(char * fileName, double * grid, double xMin, double yMin, doub
 	GDALDatasetH hDstDS;
 	char *papszOptions[] = {"COMPRESS=LZW",NULL};
 	hDstDS = GDALCreate(hDriver, fileName, nCol, nRow, 1, GDT_Float64, papszOptions);
-
 	
 	double adfGeoTransform[6];
 	adfGeoTransform[0] = xMin;
@@ -111,6 +110,14 @@ void writeGeoTiff(char * fileName, double * grid, double xMin, double yMin, doub
 	adfGeoTransform[5] = -cellSize;
 
 	GDALSetGeoTransform(hDstDS,adfGeoTransform);
+
+	char *pszSRS_WKT = NULL;
+	OGRSpatialReferenceH hSRS = OSRNewSpatialReference(NULL);
+	OSRImportFromEPSG(hSRS, outputEPSG);
+	OSRExportToWkt(hSRS,&pszSRS_WKT);
+	GDALSetProjection(hDstDS,pszSRS_WKT);
+	OSRDestroySpatialReference(hSRS);
+	CPLFree(pszSRS_WKT);
 
 
 	GDALRasterBandH hBand;
