@@ -1,17 +1,16 @@
-/*
+/****************************************************************************
+ * DESCRIPTION:
+ *  IO functions for developing the Advance Fusion tool for the ACCESS TERRA
+ *  Fusion project. Basic Fusion TERRA data is used as an input and retrives
+ *  data from instruments by specifying desired paraameters. The data is
+ *  used for resampling and reprojection. 
+ *
+ * DEVELOPERS:
+ *  - Jonathan Kim (jkm@illinois.edu)
+ *  - Yat Long Lo (yllo2@illinois.edu) - Author
+ *
+ */
 
-
-    AUTHOR:
-        Yat Long Lo
-
-    EMAIL:
-        yllo2@illinois.edu
-
-	PROGRAM DESCRIPTION:
-		This is the IO module for the TERRA Fusion project, used for advanced fusion. TERRA data can be retrieved for any instruments by specifying
-		different paraameters, which are used for reprojection. 
-
-*/
 
 #include "io.h"
 #include "hdf5.h"
@@ -2232,6 +2231,15 @@ int af_write_mm_geo(hid_t output_file, int geo_flag, double* geo_data, int geo_s
 	htri_t status = H5Lexists(output_file, "Geolocation", H5P_DEFAULT);
 	if(status <= 0){
 		hid_t group_id = H5Gcreate2(output_file, "/Geolocation", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+        if(group_id < 0) {
+            printf("Error af_write_mm_geo: H5Gcreate2 in output file.\n");
+            return -1;
+        }
+        herr_t grp_status = H5Gclose(group_id);
+        if(grp_status < 0) {
+            printf("Error af_write_mm_geo: H5Gclose in output file.\n");
+            return -1;
+        }
 	}
 	char* d_name;
 	if(geo_flag == 0){
