@@ -29,6 +29,16 @@
 
 const hsize_t RESAMPLE_DATA_WIDTH = 1354;
 
+void DisplayTimeval (struct timeval *tv)
+{
+	long milliseconds;
+
+	/* Compute milliseconds from microseconds.  */
+	milliseconds = (*tv).tv_usec / 1000;
+	/* Print the formatted time, in seconds, followed by a decimal point and the milliseconds.  */
+	printf ("%ld.%03ld\n", (*tv).tv_sec, milliseconds);
+}
+
 void Usage(int &argc, char *argv[])
 {
 	std::cout	<< "Usage: \n"
@@ -87,8 +97,14 @@ int main(int argc, char *argv[])
 	int nCellsrc;
 	double* srcLatitude = NULL;
 	double* srcLongitude = NULL;
+	#if DEBUG_ELAPSE_TIME
+	StartElapseTime();
+	#endif
 	srcLatitude = get_misr_lat(src_file, (char*)misr_resolution.c_str(), &nCellsrc);
 	srcLongitude = get_misr_long(src_file, (char*)misr_resolution.c_str(), &nCellsrc);
+	#if DEBUG_ELAPSE_TIME
+	StopElapseTimeAndShow("DBG_TIME> get misr lat/long DONE.");
+	#endif
 
 	//-------------------------------------------------
 	// handle Target instrument latitude and longitude
@@ -100,27 +116,52 @@ int main(int argc, char *argv[])
 	int nCelldest;
 	double* targetLatitude = NULL;
 	double* targetLongitude = NULL;
+	#if DEBUG_ELAPSE_TIME
+	StartElapseTime();
+	#endif
 	targetLatitude = get_modis_lat(src_file, (char*)modis_resolution.c_str(), &nCelldest);
 	targetLongitude = get_modis_long(src_file, (char*)modis_resolution.c_str(), &nCelldest);
+	#if DEBUG_ELAPSE_TIME
+	StopElapseTimeAndShow("DBG_TIME> get modis lat/long DONE.");
+	#endif
 	
 	std::cout << "Writing target geolocation data...\n";
+	#if DEBUG_ELAPSE_TIME
+	StartElapseTime();
+	#endif
 	int lat_status =  af_write_mm_geo(output_file, 0, targetLatitude, nCelldest);
 	if(lat_status < 0) {
 		std::cerr << "Error: writing latitude geolocation.\n";
 		return -1;
 	}
+	#if DEBUG_ELAPSE_TIME
+	StopElapseTimeAndShow("DBG_TIME> write geo lattitude data DONE.");
+	#endif
+
+	#if DEBUG_ELAPSE_TIME
+	StartElapseTime();
+	#endif
 	int long_status = af_write_mm_geo(output_file, 1, targetLongitude, nCelldest);
 	if(long_status < 0) {
 		std::cerr << "Error: writing longitude geolocation.\n";
 		return -1;
 	}
+	#if DEBUG_ELAPSE_TIME
+	StopElapseTimeAndShow("DBG_TIME> write geo longitude data DONE.");
+	#endif
 
 	int * targetNNsrcID = NULL;
 	targetNNsrcID = new int [nCelldest];
 	
 	std::cout <<  "Running nearest neighbor block index method... \n";
+	#if DEBUG_ELAPSE_TIME
+	StartElapseTime();
+	#endif
 	nearestNeighborBlockIndex(&srcLatitude, &srcLongitude, nCellsrc, targetLatitude, targetLongitude, targetNNsrcID, NULL, nCelldest, 1000);
 	//nearestNeighbor(&srcLatitude, &srcLongitude, nCellsrc, targetLatitude, targetLongitude, targetNNsrcID, nCelldest, 1000);
+	#if DEBUG_ELAPSE_TIME
+	StopElapseTimeAndShow("DBG_TIME> nearestNeighborBlockIndex DONE.");
+	#endif
 
 	if(srcLatitude)
 		free(srcLatitude);
@@ -144,6 +185,9 @@ int main(int argc, char *argv[])
 	}
 	#endif
 
+	#if DEBUG_ELAPSE_TIME
+	StartElapseTime();
+	#endif
 	src_rad = get_misr_rad(src_file, (char*)misr_cameraAngles[0].c_str(), (char*)misr_resolution.c_str(), (char*)misr_radiance.c_str(), &nCellsrc);
 	if (src_rad == NULL) {
 		std::cerr	<< "Please verify these MISR input values. \n" 
@@ -153,6 +197,9 @@ int main(int argc, char *argv[])
 					<< std::endl;
 		return -1;
 	}
+	#if DEBUG_ELAPSE_TIME
+	StopElapseTimeAndShow("DBG_TIME> get_misr_rad DONE.");
+	#endif
 	
 	//-------------------------------------------------
 	// Get Target instrument radiance
@@ -172,7 +219,13 @@ int main(int argc, char *argv[])
 	std::cout << "DBG main> bands[0]:" << bands[0] << std::endl;
 	#endif
 
+	#if DEBUG_ELAPSE_TIME
+	StartElapseTime();
+	#endif
 	dest_rad = get_modis_rad(src_file, (char*)modis_resolution.c_str(), bands, 1, &nCelldest_rad);
+	#if DEBUG_ELAPSE_TIME
+	StopElapseTimeAndShow("DBG_TIME> get_modis_rad  DONE.");
+	#endif
 	
 	//-------------------------------------------------
 	// handle resample method
@@ -182,6 +235,9 @@ int main(int argc, char *argv[])
 	//Interpolating
 	std::string resampleMethod =  inputArgs.GetResampleMethod();
 	std::cout << "Interpolating using '" << resampleMethod << "' method...\n";
+	#if DEBUG_ELAPSE_TIME
+	StartElapseTime();
+	#endif
 	if (inputArgs.CompareStrCaseInsensitive(resampleMethod, "nnInterpolate")) {
 		nnInterpolate(src_rad, src_rad_out, targetNNsrcID, nCelldest);
 	}
@@ -197,6 +253,9 @@ int main(int argc, char *argv[])
 		}
 		#endif
 	}
+	#if DEBUG_ELAPSE_TIME
+	StopElapseTimeAndShow("DBG> nnInterpolate  DONE.");
+	#endif
 
 	if (targetNNsrcID)
 		delete [] targetNNsrcID;
@@ -213,6 +272,9 @@ int main(int argc, char *argv[])
 	//------------------------------------
 	//Write target instrument data first
 	std::cout << "Writing target instrument '" << targetInstrument << "' data...\n";
+	#if DEBUG_ELAPSE_TIME
+	StartElapseTime();
+	#endif
 	hsize_t target_dim[3];
 	target_dim[0] = 1;
 	target_dim[2] = RESAMPLE_DATA_WIDTH;
@@ -233,6 +295,9 @@ int main(int argc, char *argv[])
 	H5Sclose(target_dataspace);
 	H5Tclose(target_datatype);
 	H5Dclose(target_dataset);
+	#if DEBUG_ELAPSE_TIME
+	StopElapseTimeAndShow("DBG_TIME> Write Target data  DONE.");
+	#endif
 
 	if (dest_rad)
 		free(dest_rad);
@@ -240,6 +305,9 @@ int main(int argc, char *argv[])
 	//--------------------------------------------
 	// Write reampled source instrument data next
 	std::cout << "Writing source instrument '" << srcInstrument << "' data...\n";
+	#if DEBUG_ELAPSE_TIME
+	StartElapseTime();
+	#endif
 	hsize_t src_dim[2];
 	src_dim[0] = (new_src_size) / RESAMPLE_DATA_WIDTH;
 	src_dim[1] = RESAMPLE_DATA_WIDTH;
@@ -265,6 +333,9 @@ int main(int argc, char *argv[])
 		std::cerr <<  "Error: H5Gclose in output file.\n";
 		return -1;
 	}
+	#if DEBUG_ELAPSE_TIME
+	StopElapseTimeAndShow("DBG_TIME> Write Source data  DONE.");
+	#endif
 	
 	if(src_rad)
 		free(src_rad);
@@ -276,6 +347,9 @@ int main(int argc, char *argv[])
 
 	//----------------------------------------
 	// Closing data files
+	#if DEBUG_ELAPSE_TIME
+	StartElapseTime();
+	#endif
 	std::cout  <<  "Writing done. Closing files...\n";
 	herr_t close_status = af_close(src_file);
 	if(close_status < 0){
@@ -288,6 +362,9 @@ int main(int argc, char *argv[])
 		std::cerr  <<  "Error: closing output data file.\n";
 		return -1;
 	}
+	#if DEBUG_ELAPSE_TIME
+	StopElapseTimeAndShow("DBG_TIME> Closing files DONE.");
+	#endif
 
 	return 0;
 }

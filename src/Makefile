@@ -67,7 +67,7 @@ gdalio.o: gdalio.cpp
 # testReproHDF5: testReproHDF5.o reproject.o io.o
 #	$(H5CXX) -o ../$@ $+ -lm
 
-AFtool: AFtool.o AF_InputParmeterFile.o reproject.o io.o
+AFtool: AFtool.o AF_InputParmeterFile.o AF_debug.o reproject.o io.o
 	$(H5CXX) -o ../$@ $+ -lm
 
 test_read_area: test_read_area.o reproject.o io.o
