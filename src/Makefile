@@ -1,12 +1,12 @@
 
+CXXFLAGS=-Wno-write-strings
+
 # Use this on BW
-CXX=CC
-H5CXX=CC
+CXX=CC ${CXXFLAGS}
+H5CXX=CC ${CXXFLAGS}
 GDALDIR = /projects/sciteam/jq0/TerraFusion/gdal
 
-
 # Use this set for local build
-#CXXFLAGS=-Wno-write-strings
 #CXX=g++
 #H5CXX=HDF5_CC=/usr/bin/g++ h5cc $(CXXFLAGS)
 
