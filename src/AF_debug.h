@@ -10,11 +10,17 @@
  */
 
 //-----------------------
+#include <iostream>
+
 // DEBUG Options
 // 1 will show extra info for debugging for the AF tool code
 #define DEBUG_TOOL  0
+// 1 will show extra info for debugging for the AF tool code
+#define DEBUG_TOOL_PARSER  0
 // 1 will show elapsed time or performance debugging info for the AF tool code
 #define DEBUG_ELAPSE_TIME 0
+// 1 will show extra info for debugging for the io code
+#define DEBUG_IO  0
 
 //-------------------------
 // Measure time functions

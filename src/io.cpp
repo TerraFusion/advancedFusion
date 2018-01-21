@@ -12,13 +12,14 @@
  */
 
 
-#include "io.h"
-#include "hdf5.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <strings.h>
 #include <string.h>
 #include <assert.h>
+#include "io.h"
+#include "AF_debug.h"
+#include "hdf5.h"
 #define FALSE   0
 
 //Band constants for MODIS
@@ -363,10 +364,14 @@ double* get_modis_rad(hid_t file, char* resolution, char bands[38][50], int band
 			const char* d_arr[] = {name, res[j]};
 			concat_by_sep(&res_group_name, d_arr, "/", strlen(name) + strlen(res[j]) + 2, 2);
 			memmove(&res_group_name[0], &res_group_name[1], strlen(res_group_name));
-			printf("group_name: %s\n", res_group_name);
+			#if DEBUG_IO
+			printf("DBG_IO %s:%d> group_name: %s\n", __FUNCTION__, __LINE__, res_group_name);
+			#endif
 			htri_t status = H5Lexists(group, res_group_name, H5P_DEFAULT);
 			if(status <= 0){
-				printf("Group does not exist\n");
+				#if DEBUG_IO
+				printf("DBG_IO %s:%d> Group '%s' does not exist\n", __FUNCTION__, __LINE__, res_group_name);
+				#endif
 				include_g = 1;
 				break;
 			}
@@ -397,7 +402,6 @@ double* get_modis_rad(hid_t file, char* resolution, char bands[38][50], int band
 	
 	
 	//Get total data size
-	printf("Get total data size\n");
 	int k;
 	int m;
 	int total_size = 0;
@@ -415,6 +419,7 @@ double* get_modis_rad(hid_t file, char* resolution, char bands[38][50], int band
 			free(curr_dim);
 		}
 	}
+	printf("Get total data size: %d\n", total_size);
 	
 	double* result_data = (double*) calloc(total_size, sizeof(double));
 	int start_point = 0;
@@ -493,10 +498,14 @@ double* get_modis_rad_by_band(hid_t file, char* resolution, char* d_name, int* b
 			const char* d_arr[] = {name, res[j]};
 			concat_by_sep(&res_group_name, d_arr, "/", strlen(name) + strlen(res[j])+2, 2);
 			memmove(&res_group_name[0], &res_group_name[1], strlen(res_group_name));
-			printf("group_name: %s\n", res_group_name);
+			#if DEBUG_IO
+			printf("DBG_IO %s:%d> group_name: %s\n", __FUNCTION__, __LINE__, res_group_name);
+			#endif
 			htri_t status = H5Lexists(group, res_group_name, H5P_DEFAULT);
 			if(status <= 0){
-				printf("Group does not exist\n");
+				#if DEBUG_IO
+				printf("DBG_IO %s:%d> Group '%s' does not exist\n", __FUNCTION__, __LINE__, res_group_name );
+				#endif
 				include_g = 1;
 				break;
 			}
@@ -509,7 +518,6 @@ double* get_modis_rad_by_band(hid_t file, char* resolution, char* d_name, int* b
 	}
 	
 	//Get total data size
-	printf("Get total data size\n");
 	int k;
 	int total_size = 0;
 	for(k = 0; k < store_count; k++){
@@ -524,6 +532,7 @@ double* get_modis_rad_by_band(hid_t file, char* resolution, char* d_name, int* b
 		total_size += curr_dim[1]*curr_dim[2];
 		free(curr_dim);
 	}
+	printf("Get total data size: %d\n", total_size);
 	
 	//Allocate data size
 	double* result_data = (double*)calloc(total_size, sizeof(double));
@@ -539,17 +548,23 @@ double* get_modis_rad_by_band(hid_t file, char* resolution, char* d_name, int* b
 		const char* d_arr[] = {instrument, name, resolution, d_fields, d_name};
 		char* dataset_name;
 		concat_by_sep(&dataset_name, d_arr, "/", strlen(instrument) + strlen(name) + strlen(resolution) + strlen(d_fields) + strlen(d_name), 5);
-		printf("granule_name: %s\n", name);
+		#if DEBUG_IO
+		printf("DBG_IO %s:%d> granule_name: %s\n", __FUNCTION__, __LINE__, name);
+		#endif
 		data = af_read(file, dataset_name);
 		if(data == NULL){
 			continue;
 		} 
 		hsize_t* curr_dim = af_read_size(file, dataset_name);
 		int band_length = curr_dim[1] * curr_dim[2];
-		printf("band index: %d\n", (*band_index));
-		printf("band length: %d\n", band_length);
+		#if DEBUG_IO
+		printf("DBG_IO %s:%d> band index: %d\n", __FUNCTION__, __LINE__, (*band_index));
+		printf("DBG_IO %s:%d> band length: %d\n", __FUNCTION__, __LINE__, band_length);
+		#endif
 		int read_offset = (*band_index)*band_length;
-		printf("test data: %f\n", data[2748619]);
+		#if DEBUG_IO
+		printf("DBG_IO> test data: %f\n", data[2748619]);
+		#endif
 		memcpy(&(result_data[curr_size]), &(data[read_offset]), band_length*sizeof(double));
 		curr_size += band_length;
 		free(data);
@@ -558,8 +573,10 @@ double* get_modis_rad_by_band(hid_t file, char* resolution, char* d_name, int* b
 	*size = curr_size;
 	
 	assert(curr_size == total_size);
-	printf("Size validated\n");
-	printf("test data: %f\n", result_data[curr_size-1]);
+	#if DEBUG_IO
+	printf("DBG_IO %s:%d> Size validated\n", __FUNCTION__, __LINE__);
+	printf("DBG_IO> test data: %f\n", result_data[curr_size-1]);
+	#endif
 	return result_data;
 }
 
@@ -588,7 +605,7 @@ double* get_modis_rad_by_band(hid_t file, char* resolution, char* d_name, int* b
 
 double* get_modis_lat(hid_t file, char* resolution, int* size)
 {
-	printf("Reading MODIS lat\n");
+	printf("Reading MODIS latitude\n");
 	//Path variables
 	char* instrument = "MODIS";
 	char* d_fields = "Data_Fields";
@@ -620,10 +637,14 @@ double* get_modis_lat(hid_t file, char* resolution, int* size)
 			const char* d_arr[] = {name, res[j]};
 			concat_by_sep(&res_group_name, d_arr, "/", strlen(name) + strlen(res[j])+2, 2);
 			memmove(&res_group_name[0], &res_group_name[1], strlen(res_group_name));
-			printf("group_name: %s\n", res_group_name);
+			#if DEBUG_IO
+			printf("DBG_IO %s:%d> group_name: %s\n",  __FUNCTION__, __LINE__, res_group_name);
+			#endif
 			htri_t status = H5Lexists(group, res_group_name, H5P_DEFAULT);
 			if(status <= 0){
-				printf("Group does not exist\n");
+				#if DEBUG_IO
+				printf("DBG_IO %s:%d> Group '%s' does not exist\n", __FUNCTION__, __LINE__, res_group_name);
+				#endif
 				include_g = 1;
 				break;
 			}
@@ -635,7 +656,9 @@ double* get_modis_lat(hid_t file, char* resolution, int* size)
 		free(name);
 	}
 	
-	printf("num granules: %d\n", store_count);
+	#if DEBUG_IO
+	printf("DBG_IO %s:%d> num granules: %d\n", __FUNCTION__, __LINE__, store_count);
+	#endif
 	
 	int h;
 	double* lat_data;
@@ -644,7 +667,9 @@ double* get_modis_lat(hid_t file, char* resolution, int* size)
 	for(h = 0; h < store_count; h++){
 		//Path formation
 		char* name = names[h];
-		printf("granule name: %s\n", name);
+		#if DEBUG_IO
+		printf("DBG_IO %s:%d> granule name: %s\n", __FUNCTION__, __LINE__, name);
+		#endif
 		const char* lat_arr[] = {instrument, name, resolution, location, lat};
 		char* lat_dataset_name;
 		concat_by_sep(&lat_dataset_name, lat_arr, "/", strlen(instrument) + strlen(name) + strlen(resolution) + strlen(location) + strlen(lat), 5);
@@ -669,11 +694,13 @@ double* get_modis_lat(hid_t file, char* resolution, int* size)
 	}
 	*size = curr_lat_size;
 	
+	#if DEBUG_IO
 	if(lat_data != NULL){
-	printf("test_lat_data: %f\n", lat_data[0]);
-	printf("test_lat_data: %f\n", lat_data[2748620]);
-	printf("test_lat_data: %f\n", lat_data[5510780]);
+		printf("test lat_data[0]: %f\n", lat_data[0]);
+		printf("test lat_data[2748620]: %f\n", lat_data[2748620]);
+		printf("test lat_data[5510780]: %f\n", lat_data[5510780]);
 	}
+	#endif
 	
 	return lat_data;
 }
@@ -703,7 +730,7 @@ double* get_modis_lat(hid_t file, char* resolution, int* size)
 
 double* get_modis_long(hid_t file, char* resolution, int* size)
 {
-	printf("Reading MODIS long\n");
+	printf("Reading MODIS longitude\n");
 	//Path variables
 	char* instrument = "MODIS";
 	char* d_fields = "Data_Fields";
@@ -737,7 +764,9 @@ double* get_modis_long(hid_t file, char* resolution, int* size)
 			memmove(&res_group_name[0], &res_group_name[1], strlen(res_group_name));
 			htri_t status = H5Lexists(group, res_group_name, H5P_DEFAULT);
 			if(status <= 0){
-				printf("Group does not exist\n");
+				#if DEBUG_IO
+				printf("DBG_IO %s:%d> Group '%s' does not exist\n", __FUNCTION__, __LINE__, res_group_name);
+				#endif
 				include_g = 1;
 				break;
 			}
@@ -782,14 +811,16 @@ double* get_modis_long(hid_t file, char* resolution, int* size)
 	}
 	*size = curr_long_size;
 	
+	#if DEBUG_IO
 	if(long_data != NULL){
-		printf("test_long_data: %f\n", long_data[0]);
-		printf("test_long_data: %f\n", long_data[1]);
-		printf("test_long_data: %f\n", long_data[1353]);
-		printf("test_long_data: %f\n", long_data[1354]);
-		printf("test_long_data: %f\n", long_data[2748620]);
-		printf("test_long_data: %f\n", long_data[5510780]);
+		printf("test long_data[0]: %f\n", long_data[0]);
+		printf("test long_data[1]: %f\n", long_data[1]);
+		printf("test long_data[1353]: %f\n", long_data[1353]);
+		printf("test long_data[1354]: %f\n", long_data[1354]);
+		printf("test long_data[2748620]: %f\n", long_data[2748620]);
+		printf("test long_data[2748620]: %f\n", long_data[5510780]);
 	}
+	#endif
 	
 	return long_data;
 }
@@ -2226,8 +2257,10 @@ int af_write_misr_on_modis(hid_t output_file, double* misr_out, double* modis, i
 int af_write_mm_geo(hid_t output_file, int geo_flag, double* geo_data, int geo_size)
 {
 	//Check if geolocation group exists --- TODO - change it to H5Lexists
-	printf("test: %f\n", geo_data[0]);
-	printf("test: %f\n", geo_data[1]);
+	#if DEBUG_IO
+	printf("DBG_IO %s:%d> geo_data[0]: %f\n", geo_data[0]);
+	printf("DBG_IO %s:%d> geo_data[1]: %f\n", geo_data[1]);
+	#endif
 	htri_t status = H5Lexists(output_file, "Geolocation", H5P_DEFAULT);
 	if(status <= 0){
 		hid_t group_id = H5Gcreate2(output_file, "/Geolocation", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);

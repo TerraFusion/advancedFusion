@@ -69,7 +69,7 @@ int main(int argc, char *argv[])
 	// create output file
 	std::string outputFile = inputArgs.GetOuputFilePath();
 	#if DEBUG_TOOL
-	std::cout << "DBG main> outputFile: " << outputFile << std::endl;
+	std::cout << "DBG_TOOL main> outputFile: " << outputFile << std::endl;
 	#endif
 
 	hid_t output_file = H5Fcreate(outputFile.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
@@ -79,7 +79,7 @@ int main(int argc, char *argv[])
 	// handle input BF data file
 	std::string inputDataPath = inputArgs.GetInputBFdataPath();
 	#if DEBUG_TOOL
-	std::cout << "DBG main> inputDataPath: " << inputDataPath << std::endl;
+	std::cout << "DBG_TOOL main> inputDataPath: " << inputDataPath << std::endl;
 	#endif
 	hid_t src_file;
 	if(0 > (src_file = af_open((char*)inputDataPath.c_str()))) {
@@ -89,10 +89,10 @@ int main(int argc, char *argv[])
 	
 	//-------------------------------------------------
 	// handle Source instrument latitude and longitude
-	std::cout << "Getting source instrument latitude longitude  data...\n";
+	std::cout << "\nGetting source instrument latitude & longitude data...\n";
 	std::string misr_resolution = inputArgs.GetMISR_Resolution();
 	#if DEBUG_TOOL
-	std::cout << "DBG main> misr_resolution: " << misr_resolution << std::endl;
+	std::cout << "DBG_TOOL main> misr_resolution: " << misr_resolution << std::endl;
 	#endif
 	int nCellsrc;
 	double* srcLatitude = NULL;
@@ -109,9 +109,9 @@ int main(int argc, char *argv[])
 	//-------------------------------------------------
 	// handle Target instrument latitude and longitude
 	std::string modis_resolution = inputArgs.GetMODIS_Resolution();
-	std::cout << "Getting target instrument latitude longitude  data...\n";
+	std::cout << "\nGetting target instrument latitude & longitude data...\n";
 	#if DEBUG_TOOL
-	std::cout << "DBG main> modis_resolution: " << modis_resolution << std::endl;
+	std::cout << "DBG_TOOL main> modis_resolution: " << modis_resolution << std::endl;
 	#endif
 	int nCelldest;
 	double* targetLatitude = NULL;
@@ -125,7 +125,7 @@ int main(int argc, char *argv[])
 	StopElapseTimeAndShow("DBG_TIME> get modis lat/long DONE.");
 	#endif
 	
-	std::cout << "Writing target geolocation data...\n";
+	std::cout << "\nWriting target geolocation data...\n";
 	#if DEBUG_ELAPSE_TIME
 	StartElapseTime();
 	#endif
@@ -153,12 +153,11 @@ int main(int argc, char *argv[])
 	int * targetNNsrcID = NULL;
 	targetNNsrcID = new int [nCelldest];
 	
-	std::cout <<  "Running nearest neighbor block index method... \n";
+	std::cout <<  "\nRunning nearest neighbor block index method... \n";
 	#if DEBUG_ELAPSE_TIME
 	StartElapseTime();
 	#endif
 	nearestNeighborBlockIndex(&srcLatitude, &srcLongitude, nCellsrc, targetLatitude, targetLongitude, targetNNsrcID, NULL, nCelldest, 1000);
-	//nearestNeighbor(&srcLatitude, &srcLongitude, nCellsrc, targetLatitude, targetLongitude, targetNNsrcID, nCelldest, 1000);
 	#if DEBUG_ELAPSE_TIME
 	StopElapseTimeAndShow("DBG_TIME> nearestNeighborBlockIndex DONE.");
 	#endif
@@ -174,14 +173,14 @@ int main(int argc, char *argv[])
 	
 	//-------------------------------------------------
 	// Get Source instrument radiance
-	std::cout << "Getting source instrument radiance data...\n";
+	std::cout << "\nGetting source instrument radiance data...\n";
 	double* src_rad=NULL;
 	std::string misr_radiance = inputArgs.GetMISR_Radiance();
 	std::vector<std::string> misr_cameraAngles = inputArgs.GetMISR_CameraAngles();
 	#if DEBUG_TOOL
-	std::cout << "DBG main> misr_radiance: " << misr_radiance << std::endl;
+	std::cout << "DBG_TOOL main> misr_radiance: " << misr_radiance << std::endl;
 	for(int i = 0; i < misr_cameraAngles.size(); i++) {
-		std::cout << "DBG main> misr_cameraAngles[" << i << "]:" << misr_cameraAngles[i] << std::endl;
+		std::cout << "DBG_TOOL main> misr_cameraAngles[" << i << "]:" << misr_cameraAngles[i] << std::endl;
 	}
 	#endif
 
@@ -203,7 +202,7 @@ int main(int argc, char *argv[])
 	
 	//-------------------------------------------------
 	// Get Target instrument radiance
-	std::cout << "Getting target instrument radiance data...\n";
+	std::cout << "\nGetting target instrument radiance data...\n";
 	int nCelldest_rad;
 	double* dest_rad = NULL;
 	char bands[1][50];
@@ -214,9 +213,9 @@ int main(int argc, char *argv[])
 	sprintf(bands[0], "%d", modis_bands[0]);
 	#if DEBUG_TOOL
 	for(int i = 0; i < modis_bands.size(); i++) {
-		std::cout << "DBG main> modis_bands[" << i << "]:" << modis_bands[i] << std::endl;
+		std::cout << "DBG_TOOL main> modis_bands[" << i << "]:" << modis_bands[i] << std::endl;
 	}
-	std::cout << "DBG main> bands[0]:" << bands[0] << std::endl;
+	std::cout << "DBG_TOOL main> bands[0]:" << bands[0] << std::endl;
 	#endif
 
 	#if DEBUG_ELAPSE_TIME
@@ -234,7 +233,7 @@ int main(int argc, char *argv[])
 	int * nsrcPixels = NULL;
 	//Interpolating
 	std::string resampleMethod =  inputArgs.GetResampleMethod();
-	std::cout << "Interpolating using '" << resampleMethod << "' method...\n";
+	std::cout << "\nInterpolating using '" << resampleMethod << "' method...\n";
 	#if DEBUG_ELAPSE_TIME
 	StartElapseTime();
 	#endif
@@ -245,7 +244,7 @@ int main(int argc, char *argv[])
 		nsrcPixels = new int [nCelldest];
 		summaryInterpolate(src_rad, targetNNsrcID, nCellsrc, src_rad_out, nsrcPixels, nCelldest);
 		#if DEBUG_TOOL
-		std::cout << "DBG> No nodata values: \n";
+		std::cout << "DBG_TOOL> No nodata values: \n";
 		for(int i = 0; i < nCelldest; i++) {
 			if(nsrcPixels[i] > 0) {
 				printf("%d,\t%lf\n", nsrcPixels[i], src_rad_out[i]);
@@ -271,7 +270,7 @@ int main(int argc, char *argv[])
 
 	//------------------------------------
 	//Write target instrument data first
-	std::cout << "Writing target instrument '" << targetInstrument << "' data...\n";
+	std::cout << "\nWriting target instrument '" << targetInstrument << "' data...\n";
 	#if DEBUG_ELAPSE_TIME
 	StartElapseTime();
 	#endif
@@ -304,7 +303,7 @@ int main(int argc, char *argv[])
 
 	//--------------------------------------------
 	// Write reampled source instrument data next
-	std::cout << "Writing source instrument '" << srcInstrument << "' data...\n";
+	std::cout << "\nWriting source instrument '" << srcInstrument << "' data...\n";
 	#if DEBUG_ELAPSE_TIME
 	StartElapseTime();
 	#endif
@@ -350,7 +349,7 @@ int main(int argc, char *argv[])
 	#if DEBUG_ELAPSE_TIME
 	StartElapseTime();
 	#endif
-	std::cout  <<  "Writing done. Closing files...\n";
+	std::cout  <<  "\nWriting done. Closing files...\n";
 	herr_t close_status = af_close(src_file);
 	if(close_status < 0){
 		std::cerr  <<  "Error: closing input data file.\n";

@@ -23,16 +23,16 @@
 
 AF_InputParmeterFile::AF_InputParmeterFile()
 {
-	#if DEBUG_TOOL
-	std::cout << "DBG> Constructor AF_InputParmeterFile()\n";
+	#if DEBUG_TOOL_PARSER
+	std::cout << "DBG_PARSER " << __FUNCTION__ << ":" << __LINE__ << "> Constructor AF_InputParmeterFile()\n";
 	#endif
 	didReadHeaderFile = false;
 }
 
 AF_InputParmeterFile::~AF_InputParmeterFile()
 {
-	#if DEBUG_TOOL
-	std::cout << "DBG> Destructor AF_InputParmeterFile()\n";
+	#if DEBUG_TOOL_PARSER
+	std::cout << "DBG_PARSER " << __FUNCTION__ << ":" << __LINE__ << " > Destructor AF_InputParmeterFile()\n";
 	#endif
 }
 
@@ -82,9 +82,9 @@ void AF_InputParmeterFile::ParseByLine()
 	while(headerFile.good() && isValidInput)
 	{
 		std::getline(headerFile, line);
-		#if 0 // DEBUG_TOOL
-		std::cout << "DBG ParseByLine()> line: " <<  line << std::endl;
-		std::cout << "DBG> line size: " <<  line.size() << std::endl;
+		#if 0 // DEBUG_TOOL_PARSER
+		std::cout << "DBG_PARSER " << __FUNCTION__ << ":" << __LINE__ << "> line: " <<  line << std::endl;
+		std::cout << "DBG_PARSER " << __FUNCTION__ << ":" << __LINE__ << "> line size: " <<  line.size() << std::endl;
 		#endif
 
 		// skip comment line
@@ -108,8 +108,8 @@ void AF_InputParmeterFile::ParseByLine()
 			while (ss >> token) {  // get exact token
 				inputBFfilePath = token;
 			}
-			#if DEBUG_TOOL
-			std::cout << "DBG ParseByLine()> " << INPUT_FILE_PATH << ": "  << inputBFfilePath << std::endl;
+			#if DEBUG_TOOL_PARSER
+			std::cout << "DBG_PARSER " << __FUNCTION__ << ":" << __LINE__ << "> " << INPUT_FILE_PATH << ": "  << inputBFfilePath << std::endl;
 			#endif
 			isValidInput = CheckInputBFdataPath(inputBFfilePath);
 			continue;
@@ -129,8 +129,8 @@ void AF_InputParmeterFile::ParseByLine()
 			while (ss >> token) {  // get exact string
 				outputFilePath = token;
 			}
-			#if DEBUG_TOOL
-			std::cout << "DBG ParseByLine()> " <<  OUTPUT_FILE_PATH << ": " << outputFilePath << std::endl;
+			#if DEBUG_TOOL_PARSER
+		std::cout << "DBG_PARSER " << __FUNCTION__ << ":" << __LINE__ << "> " <<  OUTPUT_FILE_PATH << ": " << outputFilePath << std::endl;
 			#endif
 			continue;
 		}
@@ -149,8 +149,8 @@ void AF_InputParmeterFile::ParseByLine()
 			while (ss >> token) {  // get exact string
 				resampleMethod = token;
 			}
-			#if DEBUG_TOOL
-			std::cout << "DBG ParseByLine()> " <<  RESAMPLE_METHOD << ": " << resampleMethod << std::endl;
+			#if DEBUG_TOOL_PARSER
+			std::cout << "DBG_PARSER " << __FUNCTION__ << ":" << __LINE__ << "> " <<  RESAMPLE_METHOD << ": " << resampleMethod << std::endl;
 			#endif
 			continue;
 		}
@@ -169,8 +169,8 @@ void AF_InputParmeterFile::ParseByLine()
 			while (ss >> token) {  // get exact string
 				sourceInstrument = token;
 			}
-			#if DEBUG_TOOL
-			std::cout << "DBG ParseByLine()> " <<  SOURCE_INSTRUMENT << ": " << sourceInstrument << std::endl;
+			#if DEBUG_TOOL_PARSER
+			std::cout << "DBG_PARSER " << __FUNCTION__ << ":" << __LINE__ << "> " <<  SOURCE_INSTRUMENT << ": " << sourceInstrument << std::endl;
 			#endif
 			continue;
 		}
@@ -189,8 +189,8 @@ void AF_InputParmeterFile::ParseByLine()
 			while (ss >> token) {  // get exact string
 				misr_Resolution = token;
 			}
-			#if DEBUG_TOOL
-			std::cout << "DBG ParseByLine()> " <<  MISR_RESOLUTION << ": " << misr_Resolution << std::endl;
+			#if DEBUG_TOOL_PARSER
+			std::cout << "DBG_PARSER " << __FUNCTION__ << ":" << __LINE__ << "> " <<  MISR_RESOLUTION << ": " << misr_Resolution << std::endl;
 			#endif
 			continue;
 		}
@@ -209,10 +209,10 @@ void AF_InputParmeterFile::ParseByLine()
 			while (ss >> token) {
 				misr_CameraAngles.push_back(token);
 			}
-			#if DEBUG_TOOL
-			//std::cout << "DBG ParseByLine()> Num of cameras:" << misr_CameraAngles.size() << std::endl;
+			#if DEBUG_TOOL_PARSER
+			std::cout << "DBG_PARSER " << __FUNCTION__ << ":" << __LINE__ << "> Num of cameras:" << misr_CameraAngles.size() << std::endl;
 			for(int i = 0; i < misr_CameraAngles.size(); i++) {
-				std::cout << "DBG ParseByLine()> misr_CameraAngles[" << i << "]:" << misr_CameraAngles[i] << std::endl;
+				std::cout << "DBG_PARSER " << __FUNCTION__ << ":" << __LINE__ << "> misr_CameraAngles[" << i << "]:" << misr_CameraAngles[i] << std::endl;
 			}
 			#endif
 			continue;
@@ -232,8 +232,8 @@ void AF_InputParmeterFile::ParseByLine()
 			while (ss >> token) {  // get exact string
 				misr_Radiance = token;
 			}
-			#if DEBUG_TOOL
-			std::cout << "DBG ParseByLine()> " <<  MISR_RADIANCE << ": " << misr_Radiance << std::endl;
+			#if DEBUG_TOOL_PARSER
+			std::cout << "DBG_PARSER " << __FUNCTION__ << ":" << __LINE__ << "> " <<  MISR_RADIANCE << ": " << misr_Radiance << std::endl;
 			#endif
 			continue;
 		}
@@ -252,8 +252,8 @@ void AF_InputParmeterFile::ParseByLine()
 			while (ss >> token) {  // get exact string
 				targetInstrument = token;
 			}
-			#if DEBUG_TOOL
-			std::cout << "DBG ParseByLine()> " <<  TARGET_INSTRUMENT << ": " << targetInstrument << std::endl;
+			#if DEBUG_TOOL_PARSER
+			std::cout << "DBG_PARSER " << __FUNCTION__ << ":" << __LINE__ << "> " <<  TARGET_INSTRUMENT << ": " << targetInstrument << std::endl;
 			#endif
 			continue;
 		}
@@ -274,8 +274,8 @@ void AF_InputParmeterFile::ParseByLine()
 			}
 
 			isValidInput = CheckMODIS_Resolution(modis_Resolution);
-			#if DEBUG_TOOL
-			std::cout << "DBG ParseByLine()> " <<  MODIS_RESOLUTION << ": " << modis_Resolution << std::endl;
+			#if DEBUG_TOOL_PARSER
+			std::cout << "DBG_PARSER " << __FUNCTION__ << ":" << __LINE__ << "> " <<  MODIS_RESOLUTION << ": " << modis_Resolution << std::endl;
 			#endif
 			continue;
 		}
@@ -294,10 +294,10 @@ void AF_InputParmeterFile::ParseByLine()
 			while (ss >> token) {
 				modis_Bands.push_back(atoi(token.c_str()));
 			}
-			#if DEBUG_TOOL
-			//std::cout << "DBG ParseByLine()> Num of modis bands:" << modis_Bands.size() << std::endl;
+			#if DEBUG_TOOL_PARSER
+			std::cout << "DBG_PARSER " << __FUNCTION__ << ":" << __LINE__ << "> Num of modis bands:" << modis_Bands.size() << std::endl;
 			for(int i = 0; i < modis_Bands.size(); i++) {
-				std::cout << "DBG ParseByLine()> modis_Bands[" << i << "]:" << modis_Bands[i] << std::endl;
+				std::cout << "DBG_PARSER " << __FUNCTION__ << ":" << __LINE__ << "> modis_Bands[" << i << "]:" << modis_Bands[i] << std::endl;
 			}
 			#endif
 			continue;
@@ -323,8 +323,8 @@ void AF_InputParmeterFile::ParseByLine()
 bool AF_InputParmeterFile::CheckInputBFdataPath(const std::string &filePath)
 {
 	bool ret = true;
-	#if DEBUG_TOOL
-	std::cout << "DBG CheckInputBFdataPath> BF file path: " << filePath <<	".\n"; 
+	#if DEBUG_TOOL_PARSER
+	std::cout << "DBG_PARSER " << __FUNCTION__ << ":" << __LINE__ << "> BF file path: " << filePath <<	".\n"; 
 	#endif
 	// check if 
 	std::ifstream file(filePath.c_str());
@@ -342,8 +342,8 @@ bool AF_InputParmeterFile::CheckInputBFdataPath(const std::string &filePath)
 bool AF_InputParmeterFile::CheckMODIS_Resolution(std::string &str)
 {
 	bool ret = true;
-	#if DEBUG_TOOL
-	std::cout << "DBG CheckMODIS_Resolution> reolution: " << str <<  ".\n"; 
+	#if DEBUG_TOOL_PARSER
+	std::cout << "DBG_PARSER " << __FUNCTION__ << ":" << __LINE__ << "> reolution: " << str <<  ".\n"; 
 	#endif
 
 	if (CompareStrCaseInsensitive(str, "1KM")) {
