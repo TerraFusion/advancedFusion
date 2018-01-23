@@ -20,6 +20,7 @@
 #include <stdio.h>
 #include <math.h>
 #include <sys/time.h>
+#include <vector>
 
 #include <hdf5.h>
 #include "io.h"
@@ -27,7 +28,7 @@
 #include "AF_InputParmeterFile.h"
 #include "AF_debug.h"
 
-const hsize_t RESAMPLE_DATA_WIDTH = 1354;
+const hsize_t RESAMPLE_MODIS_DATA_WIDTH = 1354;
 
 void DisplayTimeval (struct timeval *tv)
 {
@@ -166,7 +167,7 @@ int main(int argc, char *argv[])
 		free(srcLatitude);
 	if(srcLongitude)
 		free(srcLongitude);
-	if(targetLatitude);
+	if(targetLatitude)
 		free(targetLatitude);
 	if(targetLongitude)
 		free(targetLongitude);
@@ -205,23 +206,34 @@ int main(int argc, char *argv[])
 	std::cout << "\nGetting target instrument radiance data...\n";
 	int nCelldest_rad;
 	double* dest_rad = NULL;
-	char bands[1][50];
+	// JK_TODO: change hardcode 2 to modis_bands.size()
+	// JK_REMOVE char bands[2][50];
 	//std::vector<std::string> bands; // TODO: use this instead of above
 
 	// handle target instrument bands
-	std::vector<int>  modis_bands = inputArgs.GetMODIS_Bands();
-	sprintf(bands[0], "%d", modis_bands[0]);
+	std::vector<std::string>  modis_bands = inputArgs.GetMODIS_Bands();
+	#if 0 // JK_REMOVE
+	// JK_TODO: use vector bands and copy from modis_bands directly
+	for(int i = 0; i < modis_bands.size(); i++) {
+		sprintf(bands[i], "%s", modis_bands[i].c_str());
+	}
+	#endif
 	#if DEBUG_TOOL
 	for(int i = 0; i < modis_bands.size(); i++) {
 		std::cout << "DBG_TOOL main> modis_bands[" << i << "]:" << modis_bands[i] << std::endl;
+		// JK_REMOVE std::cout << "DBG_TOOL main> bands[" << i << "]:" << bands[i] << std::endl;
 	}
-	std::cout << "DBG_TOOL main> bands[0]:" << bands[0] << std::endl;
 	#endif
 
 	#if DEBUG_ELAPSE_TIME
 	StartElapseTime();
 	#endif
-	dest_rad = get_modis_rad(src_file, (char*)modis_resolution.c_str(), bands, 1, &nCelldest_rad);
+	#if 1 // JK_WORK
+	// JK_TODO: check why band[i] value between AFtool and test_MISR_MODIS is different JKDBG from io.cpp
+	dest_rad = get_modis_rad(src_file, (char*)modis_resolution.c_str(), modis_bands, modis_bands.size(), &nCelldest_rad);
+	#else
+	dest_rad = get_modis_rad(src_file, (char*)modis_resolution.c_str(), bands, modis_bands.size(), &nCelldest_rad);
+	#endif
 	#if DEBUG_ELAPSE_TIME
 	StopElapseTimeAndShow("DBG_TIME> get_modis_rad  DONE.");
 	#endif
@@ -275,9 +287,9 @@ int main(int argc, char *argv[])
 	StartElapseTime();
 	#endif
 	hsize_t target_dim[3];
-	target_dim[0] = 1;
-	target_dim[2] = RESAMPLE_DATA_WIDTH;
-	target_dim[1] = (nCelldest_rad)/1/RESAMPLE_DATA_WIDTH;
+	target_dim[0] = modis_bands.size();
+	target_dim[1] = (nCelldest_rad)/modis_bands.size()/RESAMPLE_MODIS_DATA_WIDTH;
+	target_dim[2] = RESAMPLE_MODIS_DATA_WIDTH;
 	hid_t target_dataspace = H5Screate_simple(3, target_dim, NULL);
 	hid_t	target_datatype = H5Tcopy(H5T_NATIVE_DOUBLE);
 	herr_t	target_status = H5Tset_order(target_datatype, H5T_ORDER_LE);  
@@ -308,8 +320,8 @@ int main(int argc, char *argv[])
 	StartElapseTime();
 	#endif
 	hsize_t src_dim[2];
-	src_dim[0] = (new_src_size) / RESAMPLE_DATA_WIDTH;
-	src_dim[1] = RESAMPLE_DATA_WIDTH;
+	src_dim[0] = (new_src_size) / RESAMPLE_MODIS_DATA_WIDTH;
+	src_dim[1] = RESAMPLE_MODIS_DATA_WIDTH;
 	hid_t src_dataspace = H5Screate_simple(2, src_dim, NULL);
 	hid_t src_datatype = H5Tcopy(H5T_NATIVE_DOUBLE);
 	herr_t src_status = H5Tset_order(src_datatype, H5T_ORDER_LE);  

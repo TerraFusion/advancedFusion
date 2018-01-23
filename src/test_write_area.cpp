@@ -10,7 +10,10 @@
 	PROGRAM DESCRIPTION:
 		This is merely an area used for testing the correctness of certain functions in the IO module
 */
-
+#if 1 // JK_WORK
+#include <string>
+#include <vector>
+#endif
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
@@ -50,18 +53,29 @@ int main(int argc, char ** argv)
 	double* modis_lat = get_modis_lat(file, "_1KM", &geo_size);
 	printf("test size: %d\n", geo_size);
 	return 0;*/
-	char bands[2][50] = {"8", "9"};
 	int size;
+    #if 1 // JK_WORK
+    std::vector<std::string> bands = {"8", "9"};
+	double* modis_test = get_modis_rad(file, "_1KM", bands, bands.size(), &size);
+    #else
+	char bands[2][50] = {"8", "9"};
 	double* modis_test = get_modis_rad(file, "_1KM", bands, 2, &size);
+	#endif
 	printf("test modis size: %d\n", size);
 	printf("test data: %f\n", modis_test[30248359]);
 	hid_t group_id = H5Gcreate2(output_file, "/Data_Fields", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
 	
 	//Write MODIS first
 	hsize_t modis_dim[3];
+	#if 1 // JK_WORK
+	modis_dim[0] = bands.size();
+	modis_dim[2] = 1354;
+	modis_dim[1] = (size)/bands.size()/1354;
+	#else
 	modis_dim[0] = 2;
 	modis_dim[2] = 1354;
 	modis_dim[1] = (size)/2/1354;
+	#endif
 	hid_t modis_dataspace = H5Screate_simple(3, modis_dim, NULL);
 	hid_t	modis_datatype = H5Tcopy(H5T_NATIVE_DOUBLE);
     herr_t  modis_status = H5Tset_order(modis_datatype, H5T_ORDER_LE);  

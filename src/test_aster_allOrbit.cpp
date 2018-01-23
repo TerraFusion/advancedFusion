@@ -10,7 +10,10 @@
 	PROGRAM DESCRIPTION:
 		This is a program that makes use of the IO module and reprojection module to produce reprojected data of ASTER onto MODIS
 */
-
+#if 1 // JK_WORK
+#include <string>
+#include <vector>
+#endif
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
@@ -78,8 +81,13 @@ int main(int argc, char ** argv)
 	
 	int nCelldest_rad;
 	double* dest_rad;
+    #if 1 // JK_WORK
+    std::vector<std::string> bands = {"8"};
+    dest_rad = get_modis_rad(src_file, "_1KM", bands, bands.size(), &nCelldest_rad);
+    #else
 	char bands[1][50] = {"8"};
 	dest_rad = get_modis_rad(src_file, "_1KM", bands, 1, &nCelldest_rad);
+	#endif
 	
 	double* src_rad_out = (double *)malloc(sizeof(double) * nCelldest);
 	int new_ast_size = nCelldest;
@@ -102,9 +110,15 @@ int main(int argc, char ** argv)
 	hid_t group_id = H5Gcreate2(output_file, "/Data_Fields", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
 	//Write MODIS first
 	hsize_t modis_dim[3];
+    #if 1 // JK_WORK
+    modis_dim[0] = bands.size();
+	modis_dim[1] = (nCelldest_rad)/bands.size()/1354;
+    modis_dim[2] = 1354;
+    #else
 	modis_dim[0] = 1;
 	modis_dim[2] = 1354;
 	modis_dim[1] = (nCelldest_rad)/1/1354;
+	#endif
 	hid_t modis_dataspace = H5Screate_simple(3, modis_dim, NULL);
 	hid_t	modis_datatype = H5Tcopy(H5T_NATIVE_DOUBLE);
     herr_t  modis_status = H5Tset_order(modis_datatype, H5T_ORDER_LE);  

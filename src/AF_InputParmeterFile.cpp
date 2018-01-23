@@ -292,7 +292,7 @@ void AF_InputParmeterFile::ParseByLine()
 			std::stringstream ss(line); // Insert the string into a stream
 			std::string token;
 			while (ss >> token) {
-				modis_Bands.push_back(atoi(token.c_str()));
+				modis_Bands.push_back(token.c_str());
 			}
 			#if DEBUG_TOOL_PARSER
 			std::cout << "DBG_PARSER " << __FUNCTION__ << ":" << __LINE__ << "> Num of modis bands:" << modis_Bands.size() << std::endl;
@@ -414,7 +414,7 @@ std::string AF_InputParmeterFile::GetMODIS_Resolution()
 	return modis_Resolution;
 }
 
-std::vector<int>  AF_InputParmeterFile::GetMODIS_Bands()
+std::vector<std::string>  AF_InputParmeterFile::GetMODIS_Bands()
 {
 	return modis_Bands;
 }

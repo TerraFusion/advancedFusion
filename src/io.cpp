@@ -331,8 +331,11 @@ void* get_misr_attr(hid_t file, char* camera_angle, char* resolution, char* radi
 		Returns NULL upon error
 */
 
-
+#if 1 // JK_WORK
+double* get_modis_rad(hid_t file, char* resolution, std::vector<std::string> &bands, int band_size, int* size)
+#else
 double* get_modis_rad(hid_t file, char* resolution, char bands[38][50], int band_size, int* size)
+#endif
 {
 	printf("Reading MODIS rad\n");
 	
@@ -391,9 +394,16 @@ double* get_modis_rad(hid_t file, char* resolution, char bands[38][50], int band
 	int band_indices[band_size];
 	int j;
 	for(j = 0; j < band_size; j++){
+		#if 1 // JK_WORK
+        char* dname = get_modis_filename(resolution, (char*)(bands[j].c_str()), &band_indices[j]);
+        #else
 		char* dname = get_modis_filename(resolution, bands[j], &band_indices[j]);
+		#endif
+        #if 1 // JKDBG
+        printf("JKDBG %s:%d> Return from get_modis_filename. idx:%d,  Resolution: %s, Band: %s, band_indices: %d, dname:%s\n", __FUNCTION__, __LINE__, j, resolution,  bands[j].c_str(), band_indices[j], dname);
+        #endif
 		if(dname == NULL){
-			printf("Band %s is not supported for %s resolution\n", bands[j], resolution);
+			printf("Band %s is not supported for %s resolution\n", bands[j].c_str(), resolution);
 			return NULL;
 		}
 		printf("dname: %s\n", dname);

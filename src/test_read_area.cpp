@@ -9,7 +9,10 @@
 
 
 */
-
+#if 1 // JK_WORK
+#include <string>
+#include <vector>
+#endif
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
@@ -49,14 +52,14 @@ int main(int argc, char ** argv)
 	double* modis_lat = get_modis_lat(file, "_1KM", &geo_size);
 	printf("test size: %d\n", geo_size);
 	return 0;*/
-	char bands[5][50] = {"8", "9", "12", "14L", "20"};
 	int size;
-#if 1 //JKTEST
-	double* modis_test = NULL;
-	modis_test = get_modis_rad(file, "_1KM", bands, 5, &size);
-#else
+    #if 1 // JK_WORK
+    std::vector<std::string> bands = {"8", "9", "12", "14L", "20"};
+	double* modis_test = get_modis_rad(file, "_1KM", bands, bands.size(), &size);
+    #else
+	char bands[5][50] = {"8", "9", "12", "14L", "20"};
 	double* modis_test = get_modis_rad(file, "_1KM", bands, 5, &size);
-#endif
+	#endif
 	printf("test modis size: %d\n", size);
 	printf("test data: %f\n", modis_test[0]);
 	/*int rad_size;

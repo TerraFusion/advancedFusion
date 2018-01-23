@@ -22,7 +22,7 @@ class AF_InputParmeterFile
 	std::string GetMISR_Radiance();
 	std::string GetTargetInstrument();
 	std::string GetMODIS_Resolution();
-	std::vector<int>  GetMODIS_Bands();		  
+	std::vector<std::string>  GetMODIS_Bands();
 
 	std::string headerFileName;
 
@@ -47,5 +47,5 @@ class AF_InputParmeterFile
 	std::string misr_Radiance;
 	std::string targetInstrument;
 	std::string modis_Resolution;
-	std::vector<int> modis_Bands;
+	std::vector<std::string> modis_Bands;
 };
