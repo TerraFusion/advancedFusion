@@ -1,3 +1,5 @@
+#include <string>
+#include <vector>
 #include <stdlib.h>
 #include <stdio.h>
 #include "gdalio.h"
@@ -66,9 +68,9 @@ int main(int argc, char ** argv) {
 	free(targetY);
 
 	printf("getting source rad\n");
-	char bands[1][50] = {"8"};
 	double* src_rad;
-	src_rad = get_modis_rad(src_file, "_1KM", bands, 1, &nCellsrc);
+	std::vector<std::string> bands = {"8"};
+	src_rad = get_modis_rad(src_file, "_1KM", bands, bands.size(), &nCellsrc);
 	herr_t ret = af_close(src_file);
 
 	double* src_rad_out = (double *)malloc(sizeof(double) * nPoints);

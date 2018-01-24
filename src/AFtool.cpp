@@ -206,34 +206,19 @@ int main(int argc, char *argv[])
 	std::cout << "\nGetting target instrument radiance data...\n";
 	int nCelldest_rad;
 	double* dest_rad = NULL;
-	// JK_TODO: change hardcode 2 to modis_bands.size()
-	// JK_REMOVE char bands[2][50];
-	//std::vector<std::string> bands; // TODO: use this instead of above
 
 	// handle target instrument bands
 	std::vector<std::string>  modis_bands = inputArgs.GetMODIS_Bands();
-	#if 0 // JK_REMOVE
-	// JK_TODO: use vector bands and copy from modis_bands directly
-	for(int i = 0; i < modis_bands.size(); i++) {
-		sprintf(bands[i], "%s", modis_bands[i].c_str());
-	}
-	#endif
 	#if DEBUG_TOOL
 	for(int i = 0; i < modis_bands.size(); i++) {
 		std::cout << "DBG_TOOL main> modis_bands[" << i << "]:" << modis_bands[i] << std::endl;
-		// JK_REMOVE std::cout << "DBG_TOOL main> bands[" << i << "]:" << bands[i] << std::endl;
 	}
 	#endif
 
 	#if DEBUG_ELAPSE_TIME
 	StartElapseTime();
 	#endif
-	#if 1 // JK_WORK
-	// JK_TODO: check why band[i] value between AFtool and test_MISR_MODIS is different JKDBG from io.cpp
 	dest_rad = get_modis_rad(src_file, (char*)modis_resolution.c_str(), modis_bands, modis_bands.size(), &nCelldest_rad);
-	#else
-	dest_rad = get_modis_rad(src_file, (char*)modis_resolution.c_str(), bands, modis_bands.size(), &nCelldest_rad);
-	#endif
 	#if DEBUG_ELAPSE_TIME
 	StopElapseTimeAndShow("DBG_TIME> get_modis_rad  DONE.");
 	#endif
