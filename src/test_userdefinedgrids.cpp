@@ -8,7 +8,7 @@
 
 int main(int argc, char ** argv) {
 
-//	int outputEPSG = 102004;
+/* Test input for wgs 84 */
 	int outputEPSG = 4326;
 	double xMin = -180;
 	double xMax = 180;
@@ -16,9 +16,24 @@ int main(int argc, char ** argv) {
 	double yMax = 90;
 	double cellSize = 1;
 
+/* Test input for wgs 84 / utm zone 23s
+	int outputEPSG = 32723;
+	double xMin = 100000;
+	double xMax = 900000;
+	double yMin = 7000000;
+	double yMax = 10000000;
+	double cellSize = 2000;
+*/
+
+/* Test input for wgs 84 / utm zone 24s
+	int outputEPSG = 32724;
+	double xMin = 100000;
+	double xMax = 900000;
+	double yMin = 7000000;
+	double yMax = 10000000;
 	double * targetX;
 	double * targetY;
-
+*/
 	
 	gdalIORegister();
 
