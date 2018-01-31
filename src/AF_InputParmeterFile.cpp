@@ -62,18 +62,6 @@ void AF_InputParmeterFile::ParseByLine()
 		std::cerr << "Error: failed to read header file!\n";
 	}
 
-	// input parameter entry strings
-	const std::string INPUT_FILE_PATH="INPUT_FILE_PATH:";
-	const std::string OUTPUT_FILE_PATH="OUTPUT_FILE_PATH:";
-	const std::string RESAMPLE_METHOD="RESAMPLE_METHOD:";
-	const std::string SOURCE_INSTRUMENT="SOURCE_INSTRUMENT:";
-	const std::string MISR_RESOLUTION="MISR_RESOLUTION:";
-	const std::string MISR_CAMERA_ANGLE="MISR_CAMERA_ANGLE:";
-	const std::string MISR_RADIANCE="MISR_RADIANCE:";
-	const std::string TARGET_INSTRUMENT="TARGET_INSTRUMENT:";
-	const std::string MODIS_RESOLUTION="MODIS_RESOLUTION:";
-	const std::string MODIS_BANDS="MODIS_BANDS:";
-
 	std::string line;
 	size_t found;
 	int pos;
@@ -100,7 +88,7 @@ void AF_InputParmeterFile::ParseByLine()
 		if(found != std::string::npos)
 		{
 			line = line.substr(strlen(INPUT_FILE_PATH.c_str()));
-			while(line[0] == ' ')
+			while(line[0] == ' ' || line[0] == ':')
 				line = line.substr(1);
 			pos = line.find_first_of(' ', 0);
 			std::stringstream ss(line); // Insert the string into a stream
@@ -121,7 +109,7 @@ void AF_InputParmeterFile::ParseByLine()
 		if(found != std::string::npos)
 		{
 			line = line.substr(strlen(OUTPUT_FILE_PATH.c_str()));
-			while(line[0] == ' ')
+			while(line[0] == ' ' || line[0] == ':')
 				line = line.substr(1);
 			pos = line.find_first_of(' ', 0);
 			std::stringstream ss(line); // Insert the string into a stream
@@ -141,7 +129,7 @@ void AF_InputParmeterFile::ParseByLine()
 		if(found != std::string::npos)
 		{
 			line = line.substr(strlen(RESAMPLE_METHOD.c_str()));
-			while(line[0] == ' ')
+			while(line[0] == ' ' || line[0] == ':')
 				line = line.substr(1);
 			pos = line.find_first_of(' ', 0);
 			std::stringstream ss(line); // Insert the string into a stream
@@ -161,7 +149,7 @@ void AF_InputParmeterFile::ParseByLine()
 		if(found != std::string::npos)
 		{
 			line = line.substr(strlen(SOURCE_INSTRUMENT.c_str()));
-			while(line[0] == ' ')
+			while(line[0] == ' ' || line[0] == ':')
 				line = line.substr(1);
 			pos = line.find_first_of(' ', 0);
 			std::stringstream ss(line); // Insert the string into a stream
@@ -181,7 +169,7 @@ void AF_InputParmeterFile::ParseByLine()
 		if(found != std::string::npos)
 		{
 			line = line.substr(strlen(MISR_RESOLUTION.c_str()));
-			while(line[0] == ' ')
+			while(line[0] == ' ' || line[0] == ':')
 				line = line.substr(1);
 			pos = line.find_first_of(' ', 0);
 			std::stringstream ss(line); // Insert the string into a stream
@@ -201,7 +189,7 @@ void AF_InputParmeterFile::ParseByLine()
 		if(found != std::string::npos)
 		{
 			line = line.substr(strlen(MISR_CAMERA_ANGLE.c_str()));
-			while(line[0] == ' ')
+			while(line[0] == ' ' || line[0] == ':')
 				line = line.substr(1);
 			pos = line.find_first_of(' ', 0);
 			std::stringstream ss(line); // Insert the string into a stream
@@ -224,7 +212,7 @@ void AF_InputParmeterFile::ParseByLine()
 		if(found != std::string::npos)
 		{
 			line = line.substr(strlen(MISR_RADIANCE.c_str()));
-			while(line[0] == ' ')
+			while(line[0] == ' ' || line[0] == ':')
 				line = line.substr(1);
 			pos = line.find_first_of(' ', 0);
 			std::stringstream ss(line); // Insert the string into a stream
@@ -244,7 +232,7 @@ void AF_InputParmeterFile::ParseByLine()
 		if(found != std::string::npos)
 		{
 			line = line.substr(strlen(TARGET_INSTRUMENT.c_str()));
-			while(line[0] == ' ')
+			while(line[0] == ' ' || line[0] == ':')
 				line = line.substr(1);
 			pos = line.find_first_of(' ', 0);
 			std::stringstream ss(line); // Insert the string into a stream
@@ -264,7 +252,7 @@ void AF_InputParmeterFile::ParseByLine()
 		if(found != std::string::npos)
 		{
 			line = line.substr(strlen(MODIS_RESOLUTION.c_str()));
-			while(line[0] == ' ')
+			while(line[0] == ' ' || line[0] == ':')
 				line = line.substr(1);
 			pos = line.find_first_of(' ', 0);
 			std::stringstream ss(line); // Insert the string into a stream
@@ -286,7 +274,7 @@ void AF_InputParmeterFile::ParseByLine()
 		if(found != std::string::npos)
 		{
 			line = line.substr(strlen(MODIS_BANDS.c_str()));
-			while(line[0] == ' ')
+			while(line[0] == ' ' || line[0] == ':')
 				line = line.substr(1);
 			pos = line.find_first_of(' ', 0);
 			std::stringstream ss(line); // Insert the string into a stream

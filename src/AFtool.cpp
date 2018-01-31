@@ -173,7 +173,79 @@ int main(int argc, char *argv[])
 		free(targetLongitude);
 	
 	//-------------------------------------------------
-	// Get Source instrument radiance
+	// Read Target instrument radiance from BF file
+	std::cout << "\nGetting target instrument radiance data...\n";
+	int nCelldest_rad;
+	double* dest_rad = NULL;
+
+	// handle target instrument bands
+	std::vector<std::string>  modis_bands = inputArgs.GetMODIS_Bands();
+	#if DEBUG_TOOL
+	for(int i = 0; i < modis_bands.size(); i++) {
+		std::cout << "DBG_TOOL main> modis_bands[" << i << "]:" << modis_bands[i] << std::endl;
+	}
+	#endif
+
+	#if DEBUG_ELAPSE_TIME
+	StartElapseTime();
+	#endif
+	dest_rad = get_modis_rad(src_file, (char*)modis_resolution.c_str(), modis_bands, modis_bands.size(), &nCelldest_rad);
+	#if DEBUG_ELAPSE_TIME
+	StopElapseTimeAndShow("DBG_TIME> get_modis_rad  DONE.");
+	#endif
+
+	//-------------------------------------------------
+	// Prepare target data group in output file
+	//hid_t trg_group_id = H5Gcreate2(output_file, "/Target/Data_Fields", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+	hid_t trg_group_id = H5Gcreate2(output_file, "/Data_Fields", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+	if(trg_group_id < 0) {
+		std::cerr <<  "Error: H5Gcreate2 in output file.\n";
+		return -1;
+	}
+	// close group
+	herr_t grp_status = H5Gclose(trg_group_id);
+	if(grp_status < 0) {
+		std::cerr <<  "Error: H5Gclose in output file.\n";
+		return -1;
+	}
+
+	//----------------------------------------------
+	//Write target instrument data to output file
+	std::cout << "\nWriting target instrument '" << targetInstrument << "' data...\n";
+	#if DEBUG_ELAPSE_TIME
+	StartElapseTime();
+	#endif
+	hsize_t target_dim[3];
+	target_dim[0] = modis_bands.size();
+	target_dim[1] = (nCelldest_rad)/modis_bands.size()/RESAMPLE_MODIS_DATA_WIDTH;
+	target_dim[2] = RESAMPLE_MODIS_DATA_WIDTH;
+	hid_t target_dataspace = H5Screate_simple(3, target_dim, NULL);
+	hid_t	target_datatype = H5Tcopy(H5T_NATIVE_DOUBLE);
+	herr_t	target_status = H5Tset_order(target_datatype, H5T_ORDER_LE);
+	hid_t target_dataset = H5Dcreate2(output_file, "/Data_Fields/modis_rad", target_datatype, target_dataspace,H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+	if(target_dataset < 0) {
+		std::cerr <<  "Error: H5Dcreate2 target data in output file.\n";
+		return -1;
+	}
+	target_status = H5Dwrite(target_dataset, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, dest_rad);
+	if(target_status < 0) {
+		std::cerr  <<  "Error: H5Dwrite target data in output file.\n";
+		return -1;
+	}
+	H5Sclose(target_dataspace);
+	H5Tclose(target_datatype);
+	H5Dclose(target_dataset);
+	#if DEBUG_ELAPSE_TIME
+	StopElapseTimeAndShow("DBG_TIME> Write Target data  DONE.");
+	#endif
+
+	if (dest_rad)
+		free(dest_rad);
+
+
+
+	//-------------------------------------------------
+	// Read Source instrument radiance from BF file
 	std::cout << "\nGetting source instrument radiance data...\n";
 	double* src_rad=NULL;
 	std::string misr_radiance = inputArgs.GetMISR_Radiance();
@@ -201,27 +273,6 @@ int main(int argc, char *argv[])
 	StopElapseTimeAndShow("DBG_TIME> get_misr_rad DONE.");
 	#endif
 	
-	//-------------------------------------------------
-	// Get Target instrument radiance
-	std::cout << "\nGetting target instrument radiance data...\n";
-	int nCelldest_rad;
-	double* dest_rad = NULL;
-
-	// handle target instrument bands
-	std::vector<std::string>  modis_bands = inputArgs.GetMODIS_Bands();
-	#if DEBUG_TOOL
-	for(int i = 0; i < modis_bands.size(); i++) {
-		std::cout << "DBG_TOOL main> modis_bands[" << i << "]:" << modis_bands[i] << std::endl;
-	}
-	#endif
-
-	#if DEBUG_ELAPSE_TIME
-	StartElapseTime();
-	#endif
-	dest_rad = get_modis_rad(src_file, (char*)modis_resolution.c_str(), modis_bands, modis_bands.size(), &nCelldest_rad);
-	#if DEBUG_ELAPSE_TIME
-	StopElapseTimeAndShow("DBG_TIME> get_modis_rad  DONE.");
-	#endif
 	
 	//-------------------------------------------------
 	// handle resample method
@@ -257,47 +308,6 @@ int main(int argc, char *argv[])
 		delete [] targetNNsrcID;
 
 
-	//-------------------------------------------------
-	// Writing target and source data to output file
-	hid_t group_id = H5Gcreate2(output_file, "/Data_Fields", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-	if(group_id < 0) {
-		std::cerr <<  "Error: H5Gcreate2 in output file.\n";
-		return -1;
-	}
-
-	//------------------------------------
-	//Write target instrument data first
-	std::cout << "\nWriting target instrument '" << targetInstrument << "' data...\n";
-	#if DEBUG_ELAPSE_TIME
-	StartElapseTime();
-	#endif
-	hsize_t target_dim[3];
-	target_dim[0] = modis_bands.size();
-	target_dim[1] = (nCelldest_rad)/modis_bands.size()/RESAMPLE_MODIS_DATA_WIDTH;
-	target_dim[2] = RESAMPLE_MODIS_DATA_WIDTH;
-	hid_t target_dataspace = H5Screate_simple(3, target_dim, NULL);
-	hid_t	target_datatype = H5Tcopy(H5T_NATIVE_DOUBLE);
-	herr_t	target_status = H5Tset_order(target_datatype, H5T_ORDER_LE);  
-	hid_t target_dataset = H5Dcreate2(output_file, "/Data_Fields/modis_rad", target_datatype, target_dataspace,H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-	if(target_dataset < 0) {
-		std::cerr <<  "Error: H5Dcreate2 target data in output file.\n";
-		return -1;
-	}
-	target_status = H5Dwrite(target_dataset, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, dest_rad);
-	if(target_status < 0) {
-		std::cerr  <<  "Error: H5Dwrite target data in output file.\n";
-		return -1;
-	}
-	H5Sclose(target_dataspace);
-	H5Tclose(target_datatype);
-	H5Dclose(target_dataset);
-	#if DEBUG_ELAPSE_TIME
-	StopElapseTimeAndShow("DBG_TIME> Write Target data  DONE.");
-	#endif
-
-	if (dest_rad)
-		free(dest_rad);
-
 	//--------------------------------------------
 	// Write reampled source instrument data next
 	std::cout << "\nWriting source instrument '" << srcInstrument << "' data...\n";
@@ -324,11 +334,6 @@ int main(int argc, char *argv[])
 	H5Tclose(src_datatype);
 	H5Dclose(src_dataset);
 
-	herr_t grp_status = H5Gclose(group_id);
-	if(grp_status < 0) {
-		std::cerr <<  "Error: H5Gclose in output file.\n";
-		return -1;
-	}
 	#if DEBUG_ELAPSE_TIME
 	StopElapseTimeAndShow("DBG_TIME> Write Source data  DONE.");
 	#endif

@@ -4,6 +4,19 @@
 
 #include "AF_debug.h"
 
+// input parameter entry strings
+const std::string INPUT_FILE_PATH="INPUT_FILE_PATH";
+const std::string OUTPUT_FILE_PATH="OUTPUT_FILE_PATH";
+const std::string RESAMPLE_METHOD="RESAMPLE_METHOD";
+const std::string SOURCE_INSTRUMENT="SOURCE_INSTRUMENT";
+const std::string MISR_RESOLUTION="MISR_RESOLUTION";
+const std::string MISR_CAMERA_ANGLE="MISR_CAMERA_ANGLE";
+const std::string MISR_RADIANCE="MISR_RADIANCE";
+const std::string TARGET_INSTRUMENT="TARGET_INSTRUMENT";
+const std::string MODIS_RESOLUTION="MODIS_RESOLUTION";
+const std::string MODIS_BANDS="MODIS_BANDS";
+
+
 class AF_InputParmeterFile
 {
 	public:
