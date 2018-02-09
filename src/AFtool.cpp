@@ -248,10 +248,11 @@ int main(int argc, char *argv[])
 	// Read Source instrument radiance from BF file
 	std::cout << "\nGetting source instrument radiance data...\n";
 	double* src_rad=NULL;
-	std::string misr_radiance = inputArgs.GetMISR_Radiance();
+	std::vector<std::string> misr_radiance = inputArgs.GetMISR_Radiance();
 	std::vector<std::string> misr_cameraAngles = inputArgs.GetMISR_CameraAngles();
 	#if DEBUG_TOOL
-	std::cout << "DBG_TOOL main> misr_radiance: " << misr_radiance << std::endl;
+	for(int i = 0; i < misr_radiance.size(); i++) {
+		std::cout << "DBG_TOOL main> misr_radiance[" << i << "]: " << misr_radiance[i] << std::endl;
 	for(int i = 0; i < misr_cameraAngles.size(); i++) {
 		std::cout << "DBG_TOOL main> misr_cameraAngles[" << i << "]:" << misr_cameraAngles[i] << std::endl;
 	}
@@ -260,12 +261,13 @@ int main(int argc, char *argv[])
 	#if DEBUG_ELAPSE_TIME
 	StartElapseTime();
 	#endif
-	src_rad = get_misr_rad(src_file, (char*)misr_cameraAngles[0].c_str(), (char*)misr_resolution.c_str(), (char*)misr_radiance.c_str(), &nCellsrc);
+	// TODO: [0] for only single value, change to multiple values
+	src_rad = get_misr_rad(src_file, (char*)misr_cameraAngles[0].c_str(), (char*)misr_resolution.c_str(), (char*)misr_radiance[0].c_str(), &nCellsrc);
 	if (src_rad == NULL) {
 		std::cerr	<< "Please verify these MISR input values. \n" 
 					<< "	   - Camera: " << misr_cameraAngles[0] << "\n" 
 					<< "	   - Resolution: " << misr_resolution << "\n"
-					<< "	   - Radiance: " << misr_radiance << "\n" 
+					<< "	   - Radiance: " << misr_radiance[0] << "\n" 
 					<< std::endl;
 		return -1;
 	}

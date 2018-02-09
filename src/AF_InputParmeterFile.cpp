@@ -207,7 +207,7 @@ void AF_InputParmeterFile::ParseByLine()
 		}
 
 
-		// parse single exact token without '\n', '\r' or space.
+		// parse multiple
 		found = line.find(MISR_RADIANCE.c_str());
 		if(found != std::string::npos)
 		{
@@ -218,10 +218,13 @@ void AF_InputParmeterFile::ParseByLine()
 			std::stringstream ss(line); // Insert the string into a stream
 			std::string token;
 			while (ss >> token) {  // get exact string
-				misr_Radiance = token;
+				misr_Radiances.push_back(token);
 			}
 			#if DEBUG_TOOL_PARSER
-			std::cout << "DBG_PARSER " << __FUNCTION__ << ":" << __LINE__ << "> " <<  MISR_RADIANCE << ": " << misr_Radiance << std::endl;
+			std::cout << "DBG_PARSER " << __FUNCTION__ << ":" << __LINE__ << "> Num of radiances:" << misr_Radiances.size() << std::endl;
+			for(int i = 0; i < misr_Radiances.size(); i++) {
+				std::cout << "DBG_PARSER " << __FUNCTION__ << ":" << __LINE__ << "> misr_Radiances[" << i << "]:" << misr_Radiances[i] << std::endl;
+			}
 			#endif
 			continue;
 		}
@@ -296,6 +299,10 @@ void AF_InputParmeterFile::ParseByLine()
 		std::cerr << "Error: invlid input detected.\n";
 		exit(1);
 	}
+
+	if (IsSourceTargetInstrumentSame() == true) {
+		exit(1);
+	}
 }
 
 
@@ -324,6 +331,26 @@ bool AF_InputParmeterFile::CheckInputBFdataPath(const std::string &filePath)
 }
 
 //--------------------
+// Return:
+//	 true - OK
+//	 false - Failed
+bool AF_InputParmeterFile::IsSourceTargetInstrumentSame()
+{
+	bool ret = false;
+	#if DEBUG_TOOL_PARSER
+	std::cout << "DBG_PARSER " << __FUNCTION__ << ":" << __LINE__ << "> sourceInstrument: " << sourceInstrument << ", targetInstrument: " << targetInstrument <<   ".\n";
+	#endif
+
+	if (sourceInstrument == targetInstrument) {
+		std::cerr	<< "Error: Source instrument must be different from target instrument.\n";
+		ret = true;
+	}
+
+	return ret;
+}
+
+
+//--------------------
 // Return: 
 //	 true - OK 
 //	 false - Failed
@@ -331,7 +358,7 @@ bool AF_InputParmeterFile::CheckMODIS_Resolution(std::string &str)
 {
 	bool ret = true;
 	#if DEBUG_TOOL_PARSER
-	std::cout << "DBG_PARSER " << __FUNCTION__ << ":" << __LINE__ << "> reolution: " << str <<  ".\n"; 
+	std::cout << "DBG_PARSER " << __FUNCTION__ << ":" << __LINE__ << "> reolution: " << str <<	".\n";
 	#endif
 
 	if (CompareStrCaseInsensitive(str, "1KM")) {
@@ -387,9 +414,9 @@ std::vector<std::string>  AF_InputParmeterFile::GetMISR_CameraAngles()
 	return misr_CameraAngles;
 }
 
-std::string AF_InputParmeterFile::GetMISR_Radiance()
+std::vector<std::string> AF_InputParmeterFile::GetMISR_Radiance()
 {
-	return misr_Radiance;
+	return misr_Radiances;
 }
 
 std::string AF_InputParmeterFile::GetTargetInstrument()

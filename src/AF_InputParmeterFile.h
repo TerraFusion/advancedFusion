@@ -1,5 +1,6 @@
 
 #include <vector>
+#include <map>
 #include <string>
 
 #include "AF_debug.h"
@@ -16,6 +17,7 @@ const std::string TARGET_INSTRUMENT="TARGET_INSTRUMENT";
 const std::string MODIS_RESOLUTION="MODIS_RESOLUTION";
 const std::string MODIS_BANDS="MODIS_BANDS";
 
+typedef std::vector<std::string> strVec;
 
 class AF_InputParmeterFile
 {
@@ -23,6 +25,8 @@ class AF_InputParmeterFile
 	AF_InputParmeterFile();
 	~AF_InputParmeterFile();
 	void ParseByLine();
+
+	std::string headerFileName;
 
 	//------------------------------
 	// Get input parameter values
@@ -32,24 +36,27 @@ class AF_InputParmeterFile
 	std::string GetSourceInstrument();
 	std::string GetMISR_Resolution();
 	std::vector<std::string>  GetMISR_CameraAngles();
-	std::string GetMISR_Radiance();
+	std::vector<std::string>  GetMISR_Radiance();
 	std::string GetTargetInstrument();
 	std::string GetMODIS_Resolution();
 	std::vector<std::string>  GetMODIS_Bands();
 
-	std::string headerFileName;
 
+	//-------------------------------
+	// util functions
 	bool CompareStrCaseInsensitive(const std::string& s1, const std::string& s2);
 
 	protected:
 	//------------------------------
 	// Check input parameter values
 	bool CheckInputBFdataPath(const std::string &str);
+	bool IsSourceTargetInstrumentSame();
 	bool CheckMODIS_Resolution(std::string &str);
 
 	private:
 	bool didReadHeaderFile;
 
+	//-------------------------
 	// input parameter entries
 	std::string inputBFfilePath;
 	std::string outputFilePath;
@@ -57,7 +64,7 @@ class AF_InputParmeterFile
 	std::string sourceInstrument;
 	std::string misr_Resolution;
 	std::vector<std::string> misr_CameraAngles;
-	std::string misr_Radiance;
+	std::vector<std::string> misr_Radiances;
 	std::string targetInstrument;
 	std::string modis_Resolution;
 	std::vector<std::string> modis_Bands;
