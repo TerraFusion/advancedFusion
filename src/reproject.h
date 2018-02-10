@@ -66,11 +66,31 @@ void nnInterpolate(double * souVal, double * tarVal, int * tarNNSouID, int nTar)
  * 	double * souVal:	the input values at source cells
  * 	int * souNNTarID:	the IDs of nearest neighboring target cells for each source cells (generated from "nearestNeighbor")
  * 	int nSou:		the number of source cells
- * 	double * tarVal:	the output values at target cells
+ * 	double * tarVal:	the output (average) values at target cells
+ * 	double * tarSD:		the standard deviation (SD) value at target cells (can be NULL if no SD values need to be reported)
  * 	int * nSouPixels:	the output numbers of contributing source cells to each target cell
  *	int nTar:		the number of target cells
  * Output:
- * 	double * tarVal:	the output values at target cells
+ * 	double * tarVal:	the output (average) values at target cells
+ * 	double * tarSD:		the standard deviation (SD) value at target cells (can be NULL if no SD values need to be reported)
+ * 	int * nSouPixels:	the output numbers of contributing source cells to each target cell
+ */
+void summaryInterpolate(double * souVal, int * souNNTarID, int nSou, double * tarVal, double * tarSD, int * nSouPixels, int nTar);
+
+
+/**
+ * NAME:	summaryInterpolate (old version)
+ * DESCRIPTION:	Interpolation (summary) from fine resolution to coarse resolution 
+ * 	Please use void summaryInterpolate(double * souVal, int * souNNTarID, int nSou, double * tarVal, double * tarSD, int * nSouPixels, int nTar) whenever possible
+ * PARAMETERS:
+ * 	double * souVal:	the input values at source cells
+ * 	int * souNNTarID:	the IDs of nearest neighboring target cells for each source cells (generated from "nearestNeighbor")
+ * 	int nSou:		the number of source cells
+ * 	double * tarVal:	the output (average) values at target cells
+ * 	int * nSouPixels:	the output numbers of contributing source cells to each target cell
+ *	int nTar:		the number of target cells
+ * Output:
+ * 	double * tarVal:	the output (average) values at target cells
  * 	int * nSouPixels:	the output numbers of contributing source cells to each target cell
  */
 void summaryInterpolate(double * souVal, int * souNNTarID, int nSou, double * tarVal, int * nSouPixels, int nTar);

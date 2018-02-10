@@ -651,18 +651,23 @@ void nnInterpolate(double * souVal, double * tarVal, int * tarNNSouID, int nTar)
  * 	double * souVal:	the input values at source cells
  * 	int * souNNTarID:	the IDs of nearest neighboring target cells for each source cells (generated from "nearestNeighbor")
  * 	int nSou:		the number of source cells
- * 	double * tarVal:	the output values at target cells
+ * 	double * tarVal:	the output (average) values at target cells
+ * 	double * tarSD:		the standard deviation (SD) value at target cells (can be NULL if no SD values need to be reported)
  * 	int * nSouPixels:	the output numbers of contributing source cells to each target cell
  *	int nTar:		the number of target cells
  * Output:
- * 	double * tarVal:	the output values at target cells
+ * 	double * tarVal:	the output (average) values at target cells
+ * 	double * tarSD:		the standard deviation (SD) value at target cells (can be NULL if no SD values need to be reported)
  * 	int * nSouPixels:	the output numbers of contributing source cells to each target cell
  */
-void summaryInterpolate(double * souVal, int * souNNTarID, int nSou, double * tarVal, int * nSouPixels, int nTar) {
+void summaryInterpolate(double * souVal, int * souNNTarID, int nSou, double * tarVal, double * tarSD, int * nSouPixels, int nTar) {
 
 	for(int i = 0; i < nTar; i++) {
 	
 		tarVal[i] = 0;
+		if (tarSD != NULL) {
+			tarSD[i] = 0;
+		}
 		nSouPixels[i] = 0;
 	}
 
@@ -672,6 +677,9 @@ void summaryInterpolate(double * souVal, int * souNNTarID, int nSou, double * ta
 		nnTarID = souNNTarID[i];
 		if(nnTarID > 0 && souVal[i] >= 0) {
 			tarVal[nnTarID] += souVal[i];
+			if (tarSD != NULL) {
+				tarSD[nnTarID] += souVal[i] * souVal[i];
+			}
 			nSouPixels[nnTarID] ++;	
 		}
 	}
@@ -681,10 +689,36 @@ void summaryInterpolate(double * souVal, int * souNNTarID, int nSou, double * ta
 	
 		if(nSouPixels[i] > 0) {
 			tarVal[i] = tarVal[i] / nSouPixels[i];
+			if (tarSD != NULL) {
+				tarSD[i] = tarVal[i] / nSouPixels[i] - tarVal[i] * tarVal[i];
+			}
+			
 		}
 		else {
 			tarVal[i] = -999;
+			if (tarSD != NULL) {
+				tarSD[i] = -999;
+			}
 		}
 	}
+}
+
+/**
+ * NAME:	summaryInterpolate
+ * DESCRIPTION:	Interpolation (summary) from fine resolution to coarse resolution
+ * PARAMETERS:
+ * 	double * souVal:	the input values at source cells
+ * 	int * souNNTarID:	the IDs of nearest neighboring target cells for each source cells (generated from "nearestNeighbor")
+ * 	int nSou:		the number of source cells
+ * 	double * tarVal:	the output (average) values at target cells
+ * 	int * nSouPixels:	the output numbers of contributing source cells to each target cell
+ *	int nTar:		the number of target cells
+ * Output:
+ * 	double * tarVal:	the output (average) values at target cells
+ * 	int * nSouPixels:	the output numbers of contributing source cells to each target cell
+ */
+void summaryInterpolate(double * souVal, int * souNNTarID, int nSou, double * tarVal, int * nSouPixels, int nTar) {
+
+	summaryInterpolate(souVal, souNNTarID, nSou, tarVal, NULL, nSouPixels, nTar);
 
 }

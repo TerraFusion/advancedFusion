@@ -31,9 +31,12 @@ int main(int argc, char ** argv) {
 	double xMax = 900000;
 	double yMin = 7000000;
 	double yMax = 10000000;
+	double cellSize = 2000;
+*/
+
 	double * targetX;
 	double * targetY;
-*/
+
 	
 	gdalIORegister();
 
