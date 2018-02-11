@@ -11,6 +11,7 @@
 //	High resultion (275m): 512 * 2048
 
 #include <stdio.h>
+#include <stdlib.h>
 
 /**
  * NAME:	getMISRFinalImageSize
@@ -38,7 +39,7 @@ void getMISRFinalImageSize(int * pNRow, int * pNCol, int highResolution)
 	else 
 	{
 		*pNRow = 180 * 512;
-		*pnCol = 2048 + 1580 * 4;
+		*pNCol = 2048 + 1580 * 4;
 	}
 }
 
@@ -106,7 +107,7 @@ double * MISRBlockOffset(double * originalGrid, int highResolution)
 		blockID = i / nRowPerBlock;
 		for(int j = 0; j < nColPerBlock; j++ )
 		{
-			finalGrid[i * nCol + j + offsets[blockID]] = originalGrid[i * nColPreBlock + j];
+			finalGrid[i * nCol + j + offsets[blockID]] = originalGrid[i * nColPerBlock + j];
 		}
 	}
 

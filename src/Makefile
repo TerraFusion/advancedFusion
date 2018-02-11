@@ -11,7 +11,7 @@ GDALDIR = /projects/sciteam/jq0/TerraFusion/gdal
 #H5CXX=HDF5_CC=/usr/bin/g++ h5cc $(CXXFLAGS)
 
 #all: testRepro testRepro2 testRepro3 testReproHDF5
-all: AFtool test_aster test_aster_allOrbit test_read_area test_MISR_MODIS test_userdefinedgrids
+all: AFtool test_aster test_aster_allOrbit test_read_area test_MISR_MODIS test_userdefinedgrids test_MISR_offset
 
 AFtool.o: AFtool.cpp
 	$(H5CXX) -c $< -o $@
@@ -46,6 +46,9 @@ test_aster_allOrbit.o: test_aster_allOrbit.cpp
 test_userdefinedgrids.o: test_userdefinedgrids.cpp
 	$(H5CXX) -c $< -o $@
 
+test_MISR_offset.o: test_MISR_offset.cpp
+	$(H5CXX) -c $< -o $@
+
 reproject.o: reproject.cpp
 	$(CXX) -o $@ -c $<
 
@@ -54,6 +57,9 @@ io.o: io.cpp
 
 gdalio.o: gdalio.cpp
 	$(CXX) -I. -I$(GDALDIR)/include -o $@ -c $< 	
+
+misrutil.o: misrutil.cpp
+	$(H5CXX) -c $< -o $@
 
 # testRepro: testRepro.o reproject.o
 #	$(CXX) -o ../$@ $+ -lm
@@ -88,6 +94,9 @@ test_aster_allOrbit: test_aster_allOrbit.o reproject.o io.o
 test_userdefinedgrids: test_userdefinedgrids.o reproject.o io.o gdalio.o
 	$(H5CXX) -o ../$@ $+ -lm -L$(GDALDIR)/lib -lgdal
 
+test_MISR_offset: test_MISR_offset.o io.o misrutil.o
+	$(H5CXX) -o ../$@ $+ -lm -L$(GDALDIR)/lib -lgdal
+
 clean:
-	rm *.o ../AFtool ../test_read_area ../test_aster ../test_aster_allOrbit ../test_MISR_MODIS ../test_userdefinedgrids
+	rm *.o ../AFtool ../test_read_area ../test_aster ../test_aster_allOrbit ../test_MISR_MODIS ../test_userdefinedgrids ../test_MISR_offset
 #	rm *.o ../testRepro ../testRepro2 ../testRepro3 ../testReproHDF5
