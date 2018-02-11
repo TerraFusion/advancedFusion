@@ -109,7 +109,7 @@ int getCellCenterLatLon(int outputEPSG, double xMin, double yMin, double xMax, d
  * PARAMETERS:
  *	char * fileName:	output GeoTiff file name
  * 	double * grid:		the grid of the output radianc values
- * 	int outputEPSG:		EPSG code of output spatial reference system 
+ * 	int outputEPSG:		EPSG code of output spatial reference system (negative value if unknown) 
  *	double xMin:		west boundary of output area
  *	double yMin:		south boundary of output area
  *	double xMax:		east boundary of output area
@@ -145,14 +145,16 @@ void writeGeoTiff(char * fileName, double * grid, int outputEPSG, double xMin, d
 
 	GDALSetGeoTransform(hDstDS,adfGeoTransform);
 
-	char *pszSRS_WKT = NULL;
-	OGRSpatialReferenceH hSRS = OSRNewSpatialReference(NULL);
-	OSRImportFromEPSG(hSRS, outputEPSG);
-	OSRExportToWkt(hSRS,&pszSRS_WKT);
-	GDALSetProjection(hDstDS,pszSRS_WKT);
-	OSRDestroySpatialReference(hSRS);
-	CPLFree(pszSRS_WKT);
-
+	if(outputEPSG > 0)
+	{
+		char *pszSRS_WKT = NULL;
+		OGRSpatialReferenceH hSRS = OSRNewSpatialReference(NULL);
+		OSRImportFromEPSG(hSRS, outputEPSG);
+		OSRExportToWkt(hSRS,&pszSRS_WKT);
+		GDALSetProjection(hDstDS,pszSRS_WKT);
+		OSRDestroySpatialReference(hSRS);
+		CPLFree(pszSRS_WKT);
+	}
 
 	GDALRasterBandH hBand;
 	hBand=GDALGetRasterBand(hDstDS,1);

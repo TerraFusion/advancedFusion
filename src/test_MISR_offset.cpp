@@ -11,6 +11,7 @@
 #include <stdlib.h>
 #include "io.h"
 #include "misrutil.h"
+#include "gdalio.h"
 
 int main(int argc, char ** argv)
 {
@@ -28,7 +29,19 @@ int main(int argc, char ** argv)
 
 	printf("Total number of MISR pixels: %d\n", nCellMISR);
 
+	int nRow, nCol;
+	getMISRFinalImageSize(&nRow, &nCol, 0);
+	printf("Size of the final output image: %d * %d\n", nRow, nCol);
+
+	double * MISRFinal; 
+
+	MISRFinal = MISRBlockOffset(MISRRad, 0); 
+	
+	gdalIORegister();
+	writeGeoTiff("TestMISROffset.tif", MISRFinal, -1, 0, 0, (double)(nCol), (double)(nRow), 1);
+
 	free(MISRRad);
+	free(MISRFinal);
 	
 	return 0;
 }

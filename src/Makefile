@@ -94,7 +94,7 @@ test_aster_allOrbit: test_aster_allOrbit.o reproject.o io.o
 test_userdefinedgrids: test_userdefinedgrids.o reproject.o io.o gdalio.o
 	$(H5CXX) -o ../$@ $+ -lm -L$(GDALDIR)/lib -lgdal
 
-test_MISR_offset: test_MISR_offset.o io.o misrutil.o
+test_MISR_offset: test_MISR_offset.o io.o misrutil.o gdalio.o
 	$(H5CXX) -o ../$@ $+ -lm -L$(GDALDIR)/lib -lgdal
 
 clean:
