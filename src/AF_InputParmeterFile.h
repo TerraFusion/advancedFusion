@@ -5,7 +5,9 @@
 
 #include "AF_debug.h"
 
-// input parameter entry strings
+/*---------------------------------
+ * Input parameter entry strings
+ */
 const std::string INPUT_FILE_PATH="INPUT_FILE_PATH";
 const std::string OUTPUT_FILE_PATH="OUTPUT_FILE_PATH";
 const std::string RESAMPLE_METHOD="RESAMPLE_METHOD";
@@ -17,7 +19,7 @@ const std::string TARGET_INSTRUMENT="TARGET_INSTRUMENT";
 const std::string MODIS_RESOLUTION="MODIS_RESOLUTION";
 const std::string MODIS_BANDS="MODIS_BANDS";
 
-typedef std::vector<std::string> strVec;
+typedef std::vector<std::string> strVec_t;
 
 class AF_InputParmeterFile
 {
@@ -28,8 +30,9 @@ class AF_InputParmeterFile
 
 	std::string headerFileName;
 
-	//------------------------------
-	// Get input parameter values
+	/*------------------------------
+	 * Get input parameter values
+	 */
 	std::string GetOuputFilePath();
 	std::string GetInputBFdataPath();
 	std::string GetResampleMethod();
@@ -42,13 +45,23 @@ class AF_InputParmeterFile
 	std::vector<std::string>  GetMODIS_Bands();
 
 
-	//-------------------------------
-	// util functions
+	/*-------------------------------
+	 * Handle multi-value variables
+	 */
+	std::vector<std::string> &GetMultiVariableNames(std::string instrument);
+	void BuildMultiValueVariableMap(std::string &instrument, std::map<std::string, strVec_t> &inputMultiVarsMap);
+	void DBG_displayinputListMap(std::string &instrument, std::map<std::string, strVec_t> &trgInputMultiVarsMap, const std::string &mixType);
+
+
+	/*-------------------------------
+	 * Util functions
+	 */
 	bool CompareStrCaseInsensitive(const std::string& s1, const std::string& s2);
 
 	protected:
-	//------------------------------
-	// Check input parameter values
+	/*------------------------------
+	 * Check input parameter values
+	 */
 	bool CheckInputBFdataPath(const std::string &str);
 	bool IsSourceTargetInstrumentSame();
 	bool CheckMODIS_Resolution(std::string &str);
@@ -56,8 +69,9 @@ class AF_InputParmeterFile
 	private:
 	bool didReadHeaderFile;
 
-	//-------------------------
-	// input parameter entries
+	/*-------------------------
+	 * Input parameter entries
+	 */
 	std::string inputBFfilePath;
 	std::string outputFilePath;
 	std::string resampleMethod;
@@ -68,4 +82,10 @@ class AF_InputParmeterFile
 	std::string targetInstrument;
 	std::string modis_Resolution;
 	std::vector<std::string> modis_Bands;
+
+	/*-----------------------------------
+	 * Store multi-value variables names
+	 */
+	std::vector<std::string> modis_MultiVars;
+	std::vector<std::string> misr_MultiVars;
 };

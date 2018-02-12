@@ -21,14 +21,29 @@
 #include "AF_debug.h"
 
 
+/*=================================================================
+ * AF_InputParmeterFile Constructor
+ */
 AF_InputParmeterFile::AF_InputParmeterFile()
 {
 	#if DEBUG_TOOL_PARSER
 	std::cout << "DBG_PARSER " << __FUNCTION__ << ":" << __LINE__ << "> Constructor AF_InputParmeterFile()\n";
 	#endif
 	didReadHeaderFile = false;
+
+	/*------------------------------
+	 * init multi-value variables
+	 */
+	// MODIS
+	modis_MultiVars.push_back(MODIS_BANDS);
+	// MISR
+	misr_MultiVars.push_back(MISR_CAMERA_ANGLE);
+	misr_MultiVars.push_back(MISR_RADIANCE);
 }
 
+/*=================================================================
+ * AF_InputParmeterFile Destructor
+ */
 AF_InputParmeterFile::~AF_InputParmeterFile()
 {
 	#if DEBUG_TOOL_PARSER
@@ -36,20 +51,27 @@ AF_InputParmeterFile::~AF_InputParmeterFile()
 	#endif
 }
 
-//---------------------------
-// util functions
+/* ################################################################
+ *
+ *  Util functions
+ *
+ * ################################################################*/
 inline bool caseInsenstiveCharCompareN(char a, char b) {
 	return(toupper(a) == toupper(b));
 }
-
 bool AF_InputParmeterFile::CompareStrCaseInsensitive(const std::string& s1, const std::string& s2) {
 	return((s1.size() == s2.size()) &&
 			equal(s1.begin(), s1.end(), s2.begin(), caseInsenstiveCharCompareN));
 }
 
 
-//------------------------------------------------
-// parsing input parameters from a input file, and can retrive with Get member functions. 
+/*=================================================================
+ * Parse input parameters from a input file.
+ *
+ * What next:
+ *  Use Get...  member functions to retrive input parameters.
+ *
+ */
 void AF_InputParmeterFile::ParseByLine()
 {
 	if(didReadHeaderFile)
@@ -70,9 +92,8 @@ void AF_InputParmeterFile::ParseByLine()
 	while(headerFile.good() && isValidInput)
 	{
 		std::getline(headerFile, line);
-		#if 0 // DEBUG_TOOL_PARSER
+		#if DEBUG_TOOL_PARSER
 		std::cout << "DBG_PARSER " << __FUNCTION__ << ":" << __LINE__ << "> line: " <<  line << std::endl;
-		std::cout << "DBG_PARSER " << __FUNCTION__ << ":" << __LINE__ << "> line size: " <<  line.size() << std::endl;
 		#endif
 
 		// skip comment line
@@ -311,10 +332,17 @@ void AF_InputParmeterFile::ParseByLine()
  *	Functions to check input values
  */
 
-//--------------------
-// Return: 
-//	 true - OK 
-//	 false - Failed
+/*=================================================================
+ * Check if BF input file path is vaild
+ *
+ * Parameter:
+ *  - filePath [IN] : BF input file path
+ *
+ * Return:
+ *  - true -  valid
+ * -  false - not valid
+ */
+
 bool AF_InputParmeterFile::CheckInputBFdataPath(const std::string &filePath)
 {
 	bool ret = true;
@@ -330,10 +358,16 @@ bool AF_InputParmeterFile::CheckInputBFdataPath(const std::string &filePath)
 	return ret;
 }
 
-//--------------------
-// Return:
-//	 true - OK
-//	 false - Failed
+/*=================================================================
+ * Check if source instrument is same as target instrument
+ *
+ * Parameter:
+ *  - str [IN] : resolution string
+ *
+ * Return:
+ *  - true -  same
+ * -  false - not same
+ */
 bool AF_InputParmeterFile::IsSourceTargetInstrumentSame()
 {
 	bool ret = false;
@@ -350,10 +384,16 @@ bool AF_InputParmeterFile::IsSourceTargetInstrumentSame()
 }
 
 
-//--------------------
-// Return: 
-//	 true - OK 
-//	 false - Failed
+/*=================================================================
+ * Check Modis resolution input
+ *
+ * Parameter:
+ *  - str [IN] : resolution string
+ *
+ * Return:
+ *  - true - success
+ * -  false - fail
+ */
 bool AF_InputParmeterFile::CheckMODIS_Resolution(std::string &str)
 {
 	bool ret = true;
@@ -381,8 +421,8 @@ bool AF_InputParmeterFile::CheckMODIS_Resolution(std::string &str)
 }
 
 
-//===================================================
-// Functions to get input values
+//=============================================================
+// Functions to get input values from the input parameter file
 //
 std::string AF_InputParmeterFile::GetOuputFilePath()
 {
@@ -432,4 +472,193 @@ std::string AF_InputParmeterFile::GetMODIS_Resolution()
 std::vector<std::string>  AF_InputParmeterFile::GetMODIS_Bands()
 {
 	return modis_Bands;
+}
+
+/* #####################################
+ *
+ * Handling multi-value variables
+ *
+ * #####################################*/
+
+/*=========================================================
+ * Get multi-value variable names for the given instrument
+ *
+ * Parameters:
+ *  - instrument [IN] : name string of an instrument.
+ * Return:
+ *  - multi-value variable names as list of strings
+ */
+std::vector<std::string> & AF_InputParmeterFile::GetMultiVariableNames(std::string instrument)
+{
+    if(instrument == "MODIS") {
+        return modis_MultiVars;
+    }
+    else if(instrument == "MISR") {
+        return misr_MultiVars;
+    }
+    else {
+        std::cerr << __FUNCTION__ << ":" << __LINE__ << "> Error: incorrect instrument name '"<< instrument << "' is specified." << "\n";
+        exit(1);
+    }
+}
+
+
+/*=============================================================
+ * Debugging purpose. Show multi-value variable map contents
+ * for the given instrument.
+ *
+ * Parameters:
+ *  - instrument [IN]: name string of an instrument.
+ *  - trgInputMultiVarsMap [IN]: multi-value variable map
+ *  - mixType [IN]: "COMBINATION" or "PAIR"  Only support "COMBINATION" for now
+ */
+void AF_InputParmeterFile::DBG_displayinputListMap(std::string &instrument, std::map<std::string, strVec_t> &trgInputMultiVarsMap, const std::string &mixType)
+{
+    strVec_t multiVarNames;
+    //--------------------------------------------------------
+    // Use this for Single multi-value Variable case. MODIS
+
+    std::cout << "JKDBG> trgInputMultiVarsMap.size(): " << trgInputMultiVarsMap.size() << "\n";
+    // display strBuf with array index
+	if (instrument == "MODIS") {
+        multiVarNames = modis_MultiVars;
+
+        if (trgInputMultiVarsMap.size() != 1) {
+            std::cout << __FUNCTION__ << ":" << __LINE__ <<  "> Error building target input list with MODIS. There must be only one multi-value variable.\n";
+        }
+
+        std::cout << "Display trgInputMultiVarsMap with array index\n";
+        for(int i = 0; i < trgInputMultiVarsMap.size(); ++i)
+        {
+            for(int j = 0; j < trgInputMultiVarsMap[multiVarNames[i]].size(); ++j)
+                std::cout << trgInputMultiVarsMap[multiVarNames[i]][j]  << ", ";
+            std::cout << std::endl;
+        }
+    }
+    //--------------------------------------------------------
+    // Use these for two multi-value Variable case. MISR and ASTER
+	else if (instrument == "MISR") {
+        multiVarNames = misr_MultiVars;
+
+        if (trgInputMultiVarsMap.size() != 2) {
+            std::cout << __FUNCTION__ << ":" << __LINE__ <<  "> Error building target input list with MISR. There must be only two multi-value variables.\n";
+        }
+
+        std::string misrCamera;
+        std::string misrRadiance;
+        if(mixType == "PAIR") {
+            std::cout << "\nJKDBG> mixType == PAIR\n";
+            // TODO - Add a function to determine minNumVals among mutiple variables. Assume it's 2 for test purpose
+            int numCameras = trgInputMultiVarsMap[multiVarNames[0]].size();
+            int numRadiances = trgInputMultiVarsMap[multiVarNames[1]].size();
+            std::cout << "JKDBG> var0 num of cameras: " << numCameras << "\n";
+            std::cout << "JKDBG> var1 num of radiances: " << numRadiances << "\n";
+            int minNumVals = (numCameras < numRadiances) ? numCameras : numRadiances;
+            std::cout << "JKDBG> minNumVals: " << minNumVals << "\n";
+            for(int i=0; i<minNumVals ;i++) {
+                //std::cout << "JKDBG trgInputMultiVarsMap[multiVarNames[0]][" << i << "]" <<  trgInputMultiVarsMap[multiVarNames[0]][i] << "\n";
+                //std::cout << "JKDBG trgInputMultiVarsMap[multiVarNames[1]][" << i << "]" <<  trgInputMultiVarsMap[multiVarNames[1]][i] << "\n";
+                // misr camera
+                misrCamera = trgInputMultiVarsMap[multiVarNames[0]][i];
+                // misr rad
+                misrRadiance = trgInputMultiVarsMap[multiVarNames[1]][i];
+                std::cout << misrCamera << " : " << misrRadiance <<  "\n";
+            }
+        }
+        else if(mixType == "COMBINATION") {
+            std::cout << "\nJKDBG> mixType == COMBINATION\n";
+            for(int i=0; i<trgInputMultiVarsMap.size()-1;i++) {
+                for(int j=i; j <trgInputMultiVarsMap[multiVarNames[i]].size(); j++) {
+                    misrCamera = trgInputMultiVarsMap[multiVarNames[i]][j];
+                    for (int k=0; k<trgInputMultiVarsMap[multiVarNames[i+1]].size(); k++) {
+                        misrRadiance = trgInputMultiVarsMap[multiVarNames[i+1]][k];
+                        std::cout << misrCamera << ":" << misrRadiance << "\n";
+                    }
+                }
+            }
+        }
+    }
+}
+
+/*=============================================================================
+ * Build multi-value variables map which is generic container among instruments
+ *
+ * Parameters:
+ *  - instrument [IN] : name string of an instrument.
+ *  - trgInputMultiVarsMap [OUT] : multi-value variable map to build
+ */
+void AF_InputParmeterFile::BuildMultiValueVariableMap(std::string &instrument, std::map<std::string, strVec_t> &inputMultiVarsMap)
+{
+	std::vector<std::string> strVecTmp;
+
+	if (instrument == "MODIS") {
+    	#if DEBUG_TOOL_PARSER
+		if (targetInstrument == "MODIS")
+			std::cout << "DBG_PARSER " << __FUNCTION__ << ":" << __LINE__ << "> Target is MODIS\n";
+		if (sourceInstrument == "MODIS")
+			std::cout << "DBG_PARSER " << __FUNCTION__ << ":" << __LINE__ << "> Source is MODIS\n";
+		std::cout << "DBG_PARSER " << __FUNCTION__ << ":" << __LINE__ << "> modis_MultiVars.size(): " << modis_MultiVars.size() << "\n";
+		std::cout << "DBG_PARSER " << __FUNCTION__ << ":" << __LINE__ << "> modis_Bands.size(): " << modis_Bands.size() << "\n";
+		#endif
+		if (modis_MultiVars.size() != 1) {
+			std::cout << __FUNCTION__ << ":" << __LINE__ <<  "> Error building input list with MODIS. There must be only one multi-value variable.\n";
+		}
+
+		if(modis_MultiVars[0] == MODIS_BANDS) {
+			strVecTmp.clear();
+			for(int j=0; j < modis_Bands.size(); j++) {
+				strVecTmp.push_back(modis_Bands[j]);
+			}
+			inputMultiVarsMap[modis_MultiVars[0]] = strVecTmp;
+			/*---------------------
+			Ex:
+			inputMultiVarsMap["MODIS_BANDS"] = "{"8","9","10"}
+			inputMultiVarsMap.size() == 1
+			----------------------*/
+		}
+		else {
+			std::cout << __FUNCTION__ << ":" << __LINE__ <<  "> Error building input list with MODIS.\n";
+		}
+	}
+	else if (instrument == "MISR") {
+    	#if DEBUG_TOOL_PARSER
+		if (targetInstrument == "MISR")
+			std::cout << "DBG_PARSER " << __FUNCTION__ << ":" << __LINE__ << "> Target is MISR\n";
+		if (sourceInstrument == "MISR")
+			std::cout << "DBG_PARSER " << __FUNCTION__ << ":" << __LINE__ << "> Source is MISR\n";
+		std::cout << "DBG_PARSER " << __FUNCTION__ << ":" << __LINE__ << "> misr_MultiVars.size(): " << misr_MultiVars.size() << "\n";
+		#endif
+		if (misr_MultiVars.size() != 2) {
+			std::cout << __FUNCTION__ << ":" << __LINE__ <<  "> Error building input list with MISR. There must be only two multi-value variables.\n";
+		}
+
+		for(int i=0; i<misr_MultiVars.size(); i++) {
+			strVecTmp.clear();
+			if(misr_MultiVars[i] == MISR_CAMERA_ANGLE) {
+				for(int j=0; j < misr_CameraAngles.size(); j++) {
+					strVecTmp.push_back(misr_CameraAngles[j]);
+				}
+				inputMultiVarsMap[MISR_CAMERA_ANGLE] = strVecTmp;
+				/*---------------------
+				Ex:
+				inputMultiVarsMap["MISR_CAMERA_ANGLE"] = "{"AN","AF", ..}
+				inputMultiVarsMap.size() == 1
+				----------------------*/
+			}
+			else if(misr_MultiVars[i] == MISR_RADIANCE) {
+				for(int j=0; j < misr_Radiances.size(); j++) {
+					strVecTmp.push_back(misr_Radiances[j]);
+				}
+				inputMultiVarsMap[MISR_RADIANCE] = strVecTmp;
+				/*---------------------
+				Ex:
+				inputMultiVarsMap["MISR_RADIANCE"] = "{"BLUE","GREEN", ..}
+				inputMultiVarsMap.size() == 2
+				----------------------*/
+			}
+			else {
+				std::cout << __FUNCTION__ << ":" << __LINE__ <<  "> Error building target input list with MISR.\n";
+			}
+		}
+	}
 }
