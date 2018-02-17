@@ -11,7 +11,7 @@
  *
  * OUTPUT:
  *	A resampled orbit data file as HDF5 format which contains source and target 
- *	instrument data. 
+ *	instrument data paired with geo location data. 
  */
 
 #include <iostream>
@@ -52,6 +52,7 @@ void Usage(int &argc, char *argv[])
 				<< "   " << argv[0] << "  <parameter-input-file>\n";
 }
 
+
 /*##############################################################
  *
  * Generate Target instrument radiance to output file
@@ -61,7 +62,7 @@ void Usage(int &argc, char *argv[])
 /*==================================
  * Target output as MODIS 
  */
-static int af_WriteModisSingleRadianceAsTrg(hid_t outputFile, hid_t modisDatatype, hid_t modisFilespace, double* modisData, int modisDataSize, int bandIdx)
+static int af_WriteSingleRadiance_ModisAsTrg(hid_t outputFile, hid_t modisDatatype, hid_t modisFilespace, double* modisData, int modisDataSize, int bandIdx)
 {
 	#if DEBUG_TOOL
 	std::cout << "DBG_TOOL " << __FUNCTION__ << "> BEGIN \n";
@@ -139,7 +140,7 @@ done:
 }
 
 
-int af_ModisAsTrg_GenerateOutputCumulative(hid_t outputFile,hid_t srcFile, int trgCellNum, std::string modisResolution,  std::vector<std::string> &bands /* multi */)
+int af_GenerateOutputCumulative_ModisAsTrg(hid_t outputFile,hid_t srcFile, int trgCellNum, std::string modisResolution,  std::vector<std::string> &bands /* multi */)
 {
 	#if DEBUG_TOOL
 	std::cout << "DBG_TOOL " << __FUNCTION__ << "> BEGIN \n";
@@ -195,7 +196,7 @@ int af_ModisAsTrg_GenerateOutputCumulative(hid_t outputFile,hid_t srcFile, int t
 		#if DEBUG_ELAPSE_TIME
 		StartElapseTime();
 		#endif
-		af_WriteModisSingleRadianceAsTrg(outputFile, modisDatatype, modisDataspace,  modisSingleData, numCells, i);
+		af_WriteSingleRadiance_ModisAsTrg(outputFile, modisDatatype, modisDataspace,  modisSingleData, numCells, i);
 		#if DEBUG_ELAPSE_TIME
 		StopElapseTimeAndShow("DBG_TIME> Write target Modis single band data  DONE.");
 		#endif
@@ -254,7 +255,7 @@ int   AF_GenerateTargetRadiancesOutput(AF_InputParmeterFile &inputArgs, hid_t ou
 		// TODO_LATER - decide for loop inside or loop outside
 		#if 1 // case for looping inside
 		// [0] is cause we know modis has only one multi-value valriable at this point
-		af_ModisAsTrg_GenerateOutputCumulative(outputFile, srcFile, trgCellNum, inputArgs.GetMODIS_Resolution(), trgInputMultiVarsMap[multiVarNames[0]]);
+		af_GenerateOutputCumulative_ModisAsTrg(outputFile, srcFile, trgCellNum, inputArgs.GetMODIS_Resolution(), trgInputMultiVarsMap[multiVarNames[0]]);
 		#else // case for looping from outside
 		for(int j = 0; j < trgInputMultiVarsMap[multiVarNames[0]].size(); ++j) {
 			std::cout << trgInputMultiVarsMap[multiVarNames[0]][j]	<< ", ";
@@ -327,7 +328,7 @@ int   AF_GenerateTargetRadiancesOutput(AF_InputParmeterFile &inputArgs, hid_t ou
  * Source output as MODIS 
  */
 #if 0 // JK_TODO_LATER // place holder for Modis as source output
-static int af_WriteModisSingleRadianceAsSrc(hid_t outputFile, hid_t modisDatatype, hid_t modisFilespace, double* modisData, int modisDataSize, int bandIdx)
+static int af_WriteSingleRadiance_ModisAsSrc(hid_t outputFile, hid_t modisDatatype, hid_t modisFilespace, double* modisData, int modisDataSize, int bandIdx)
 {
 	#if DEBUG_TOOL
 	std::cout << "DBG_TOOL " << __FUNCTION__ << "> BEGIN \n";
@@ -405,7 +406,7 @@ done:
 }
 
 
-int af_ModisAsSrc_GenerateOutputCumulative(hid_t outputFile,hid_t srcFile, int singleDataSize, std::string modisResolution,  std::vector<std::string> &bands)
+int af_GenerateOutputCumulative_ModisAsSrc(hid_t outputFile,hid_t srcFile, int singleDataSize, std::string modisResolution,  std::vector<std::string> &bands)
 {
 	#if DEBUG_TOOL
 	std::cout << "DBG_TOOL " << __FUNCTION__ << "> BEGIN \n";
@@ -474,7 +475,7 @@ int af_ModisAsSrc_GenerateOutputCumulative(hid_t outputFile,hid_t srcFile, int s
 		#if DEBUG_ELAPSE_TIME
 		StartElapseTime();
 		#endif
-		af_WriteModisSingleRadianceAsSrc(outputFile, modisDatatype, modisDataspace,  modisSingleData, numCells, i);
+		af_WriteSingleRadiance_ModisAsSrc(outputFile, modisDatatype, modisDataspace,  modisSingleData, numCells, i);
 		#if DEBUG_ELAPSE_TIME
 		StopElapseTimeAndShow("DBG_TIME> Write target Modis single band data  DONE.");
 		#endif
@@ -496,7 +497,7 @@ int af_ModisAsSrc_GenerateOutputCumulative(hid_t outputFile,hid_t srcFile, int s
 /*==================================
  * Source output as MISR 
  */
-static int af_WriteMisrSingleRadianceAsSrc(hid_t outputFile, hid_t misrDatatype, hid_t misrFilespace, double* misrData, int misrDataSize, int cameraIdx, int radIdx)
+static int af_WriteSingleRadiance_MisrAsSrc(hid_t outputFile, hid_t misrDatatype, hid_t misrFilespace, double* misrData, int misrDataSize, int cameraIdx, int radIdx)
 {
 	#if DEBUG_TOOL
 	std::cout << "DBG_TOOL " << __FUNCTION__ << "> BEGIN \n";
@@ -577,7 +578,7 @@ done:
 }
 
 
-int af_MisrAsSrc_GenerateOutputCumulative(AF_InputParmeterFile &inputArgs, hid_t outputFile, int *targetNNsrcID,  int trgCellNum, hid_t srcFile, int srcCellNum, std::map<std::string, strVec_t> &srcInputMultiVarsMap)
+int af_GenerateOutputCumulative_MisrAsSrc(AF_InputParmeterFile &inputArgs, hid_t outputFile, int *targetNNsrcID,  int trgCellNum, hid_t srcFile, int srcCellNum, std::map<std::string, strVec_t> &srcInputMultiVarsMap)
 {
 	#if DEBUG_TOOL
 	std::cout << "DBG_TOOL " << __FUNCTION__ << "> BEGIN \n";
@@ -679,7 +680,7 @@ int af_MisrAsSrc_GenerateOutputCumulative(AF_InputParmeterFile &inputArgs, hid_t
 			#if DEBUG_ELAPSE_TIME
 			StartElapseTime();
 			#endif
-			af_WriteMisrSingleRadianceAsSrc(outputFile, misrDatatype, misrDataspace,  src_rad_out, numCells, j /*cameraIdx*/, i /*radIdx*/);
+			af_WriteSingleRadiance_MisrAsSrc(outputFile, misrDatatype, misrDataspace,  src_rad_out, numCells, j /*cameraIdx*/, i /*radIdx*/);
 			#if DEBUG_ELAPSE_TIME
 			StopElapseTimeAndShow("DBG_TIME> Write target Misr single band data  DONE.");
 			#endif
@@ -753,11 +754,11 @@ int   AF_GenerateSourceRadiancesOutput(AF_InputParmeterFile &inputArgs, hid_t ou
 		// TODO - decide for loop inside or loop outside
 		#if 1 // case for looping inside
 		// [0] is cause we know modis has only one multi-value valriable at this point
-		af_ModisAsSrc_GenerateOutputCumulative(outputFile, srcFile, trgCellNum, inputArgs.GetMODIS_Resolution(), srcInputMultiVarsMap[multiVarNames[0]]);
+		af_GenerateOutputCumulative_ModisAsSrc(outputFile, srcFile, trgCellNum, inputArgs.GetMODIS_Resolution(), srcInputMultiVarsMap[multiVarNames[0]]);
 		#else // case for looping from outside
 		for(int j = 0; j < srcInputMultiVarsMap[multiVarNames[0]].size(); ++j) {
 			std::cout << srcInputMultiVarsMap[multiVarNames[0]][j]	<< ", ";
-			af_ModisAsSrc_GenerateOutputCumulative(outputFile, srcFile, trgCellNum, srcInputMultiVarsMap[multiVarNames[0]][j] /* single Band*/);
+			af_GenerateOutputCumulative_ModisAsSrc(outputFile, srcFile, trgCellNum, srcInputMultiVarsMap[multiVarNames[0]][j] /* single Band*/);
 		}
 		std::cout << std::endl;
 		#endif
@@ -774,7 +775,7 @@ int   AF_GenerateSourceRadiancesOutput(AF_InputParmeterFile &inputArgs, hid_t ou
 			goto done;
 		}
 
-		ret = af_MisrAsSrc_GenerateOutputCumulative(inputArgs, outputFile, targetNNsrcID,  trgCellNum, srcFile, srcCellNum, srcInputMultiVarsMap);
+		ret = af_GenerateOutputCumulative_MisrAsSrc(inputArgs, outputFile, targetNNsrcID,  trgCellNum, srcFile, srcCellNum, srcInputMultiVarsMap);
 		if (ret == FAILED) {
 			std::cout << __FUNCTION__ << ":" << __LINE__ <<  "> returned failure.\n";
 			ret = FAILED;
