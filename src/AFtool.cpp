@@ -584,6 +584,8 @@ int af_GenerateOutputCumulative_MisrAsSrc(AF_InputParmeterFile &inputArgs, hid_t
 	std::cout << "DBG_TOOL " << __FUNCTION__ << "> BEGIN \n";
 	#endif
 
+	int ret = SUCCEED;
+
 	strVec_t multiVarNames = inputArgs.GetMultiVariableNames("MISR"); // misr_MultiVars;
 	std::string misrResolution = inputArgs.GetMISR_Resolution();
 
@@ -680,7 +682,10 @@ int af_GenerateOutputCumulative_MisrAsSrc(AF_InputParmeterFile &inputArgs, hid_t
 			#if DEBUG_ELAPSE_TIME
 			StartElapseTime();
 			#endif
-			af_WriteSingleRadiance_MisrAsSrc(outputFile, misrDatatype, misrDataspace,  src_rad_out, numCells, j /*cameraIdx*/, i /*radIdx*/);
+			ret = af_WriteSingleRadiance_MisrAsSrc(outputFile, misrDatatype, misrDataspace,  src_rad_out, numCells, j /*cameraIdx*/, i /*radIdx*/);
+			if (ret == FAILED) {
+				std::cerr << __FUNCTION__ << "> Error: returned fail.\n";
+			}
 			#if DEBUG_ELAPSE_TIME
 			StopElapseTimeAndShow("DBG_TIME> Write target Misr single band data  DONE.");
 			#endif
@@ -703,6 +708,8 @@ int af_GenerateOutputCumulative_MisrAsSrc(AF_InputParmeterFile &inputArgs, hid_t
 	#if DEBUG_TOOL
 	std::cout << "DBG_TOOL " << __FUNCTION__ << "> END \n";
 	#endif
+
+	return ret;
 }
 
 /*===============================================
