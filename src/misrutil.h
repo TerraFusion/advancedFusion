@@ -27,12 +27,13 @@ void getMISRFinalImageSize(int * pNRow, int * pNCol, int highResolution);
  *		Please use this function to generate the array for MISR output if block offset needs to apply
  * PARAMETERS:
  *	double * originalGrid:	the original input grids (radiance values in one band, latitude or longitude)
+ *	double * newGrid:	the output grid (the original input grid after block offseting)
  *	int highResolution: whether the MISR image is high or low resolution
  *		0: low resolution
  *		1: high resolution
- * Return:
- *	double *: the grid values after block offset
+ * Output:
+ *	double * newGrid:	the output grid (the original input grid after block offseting)
  */
-double * MISRBlockOffset(double * originalGrid, int highResolution);
+void MISRBlockOffset(double * originalGrid, double * newGrid, int highResolution);
 
 #endif

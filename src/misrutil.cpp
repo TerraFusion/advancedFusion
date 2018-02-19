@@ -49,13 +49,14 @@ void getMISRFinalImageSize(int * pNRow, int * pNCol, int highResolution)
  *		Please use this function to generate the array for MISR output if block offset needs to apply
  * PARAMETERS:
  *	double * originalGrid:	the original input grids (radiance values in one band, latitude or longitude)
+ *	double * newGrid:	the output grid (the original input grid after block offseting)
  *	int highResolution: whether the MISR image is high or low resolution
  *		0: low resolution
  *		1: high resolution
- * Return:
- *	double *: the grid values after block offset
+ * Output:
+ *	double * newGrid:	the output grid (the original input grid after block offseting)
  */
-double * MISRBlockOffset(double * originalGrid, int highResolution) 
+void MISRBlockOffset(double * originalGrid, double * newGrid, int highResolution) 
 {
 	int nRowPerBlock;
 	int nColPerBlock;
@@ -71,18 +72,11 @@ double * MISRBlockOffset(double * originalGrid, int highResolution)
 	//Finally, the minium prefix sum value is substracted from each element of the prefix sum to make all values non-negative
 	//The resulting list is the "int offsets[180]"
 
-	double * finalGrid;
-	if(NULL == (finalGrid = (double *)malloc(sizeof(double) * nRow * nCol))) 
-	{
-		printf("ERROR: Out of memory at line %d in file %s\n", __LINE__, __FILE__);
-		exit(1);
-	}
-
 	for(int i = 0; i < nRow; i++)
 	{
 		for(int j = 0; j < nCol; j ++)
 		{
-			finalGrid[i * nCol + j] = -999;
+			newGrid[i * nCol + j] = -999;
 		}
 	}
 
@@ -107,10 +101,7 @@ double * MISRBlockOffset(double * originalGrid, int highResolution)
 		blockID = i / nRowPerBlock;
 		for(int j = 0; j < nColPerBlock; j++ )
 		{
-			finalGrid[i * nCol + j + offsets[blockID]] = originalGrid[i * nColPerBlock + j];
+			newGrid[i * nCol + j + offsets[blockID]] = originalGrid[i * nColPerBlock + j];
 		}
 	}
-
-	return finalGrid;
-
 }

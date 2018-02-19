@@ -33,9 +33,11 @@ int main(int argc, char ** argv)
 	getMISRFinalImageSize(&nRow, &nCol, 0);
 	printf("Size of the final output image: %d * %d\n", nRow, nCol);
 
-	double * MISRFinal; 
+	double * MISRFinal;
 
-	MISRFinal = MISRBlockOffset(MISRRad, 0); 
+	MISRFinal = (double *) malloc(sizeof(double) * nRow * nCol);
+
+	MISRBlockOffset(MISRRad, MISRFinal, 0); 
 	
 	gdalIORegister();
 	writeGeoTiff("TestMISROffset.tif", MISRFinal, -1, 0, 0, (double)(nCol), (double)(nRow), 1);
