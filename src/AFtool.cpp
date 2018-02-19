@@ -52,6 +52,52 @@ void Usage(int &argc, char *argv[])
 				<< "   " << argv[0] << "  <parameter-input-file>\n";
 }
 
+/*##############################################################
+ *
+ * Util functions
+ *
+ *#############################################################*/
+
+int AF_GetGeolocationDataFromInstrument(std::string instrument, AF_InputParmeterFile &inputArgs, hid_t inputFile, double **latitude /*OUT*/, double **longitude /*OUT*/, int &cellNum /*OUT*/)
+{
+	#if DEBUG_TOOL
+	std::cout << "DBG_TOOL " << __FUNCTION__ << "> BEGIN \n";
+	#endif
+
+	if (instrument == "MODIS" ) {
+		std::string resolution = inputArgs.GetMODIS_Resolution();
+		#if DEBUG_TOOL
+		std::cout << "DBG_TOOL " << __FUNCTION__ << "> Modis resolution: " << resolution << "\n";
+		#endif
+		*latitude = get_modis_lat(inputFile, (char*) resolution.c_str(), &cellNum);
+		*longitude = get_modis_long(inputFile, (char*) resolution.c_str(), &cellNum);
+	}
+	else if (instrument == "MISR") {
+		std::string resolution = inputArgs.GetMISR_Resolution();
+		*latitude = get_misr_lat(inputFile, (char*) resolution.c_str(), &cellNum);
+		*longitude = get_misr_long(inputFile, (char*) resolution.c_str(), &cellNum);
+		#if DEBUG_TOOL
+		std::cout << "DBG_TOOL " << __FUNCTION__ << "> Misr resolution: " << resolution << ", cellNum: " << cellNum << "\n";
+		#endif
+	}
+	#if 0 // TODO LATER - place holder
+	else if (instrument == "ASTER" ) {
+		//Get ASTER input parameters EX: "TIR", "ImageData10"
+		//*latitude = get_ast_lat(inputFile, "TIR", "ImageData10", &cellNum);
+		//*longitude = get_ast_long(inputFile, "TIR", "ImageData10", &cellNum);
+	}
+	#endif
+	else {
+		std::cerr << __FUNCTION__ << "> Error: invalid instrument - " << instrument << "\n";
+		return FAILED;
+	}
+
+	#if DEBUG_TOOL
+	std::cout << "DBG_TOOL " << __FUNCTION__ << "> END \n";
+	#endif
+	
+	return SUCCEED;
+}
 
 /*##############################################################
  *
@@ -859,53 +905,51 @@ int main(int argc, char *argv[])
 	}
 	
 	/* ---------------------------------------------------
-	 * Handle Source instrument latitude and longitude
+	 * Get Source instrument latitude and longitude
 	 */
 	std::cout << "\nGetting source instrument latitude & longitude data...\n";
-	std::string misr_resolution = inputArgs.GetMISR_Resolution();
-	#if DEBUG_TOOL
-	std::cout << "DBG_TOOL main> misr_resolution: " << misr_resolution << std::endl;
-	#endif
 	int srcCellNum;
 	double* srcLatitude = NULL;
 	double* srcLongitude = NULL;
 	#if DEBUG_ELAPSE_TIME
 	StartElapseTime();
 	#endif
-	srcLatitude = get_misr_lat(src_file, (char*)misr_resolution.c_str(), &srcCellNum);
-	srcLongitude = get_misr_long(src_file, (char*)misr_resolution.c_str(), &srcCellNum);
-	#if DEBUG_TOOL
-	std::cout << "DBG_TOOL main> src lat: " << *srcLatitude << "\n";
-	std::cout << "DBG_TOOL main> src lon: " << *srcLongitude << "\n";
-	#endif
+	ret = AF_GetGeolocationDataFromInstrument(srcInstrument, inputArgs, src_file, &srcLatitude /*OUT*/, &srcLongitude /*OUT*/, srcCellNum /*OUT*/);
+	if (ret == FAILED) {
+		std::cerr << __FUNCTION__ << "> Error getting geolocation data from source instrument - " << srcInstrument << ".\n";
+		return FAILED;
+	}
 	#if DEBUG_ELAPSE_TIME
-	StopElapseTimeAndShow("DBG_TIME> get misr lat/long DONE.");
+	StopElapseTimeAndShow("DBG_TIME> get source lat/long DONE.");
+	#endif
+	#if DEBUG_TOOL
+	std::cout << "DBG_TOOL main> srcCellNum: " <<  srcCellNum << "\n";
 	#endif
 
 	/* ---------------------------------------------------
-	 * Handle Target instrument latitude and longitude
+	 * Get Target instrument latitude and longitude
 	 */
-	std::string modis_resolution = inputArgs.GetMODIS_Resolution();
-	std::cout << "\nGetting target instrument latitude & longitude data...\n";
-	#if DEBUG_TOOL
-	std::cout << "DBG_TOOL main> modis_resolution: " << modis_resolution << std::endl;
-	#endif
 	int trgCellNum;
 	double* targetLatitude = NULL;
 	double* targetLongitude = NULL;
 	#if DEBUG_ELAPSE_TIME
 	StartElapseTime();
 	#endif
-	targetLatitude = get_modis_lat(src_file, (char*)modis_resolution.c_str(), &trgCellNum);
-	targetLongitude = get_modis_long(src_file, (char*)modis_resolution.c_str(), &trgCellNum);
-	#if DEBUG_TOOL
-	std::cout << "DBG_TOOL main> trg lat: " << *targetLatitude << "\n";
-	std::cout << "DBG_TOOL main> trg lon: " << *targetLongitude << "\n";
-	#endif
+	ret = AF_GetGeolocationDataFromInstrument(trgInstrument, inputArgs, src_file, &targetLatitude /*OUT*/, &targetLongitude /*OUT*/, trgCellNum /*OUT*/);
+	if (ret == FAILED) {
+		std::cerr << __FUNCTION__ << "> Error getting geolocation data from target instrument - " << trgInstrument << ".\n";
+		return FAILED;
+	}
 	#if DEBUG_ELAPSE_TIME
-	StopElapseTimeAndShow("DBG_TIME> get modis lat/long DONE.");
+	StopElapseTimeAndShow("DBG_TIME> get source lat/long DONE.");
+	#endif
+	#if DEBUG_TOOL
+	std::cout << "DBG_TOOL main> trgCellNum: " <<  trgCellNum << "\n";
 	#endif
 	
+	/* ---------------------------------------------------
+	 * Output Target instrument latitude and longitude
+	 */
 	std::cout << "\nWriting target geolocation data...\n";
 	#if DEBUG_ELAPSE_TIME
 	StartElapseTime();
@@ -931,6 +975,10 @@ int main(int argc, char *argv[])
 	StopElapseTimeAndShow("DBG_TIME> write geo longitude data DONE.");
 	#endif
 
+
+	/* -----------------------------------------------------------
+	 * Calculate nearest neighbot source over target geolocation
+	 */
 	int * targetNNsrcID = NULL;
 	targetNNsrcID = new int [trgCellNum];
 	
@@ -952,6 +1000,7 @@ int main(int argc, char *argv[])
 	if(targetLongitude)
 		free(targetLongitude);
 	
+
 	/*------------------------------------------------------
 	 * Target instrument: Generate radiance to output file
 	 */
