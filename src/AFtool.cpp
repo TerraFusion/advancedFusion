@@ -31,18 +31,14 @@
 #define SUCCEED 0
 #define FAILED -1
 
-const hsize_t RESAMPLE_MODIS_DATA_WIDTH = 1354; // 1KM
-//const hsize_t RESAMPLE_MODIS_DATA_WIDTH = 2708; // 500m
-//const hsize_t RESAMPLE_MODIS_DATA_WIDTH = 5416; // 250m
-const hsize_t RESAMPLE_MISR_DATA_WIDTH = 1354;
 
 void DisplayTimeval (struct timeval *tv)
 {
 	long milliseconds;
 
-	/* Compute milliseconds from microseconds.  */
+	/* Compute milliseconds from microseconds.	*/
 	milliseconds = (*tv).tv_usec / 1000;
-	/* Print the formatted time, in seconds, followed by a decimal point and the milliseconds.  */
+	/* Print the formatted time, in seconds, followed by a decimal point and the milliseconds.	*/
 	printf ("%ld.%03ld\n", (*tv).tv_sec, milliseconds);
 }
 
@@ -99,6 +95,35 @@ int AF_GetGeolocationDataFromInstrument(std::string instrument, AF_InputParmeter
 	return SUCCEED;
 }
 
+
+
+/*=====================================
+ * Get output width of an instrument
+ */
+int af_GetWidthForOutput(std::string instrument, AF_InputParmeterFile &inputArgs)
+{
+	if (instrument == "MODIS") {
+		std::string resolution = inputArgs.GetMODIS_Resolution();
+		if (resolution == "_1KM") {
+			return 1354;
+		}
+		else if (resolution == "_500m") {
+			return 2708;  // 1354 * 2
+		}
+		else if (resolution == "_250m") {
+			return 5416;  // 1354 * 4
+		}
+	}
+	#if 0 // TODO - place holder 
+	else if (instrument == "MISR") {
+		Get Misr resolution
+		Get Misr camera
+		Get Misr radiance
+		Figure out return value by these inputs
+	}
+	#endif
+}
+
 /*##############################################################
  *
  * Generate Target instrument radiance to output file
@@ -108,7 +133,7 @@ int AF_GetGeolocationDataFromInstrument(std::string instrument, AF_InputParmeter
 /*==================================
  * Target output as MODIS 
  */
-static int af_WriteSingleRadiance_ModisAsTrg(hid_t outputFile, hid_t modisDatatype, hid_t modisFilespace, double* modisData, int modisDataSize, int bandIdx)
+static int af_WriteSingleRadiance_ModisAsTrg(hid_t outputFile, hid_t modisDatatype, hid_t modisFilespace, double* modisData, int modisDataSize, int outputWidth, int bandIdx)
 {
 	#if DEBUG_TOOL
 	std::cout << "DBG_TOOL " << __FUNCTION__ << "> BEGIN \n";
@@ -140,14 +165,14 @@ static int af_WriteSingleRadiance_ModisAsTrg(hid_t outputFile, hid_t modisDataty
 	hsize_t dim2dMem[2];
 	hsize_t start2dMem[2];
 	hsize_t count2dMem[2];
-	dim2dMem[0] = modisDataSize/RESAMPLE_MODIS_DATA_WIDTH; // y
-	dim2dMem[1] = RESAMPLE_MODIS_DATA_WIDTH; // x
+	dim2dMem[0] = modisDataSize/outputWidth; // y
+	dim2dMem[1] = outputWidth; // x
 	hid_t memspace = H5Screate_simple(ranksMem, dim2dMem, NULL);
 
 	start2dMem[0] = 0; // y
 	start2dMem[1] = 0; // x
-	count2dMem[0] = modisDataSize/RESAMPLE_MODIS_DATA_WIDTH; // y
-	count2dMem[1] = RESAMPLE_MODIS_DATA_WIDTH; // x
+	count2dMem[0] = modisDataSize/outputWidth; // y
+	count2dMem[1] = outputWidth; // x
 
 	status = H5Sselect_hyperslab(memspace, H5S_SELECT_SET, start2dMem, NULL, count2dMem, NULL);
 
@@ -159,8 +184,8 @@ static int af_WriteSingleRadiance_ModisAsTrg(hid_t outputFile, hid_t modisDataty
 	star3dFile[1] = 0; // y
 	star3dFile[2] = 0; // x
 	count3dFile[0] = 1;
-	count3dFile[1] = modisDataSize/RESAMPLE_MODIS_DATA_WIDTH; // y
-	count3dFile[2] = RESAMPLE_MODIS_DATA_WIDTH;  // x
+	count3dFile[1] = modisDataSize/outputWidth; // y
+	count3dFile[2] = outputWidth;  // x
 
 	status = H5Sselect_hyperslab(modisFilespace, H5S_SELECT_SET, star3dFile, NULL, count3dFile, NULL);
 	if(status < 0) {
@@ -186,11 +211,15 @@ done:
 }
 
 
-int af_GenerateOutputCumulative_ModisAsTrg(hid_t outputFile,hid_t srcFile, int trgCellNum, std::string modisResolution,  std::vector<std::string> &bands /* multi */)
+int af_GenerateOutputCumulative_ModisAsTrg(AF_InputParmeterFile &inputArgs, hid_t outputFile,hid_t srcFile, int trgCellNum, std::map<std::string, strVec_t> &inputMultiVarsMap)
 {
 	#if DEBUG_TOOL
 	std::cout << "DBG_TOOL " << __FUNCTION__ << "> BEGIN \n";
 	#endif
+
+	std::string modisResolution = inputArgs.GetMODIS_Resolution();
+	// get multi-value variable for modis
+	strVec_t bands = inputMultiVarsMap[MODIS_BANDS];
 
 	// data type
 	hid_t modisDatatype = H5Tcopy(H5T_NATIVE_DOUBLE);
@@ -201,10 +230,14 @@ int af_GenerateOutputCumulative_ModisAsTrg(hid_t outputFile,hid_t srcFile, int t
 	}
 
 
+	/*----------------------------
+	 * create data space
+	 */
+	int targetOutputWidth = af_GetWidthForOutput(inputArgs.GetTargetInstrument() /* MODIS */, inputArgs);
 	hsize_t modis_dim[3];
 	modis_dim[0] = bands.size();
-	modis_dim[1] = trgCellNum/RESAMPLE_MODIS_DATA_WIDTH; // NY;
-	modis_dim[2] = RESAMPLE_MODIS_DATA_WIDTH; // NX;
+	modis_dim[1] = trgCellNum/targetOutputWidth; // NY;
+	modis_dim[2] = targetOutputWidth; // NX;
 	hid_t modisDataspace = H5Screate_simple(3, modis_dim, NULL);
 
 	int numCells;
@@ -242,7 +275,7 @@ int af_GenerateOutputCumulative_ModisAsTrg(hid_t outputFile,hid_t srcFile, int t
 		#if DEBUG_ELAPSE_TIME
 		StartElapseTime();
 		#endif
-		af_WriteSingleRadiance_ModisAsTrg(outputFile, modisDatatype, modisDataspace,  modisSingleData, numCells, i);
+		af_WriteSingleRadiance_ModisAsTrg(outputFile, modisDatatype, modisDataspace,  modisSingleData, numCells, targetOutputWidth, i);
 		#if DEBUG_ELAPSE_TIME
 		StopElapseTimeAndShow("DBG_TIME> Write target Modis single band data  DONE.");
 		#endif
@@ -258,6 +291,7 @@ int af_GenerateOutputCumulative_ModisAsTrg(hid_t outputFile,hid_t srcFile, int t
 	std::cout << "DBG_TOOL " << __FUNCTION__ << "> END \n";
 	#endif
 }
+
 
 int   AF_GenerateTargetRadiancesOutput(AF_InputParmeterFile &inputArgs, hid_t outputFile, int trgCellNum, hid_t srcFile, std::map<std::string, strVec_t> & trgInputMultiVarsMap)
 {
@@ -300,8 +334,7 @@ int   AF_GenerateTargetRadiancesOutput(AF_InputParmeterFile &inputArgs, hid_t ou
 
 		// TODO_LATER - decide for loop inside or loop outside
 		#if 1 // case for looping inside
-		// [0] is cause we know modis has only one multi-value valriable at this point
-		af_GenerateOutputCumulative_ModisAsTrg(outputFile, srcFile, trgCellNum, inputArgs.GetMODIS_Resolution(), trgInputMultiVarsMap[multiVarNames[0]]);
+		af_GenerateOutputCumulative_ModisAsTrg(inputArgs, outputFile, srcFile, trgCellNum, trgInputMultiVarsMap);
 		#else // case for looping from outside
 		for(int j = 0; j < trgInputMultiVarsMap[multiVarNames[0]].size(); ++j) {
 			std::cout << trgInputMultiVarsMap[multiVarNames[0]][j]	<< ", ";
@@ -543,7 +576,7 @@ int af_GenerateOutputCumulative_ModisAsSrc(hid_t outputFile,hid_t srcFile, int s
 /*==================================
  * Source output as MISR 
  */
-static int af_WriteSingleRadiance_MisrAsSrc(hid_t outputFile, hid_t misrDatatype, hid_t misrFilespace, double* misrData, int misrDataSize, int cameraIdx, int radIdx)
+static int af_WriteSingleRadiance_MisrAsSrc(hid_t outputFile, hid_t misrDatatype, hid_t misrFilespace, double* misrData, int misrDataSize, int outputWidth, int cameraIdx, int radIdx)
 {
 	#if DEBUG_TOOL
 	std::cout << "DBG_TOOL " << __FUNCTION__ << "> BEGIN \n";
@@ -575,14 +608,14 @@ static int af_WriteSingleRadiance_MisrAsSrc(hid_t outputFile, hid_t misrDatatype
 	hsize_t dim2dMem[ranksMem];
 	hsize_t start2dMem[ranksMem];
 	hsize_t count2dMem[ranksMem];
-	dim2dMem[0] = misrDataSize/RESAMPLE_MISR_DATA_WIDTH; // y
-	dim2dMem[1] = RESAMPLE_MISR_DATA_WIDTH; // x
+	dim2dMem[0] = misrDataSize/outputWidth; // y
+	dim2dMem[1] = outputWidth; // x
 	hid_t memspace = H5Screate_simple(ranksMem, dim2dMem, NULL);
 
 	start2dMem[0] = 0; // y
 	start2dMem[1] = 0; // x
-	count2dMem[0] = misrDataSize/RESAMPLE_MISR_DATA_WIDTH; // y
-	count2dMem[1] = RESAMPLE_MISR_DATA_WIDTH; // x
+	count2dMem[0] = misrDataSize/outputWidth; // y
+	count2dMem[1] = outputWidth; // x
 
 	status = H5Sselect_hyperslab(memspace, H5S_SELECT_SET, start2dMem, NULL, count2dMem, NULL);
 
@@ -597,8 +630,8 @@ static int af_WriteSingleRadiance_MisrAsSrc(hid_t outputFile, hid_t misrDatatype
 	startFile[3] = 0; // x
 	countFile[0] = 1;
 	countFile[1] = 1;
-	countFile[2] = misrDataSize/RESAMPLE_MISR_DATA_WIDTH; // y
-	countFile[3] = RESAMPLE_MISR_DATA_WIDTH;  // x
+	countFile[2] = misrDataSize/outputWidth; // y
+	countFile[3] = outputWidth;  // x
 
 	status = H5Sselect_hyperslab(misrFilespace, H5S_SELECT_SET, startFile, NULL, countFile, NULL);
 	if(status < 0) {
@@ -648,13 +681,16 @@ int af_GenerateOutputCumulative_MisrAsSrc(AF_InputParmeterFile &inputArgs, hid_t
 	}
 
 
-	// create space
+	/*-----------------
+	 * create space
+	 */
 	const int rankSpace=4;
 	hsize_t misrDims[rankSpace];
+	int srcOutputWidth = af_GetWidthForOutput(inputArgs.GetTargetInstrument() /* MISR */, inputArgs);
 	misrDims[0] = cameras.size();
 	misrDims[1] = radiances.size();
-	misrDims[2] = trgCellNum/RESAMPLE_MISR_DATA_WIDTH; // NY;
-	misrDims[3] = RESAMPLE_MISR_DATA_WIDTH; // NX;
+	misrDims[2] = trgCellNum/srcOutputWidth; // NY;
+	misrDims[3] = srcOutputWidth; // NX;
 	hid_t misrDataspace = H5Screate_simple(rankSpace, misrDims, NULL);
 
 	int numCells;
@@ -691,7 +727,7 @@ int af_GenerateOutputCumulative_MisrAsSrc(AF_InputParmeterFile &inputArgs, hid_t
 			std::cout << "DBG_TOOL " << __FUNCTION__ << "> numCells: " << numCells << "\n";
 			#endif
 			#if DEBUG_ELAPSE_TIME
-			StopElapseTimeAndShow("DBG_TIME> Read target Misr single band data  DONE.");
+			StopElapseTimeAndShow("DBG_TIME> Read target Misr single band data	DONE.");
 			#endif
 	
 			//-------------------------------------------------
@@ -700,7 +736,7 @@ int af_GenerateOutputCumulative_MisrAsSrc(AF_InputParmeterFile &inputArgs, hid_t
 			int new_src_size = trgCellNum;
 			//Interpolating
 			std::string resampleMethod =  inputArgs.GetResampleMethod();
-			std::cout << "\nInterpolating using '" << resampleMethod << "' method...\n";
+			std::cout << "\nInterpolating using '" << resampleMethod << "' method for " << cameras[j] << " : " << radiances[i] << ".\n";
 			#if DEBUG_ELAPSE_TIME
 			StartElapseTime();
 			#endif
@@ -728,7 +764,7 @@ int af_GenerateOutputCumulative_MisrAsSrc(AF_InputParmeterFile &inputArgs, hid_t
 			#if DEBUG_ELAPSE_TIME
 			StartElapseTime();
 			#endif
-			ret = af_WriteSingleRadiance_MisrAsSrc(outputFile, misrDatatype, misrDataspace,  src_rad_out, numCells, j /*cameraIdx*/, i /*radIdx*/);
+			ret = af_WriteSingleRadiance_MisrAsSrc(outputFile, misrDatatype, misrDataspace,  src_rad_out, numCells, srcOutputWidth, j /*cameraIdx*/, i /*radIdx*/);
 			if (ret == FAILED) {
 				std::cerr << __FUNCTION__ << "> Error: returned fail.\n";
 			}
@@ -741,10 +777,10 @@ int af_GenerateOutputCumulative_MisrAsSrc(AF_InputParmeterFile &inputArgs, hid_t
 			// free memory
 			if (misrSingleData)
 				free(misrSingleData);
-	    	if(src_rad_out)
-	        	delete [] src_rad_out;
-	    	if (nsrcPixels)
-	        	delete [] nsrcPixels;
+			if(src_rad_out)
+				delete [] src_rad_out;
+			if (nsrcPixels)
+				delete [] nsrcPixels;
 		} // i loop
 	} // j loop
 
@@ -769,7 +805,7 @@ int   AF_GenerateSourceRadiancesOutput(AF_InputParmeterFile &inputArgs, hid_t ou
 	#endif
 	int ret = SUCCEED;
 
-	#if 0 // JK_TODO_LATER - change to  "/Source/Data_Fields"
+	#if 0 // JK_TODO_LATER - change to	"/Source/Data_Fields"
 	//----------------------------------
 	// prepare group of dataset
 	printf("writing data fields\n");
@@ -954,7 +990,8 @@ int main(int argc, char *argv[])
 	#if DEBUG_ELAPSE_TIME
 	StartElapseTime();
 	#endif
-	int lat_status =  af_write_mm_geo(output_file, 0, targetLatitude, trgCellNum);
+	int trgOutputWidth = af_GetWidthForOutput(inputArgs.GetTargetInstrument(),  inputArgs);
+	int lat_status =  af_write_mm_geo(output_file, 0, targetLatitude, trgCellNum, trgOutputWidth);
 	if(lat_status < 0) {
 		std::cerr << "Error: writing latitude geolocation.\n";
 		return FAILED;
@@ -966,7 +1003,7 @@ int main(int argc, char *argv[])
 	#if DEBUG_ELAPSE_TIME
 	StartElapseTime();
 	#endif
-	int long_status = af_write_mm_geo(output_file, 1, targetLongitude, trgCellNum);
+	int long_status = af_write_mm_geo(output_file, 1, targetLongitude, trgCellNum, trgOutputWidth);
 	if(long_status < 0) {
 		std::cerr << "Error: writing longitude geolocation.\n";
 		return FAILED;

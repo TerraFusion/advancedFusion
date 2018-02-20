@@ -27,7 +27,7 @@ double* af_read(hid_t file, char* dataset_name);
 double* af_read_hyperslab(hid_t file, char*dataset_name, int x_offset, int y_offset, int z_offset);
 hsize_t* af_read_size(hid_t file, char* dataset_name);
 int af_write_misr_on_modis(hid_t output_file, double* misr_out, double* modis, int modis_size, int modis_band_size, int misr_size);
-int af_write_mm_geo(hid_t output_file, int geo_flag, double* geo_data, int geo_size);
+int af_write_mm_geo(hid_t output_file, int geo_flag, double* geo_data, int geo_size, int outputWidth);
 
 //Instrument data retrieval functions
 double* get_misr_rad(hid_t file, char* camera_angle, char* resolution, char* radiance, int* size);

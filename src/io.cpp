@@ -2253,7 +2253,7 @@ int af_write_misr_on_modis(hid_t output_file, double* misr_out, double* modis, i
 */
 
 
-int af_write_mm_geo(hid_t output_file, int geo_flag, double* geo_data, int geo_size)
+int af_write_mm_geo(hid_t output_file, int geo_flag, double* geo_data, int geo_size, int outputWidth)
 {
 	//Check if geolocation group exists --- TODO - change it to H5Lexists
 	#if DEBUG_IO
@@ -2281,8 +2281,8 @@ int af_write_mm_geo(hid_t output_file, int geo_flag, double* geo_data, int geo_s
 		d_name = "/Geolocation/Longitude";
 	}
 	hsize_t     geo_dim[2];
-	geo_dim[0] = (geo_size) / 1354;
-	geo_dim[1] = 1354;
+	geo_dim[0] = (geo_size) / outputWidth;
+	geo_dim[1] = outputWidth;
 	hid_t geo_dataspace = H5Screate_simple(2, geo_dim, NULL);
 	hid_t geo_datatype = H5Tcopy(H5T_NATIVE_DOUBLE);
     herr_t geo_status = H5Tset_order(geo_datatype, H5T_ORDER_LE);  
