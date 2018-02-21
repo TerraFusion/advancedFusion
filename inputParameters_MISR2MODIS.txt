@@ -5,29 +5,29 @@
 # Refer to below specification.
 #
 # INPUT_FILE_PATH: <specify a full path to BF HDF5 data file>
-# OUTPUT_FILE_PATH: <specify a path to result AF file>
-# RESAMPLE_METHOD: nnInterpolate
+# OUTPUT_FILE_PATH: <specify a path to result AF HDF5 file>
+# RESAMPLE_METHOD: one of < nnInterpolate or summaryInterpolate >
 #
 # SOURCE_INSTRUMENT: MISR
-# MISR_RESOLUTION: < L or H >
-# MISR_CAMERA_ANGLE: < AN, AA, AF, BA, BF, CA, CF, DA or DF >
-# MISR_RADIANCE: < Blue_Radiance, Green_Radiance, Red_Radiance or NIR_Radiance >
+# MISR_RESOLUTION: one of < L or H >
+# MISR_CAMERA_ANGLE: any of < AN AA AF BA BF CA CF DA DF >
+# MISR_RADIANCE: any of < Blue_Radiance Green_Radiance Red_Radiance NIR_Radiance >
 #
 # TARGET_INSTRUMENT: MODIS
-# MODIS_RESOLUTION: < 1KM, 500M or 250M >
-# MODIS_BANDS: < 1 ~ 36 >
+# MODIS_RESOLUTION: one of < 1KM 500M or 250M >
+# MODIS_BANDS: any of < 1 ~ 36 >
 #=============================================================
 
-INPUT_FILE_PATH: /u/staff/jkm/DATA/TASKS/TerraFusion/Data/TERRA_BF_L1B_O69626_20130119123228_F000_V000.h5
-OUTPUT_FILE_PATH: misr_on_modis_3N_Test.h5
+INPUT_FILE_PATH: /projects/sciteam/jq0/TerraFusion/testFiles/TERRA_BF_L1B_O69400_20130104000439_F000_V000.h5
+OUTPUT_FILE_PATH: misr_on_modis_SrcLowAnAfBlueGreen_Trg1Km89.h5
 
 RESAMPLE_METHOD: nnInterpolate
 
 SOURCE_INSTRUMENT: MISR
 MISR_RESOLUTION: L
-MISR_CAMERA_ANGLE: AN
-MISR_RADIANCE: Blue_Radiance
+MISR_CAMERA_ANGLE: AN AF
+MISR_RADIANCE: Blue_Radiance Green_Radiance
 
 TARGET_INSTRUMENT: MODIS
 MODIS_RESOLUTION: 1KM
-MODIS_BANDS: 8
+MODIS_BANDS: 8 9

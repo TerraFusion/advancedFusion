@@ -245,7 +245,7 @@ int af_GenerateOutputCumulative_ModisAsTrg(AF_InputParmeterFile &inputArgs, hid_
 	std::vector<std::string> singleBandVec;
 	for (int i=0; i< bands.size(); i++) {
 		#if DEBUG_TOOL
-		std::cout << "DBG_TOOL " << __FUNCTION__ << "> bands[" << i << "]" << bands[i] << "\n";
+		std::cout << "DBG_TOOL " << __FUNCTION__ << "> bands[" << i << "]: " << bands[i] << "\n";
 		#endif
 		// insert to only begin
 		singleBandVec.insert(singleBandVec.begin(), bands[i]);
@@ -576,7 +576,7 @@ int af_GenerateOutputCumulative_ModisAsSrc(hid_t outputFile,hid_t srcFile, int s
 /*==================================
  * Source output as MISR 
  */
-static int af_WriteSingleRadiance_MisrAsSrc(hid_t outputFile, hid_t misrDatatype, hid_t misrFilespace, double* misrData, int misrDataSize, int outputWidth, int cameraIdx, int radIdx)
+static int af_WriteSingleRadiance_MisrAsSrc(hid_t outputFile, hid_t misrDatatype, hid_t misrFilespace, double* processedData, int trgCellNum, int outputWidth, int cameraIdx, int radIdx)
 {
 	#if DEBUG_TOOL
 	std::cout << "DBG_TOOL " << __FUNCTION__ << "> BEGIN \n";
@@ -608,20 +608,20 @@ static int af_WriteSingleRadiance_MisrAsSrc(hid_t outputFile, hid_t misrDatatype
 	hsize_t dim2dMem[ranksMem];
 	hsize_t start2dMem[ranksMem];
 	hsize_t count2dMem[ranksMem];
-	dim2dMem[0] = misrDataSize/outputWidth; // y
+	dim2dMem[0] = trgCellNum/outputWidth; // y
 	dim2dMem[1] = outputWidth; // x
 	hid_t memspace = H5Screate_simple(ranksMem, dim2dMem, NULL);
 
 	start2dMem[0] = 0; // y
 	start2dMem[1] = 0; // x
-	count2dMem[0] = misrDataSize/outputWidth; // y
+	count2dMem[0] = trgCellNum/outputWidth; // y
 	count2dMem[1] = outputWidth; // x
 
 	status = H5Sselect_hyperslab(memspace, H5S_SELECT_SET, start2dMem, NULL, count2dMem, NULL);
 
 	//------------------------------
-	// select filespace
-	const int ranksFile=4;
+	// select filespace for misr
+	const int ranksFile=4; // [cameras][radiances][y][x]
 	hsize_t startFile[ranksFile];
 	hsize_t countFile[ranksFile];
 	startFile[0] = cameraIdx;
@@ -630,7 +630,7 @@ static int af_WriteSingleRadiance_MisrAsSrc(hid_t outputFile, hid_t misrDatatype
 	startFile[3] = 0; // x
 	countFile[0] = 1;
 	countFile[1] = 1;
-	countFile[2] = misrDataSize/outputWidth; // y
+	countFile[2] = trgCellNum/outputWidth; // y
 	countFile[3] = outputWidth;  // x
 
 	status = H5Sselect_hyperslab(misrFilespace, H5S_SELECT_SET, startFile, NULL, countFile, NULL);
@@ -640,7 +640,7 @@ static int af_WriteSingleRadiance_MisrAsSrc(hid_t outputFile, hid_t misrDatatype
 		goto done;
 	}
 
-	status = H5Dwrite(misr_dataset, H5T_NATIVE_DOUBLE, memspace, misrFilespace, H5P_DEFAULT, misrData);
+	status = H5Dwrite(misr_dataset, H5T_NATIVE_DOUBLE, memspace, misrFilespace, H5P_DEFAULT, processedData);
 	if(status < 0) {
 		std::cerr << __FUNCTION__ << ":" << __LINE__ <<  "> Error: H5Dwrite for Misr target .\n";
 		ret = -1;
@@ -681,18 +681,22 @@ int af_GenerateOutputCumulative_MisrAsSrc(AF_InputParmeterFile &inputArgs, hid_t
 	}
 
 
-	/*-----------------
-	 * create space
+	/*------------------------
+	 * create space for misr
 	 */
-	const int rankSpace=4;
+	const int rankSpace=4;  // [cameras][radiances][y][x]
 	hsize_t misrDims[rankSpace];
-	int srcOutputWidth = af_GetWidthForOutput(inputArgs.GetTargetInstrument() /* MISR */, inputArgs);
+	int srcOutputWidth = af_GetWidthForOutput(inputArgs.GetTargetInstrument() /*target base*/, inputArgs);
 	misrDims[0] = cameras.size();
 	misrDims[1] = radiances.size();
 	misrDims[2] = trgCellNum/srcOutputWidth; // NY;
 	misrDims[3] = srcOutputWidth; // NX;
 	hid_t misrDataspace = H5Screate_simple(rankSpace, misrDims, NULL);
 
+	#if DEBUG_TOOL
+	std::cout << "DBG_TOOL " << __FUNCTION__ << "> trgCellNum: " << trgCellNum << ", srcCellNum: " << srcCellNum << "\n";
+	std::cout << "DBG_TOOL " << __FUNCTION__ << "> srcOutputWidth: " << srcOutputWidth <<  "\n";
+	#endif
 	int numCells;
 	double *misrSingleData=NULL;
 
@@ -700,9 +704,9 @@ int af_GenerateOutputCumulative_MisrAsSrc(AF_InputParmeterFile &inputArgs, hid_t
 	std::string singleCamera;
 	//-----------------------------------------------------------------
 	// TODO: improve by preparing these memory allocation out of loop
-	// src_rad_out , nsrcPixels
+	// srcProcessedData , nsrcPixels
 	// misrSingleData 
-	double * src_rad_out = NULL;
+	double * srcProcessedData = NULL;
 	int * nsrcPixels = NULL;
 	// Note: This is Combination case only
 	for(int j=0; j < cameras.size(); j++) {
@@ -732,25 +736,25 @@ int af_GenerateOutputCumulative_MisrAsSrc(AF_InputParmeterFile &inputArgs, hid_t
 	
 			//-------------------------------------------------
 			// handle resample method
-			src_rad_out = new double [trgCellNum];
+			srcProcessedData = new double [trgCellNum];
 			int new_src_size = trgCellNum;
 			//Interpolating
 			std::string resampleMethod =  inputArgs.GetResampleMethod();
-			std::cout << "\nInterpolating using '" << resampleMethod << "' method for " << cameras[j] << " : " << radiances[i] << ".\n";
+			std::cout << "Interpolating with '" << resampleMethod << "' method on " << inputArgs.GetSourceInstrument() << " by " << cameras[j] << " : " << radiances[i] << ".\n";
 			#if DEBUG_ELAPSE_TIME
 			StartElapseTime();
 			#endif
 			if (inputArgs.CompareStrCaseInsensitive(resampleMethod, "nnInterpolate")) {
-				nnInterpolate(misrSingleData, src_rad_out, targetNNsrcID, trgCellNum);
+				nnInterpolate(misrSingleData, srcProcessedData, targetNNsrcID, trgCellNum);
 			}
 			else if (inputArgs.CompareStrCaseInsensitive(resampleMethod, "summaryInterpolate")) {
 				nsrcPixels = new int [trgCellNum];
-				summaryInterpolate(misrSingleData, targetNNsrcID, srcCellNum, src_rad_out, nsrcPixels, trgCellNum);
+				summaryInterpolate(misrSingleData, targetNNsrcID, srcCellNum, srcProcessedData, nsrcPixels, trgCellNum);
 				#if 0 // DEBUG_TOOL
 				std::cout << "DBG_TOOL> No nodata values: \n";
 				for(int i = 0; i < trgCellNum; i++) {
 					if(nsrcPixels[i] > 0) {
-						printf("%d,\t%lf\n", nsrcPixels[i], src_rad_out[i]);
+						printf("%d,\t%lf\n", nsrcPixels[i], srcProcessedData[i]);
 					}
 				}
 				#endif
@@ -764,7 +768,7 @@ int af_GenerateOutputCumulative_MisrAsSrc(AF_InputParmeterFile &inputArgs, hid_t
 			#if DEBUG_ELAPSE_TIME
 			StartElapseTime();
 			#endif
-			ret = af_WriteSingleRadiance_MisrAsSrc(outputFile, misrDatatype, misrDataspace,  src_rad_out, numCells, srcOutputWidth, j /*cameraIdx*/, i /*radIdx*/);
+			ret = af_WriteSingleRadiance_MisrAsSrc(outputFile, misrDatatype, misrDataspace,  srcProcessedData, trgCellNum /*processed size*/, srcOutputWidth, j /*cameraIdx*/, i /*radIdx*/);
 			if (ret == FAILED) {
 				std::cerr << __FUNCTION__ << "> Error: returned fail.\n";
 			}
@@ -777,8 +781,8 @@ int af_GenerateOutputCumulative_MisrAsSrc(AF_InputParmeterFile &inputArgs, hid_t
 			// free memory
 			if (misrSingleData)
 				free(misrSingleData);
-			if(src_rad_out)
-				delete [] src_rad_out;
+			if(srcProcessedData)
+				delete [] srcProcessedData;
 			if (nsrcPixels)
 				delete [] nsrcPixels;
 		} // i loop
@@ -900,6 +904,10 @@ int main(int argc, char *argv[])
 	// get instrument names
 	std::string srcInstrument = inputArgs.GetSourceInstrument();
 	std::string trgInstrument = inputArgs.GetTargetInstrument();
+	#if DEBUG_TOOL
+	std::cout << "DBG_TOOL main> src instrument: " << srcInstrument << std::endl;
+	std::cout << "DBG_TOOL main> target instrument: " << trgInstrument << std::endl;
+	#endif
 	
 #if 0 // TEST : multi-value variable map , remove later
 	//---------------------------------------------------
@@ -934,8 +942,8 @@ int main(int argc, char *argv[])
 	#if DEBUG_TOOL
 	std::cout << "DBG_TOOL main> inputDataPath: " << inputDataPath << std::endl;
 	#endif
-	hid_t src_file;
-	if(0 > (src_file = af_open((char*)inputDataPath.c_str()))) {
+	hid_t inputFile;
+	if(0 > (inputFile = af_open((char*)inputDataPath.c_str()))) {
 		std::cerr << "Error: File not found - " << inputDataPath << std::endl;
 		exit(1);
 	}
@@ -950,7 +958,7 @@ int main(int argc, char *argv[])
 	#if DEBUG_ELAPSE_TIME
 	StartElapseTime();
 	#endif
-	ret = AF_GetGeolocationDataFromInstrument(srcInstrument, inputArgs, src_file, &srcLatitude /*OUT*/, &srcLongitude /*OUT*/, srcCellNum /*OUT*/);
+	ret = AF_GetGeolocationDataFromInstrument(srcInstrument, inputArgs, inputFile, &srcLatitude /*OUT*/, &srcLongitude /*OUT*/, srcCellNum /*OUT*/);
 	if (ret == FAILED) {
 		std::cerr << __FUNCTION__ << "> Error getting geolocation data from source instrument - " << srcInstrument << ".\n";
 		return FAILED;
@@ -971,9 +979,9 @@ int main(int argc, char *argv[])
 	#if DEBUG_ELAPSE_TIME
 	StartElapseTime();
 	#endif
-	ret = AF_GetGeolocationDataFromInstrument(trgInstrument, inputArgs, src_file, &targetLatitude /*OUT*/, &targetLongitude /*OUT*/, trgCellNum /*OUT*/);
+	ret = AF_GetGeolocationDataFromInstrument(trgInstrument, inputArgs, inputFile, &targetLatitude /*OUT*/, &targetLongitude /*OUT*/, trgCellNum /*OUT*/);
 	if (ret == FAILED) {
-		std::cerr << __FUNCTION__ << "> Error getting geolocation data from target instrument - " << trgInstrument << ".\n";
+		std::cerr << __FUNCTION__ << "> Error: getting geolocation data from target instrument - " << trgInstrument << ".\n";
 		return FAILED;
 	}
 	#if DEBUG_ELAPSE_TIME
@@ -991,6 +999,9 @@ int main(int argc, char *argv[])
 	StartElapseTime();
 	#endif
 	int trgOutputWidth = af_GetWidthForOutput(inputArgs.GetTargetInstrument(),  inputArgs);
+	#if DEBUG_TOOL
+	std::cout << "DBG_TOOL main> trgOutputWidth: " <<  trgOutputWidth << "\n";
+	#endif
 	int lat_status =  af_write_mm_geo(output_file, 0, targetLatitude, trgCellNum, trgOutputWidth);
 	if(lat_status < 0) {
 		std::cerr << "Error: writing latitude geolocation.\n";
@@ -1041,27 +1052,33 @@ int main(int argc, char *argv[])
 	/*------------------------------------------------------
 	 * Target instrument: Generate radiance to output file
 	 */
+	std::cout  <<  "\nGenerating target instrument " << trgInstrument << " radiance output...\n";
 	// build target instrument multi-value variable map
 	std::map<std::string, strVec_t> trgInputMultiVarsMap;
 	inputArgs.BuildMultiValueVariableMap(trgInstrument, trgInputMultiVarsMap);
 	// write target instrument radiances to output file
-	ret = AF_GenerateTargetRadiancesOutput(inputArgs, output_file, trgCellNum, src_file, trgInputMultiVarsMap);
+	ret = AF_GenerateTargetRadiancesOutput(inputArgs, output_file, trgCellNum, inputFile, trgInputMultiVarsMap);
 	if (ret < 0) {
+		std::cerr << "Error: generate target radiance output.\n";
 		return FAILED;
 	}
+	std::cout << "Writing target radiance output done.\n";
 
 
 	/*------------------------------------------------------
 	 * Source instrument: Generate radiance to output file
 	 */
+	std::cout  <<  "\nGenerating source instrument " << srcInstrument << " radiance output...\n";
 	// build source instrument multi-value variable map
 	std::map<std::string, strVec_t> srcInputMultiVarsMap;
 	inputArgs.BuildMultiValueVariableMap(srcInstrument, srcInputMultiVarsMap);
 	// write source instrument radiances to output file
-	ret = AF_GenerateSourceRadiancesOutput(inputArgs, output_file, targetNNsrcID, trgCellNum, src_file, srcCellNum, srcInputMultiVarsMap);
+	ret = AF_GenerateSourceRadiancesOutput(inputArgs, output_file, targetNNsrcID, trgCellNum, inputFile, srcCellNum, srcInputMultiVarsMap);
 	if (ret < 0) {
+		std::cerr << "Error: generate source radiance output.\n";
 		return FAILED;
 	}
+	std::cout << "Writing source radiance output done.\n";
 
 	if (targetNNsrcID)
 		delete [] targetNNsrcID;
@@ -1072,8 +1089,8 @@ int main(int argc, char *argv[])
 	#if DEBUG_ELAPSE_TIME
 	StartElapseTime();
 	#endif
-	std::cout  <<  "\nWriting done. Closing files...\n";
-	herr_t close_status = af_close(src_file);
+	std::cout  <<  "\nClosing file...\n";
+	herr_t close_status = af_close(inputFile);
 	if(close_status < 0){
 		std::cerr  <<  "Error: closing input data file.\n";
 		return FAILED;
@@ -1085,7 +1102,7 @@ int main(int argc, char *argv[])
 		return FAILED;
 	}
 	#if DEBUG_ELAPSE_TIME
-	StopElapseTimeAndShow("DBG_TIME> Closing files DONE.");
+	StopElapseTimeAndShow("DBG_TIME> Closing file DONE.");
 	#endif
 
 	return 0;

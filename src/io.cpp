@@ -129,11 +129,15 @@ double* get_misr_rad(hid_t file, char* camera_angle, char* resolution, char* rad
 	}
 	
 	if(down_sampling == 1){
-		printf("rad_data: %f\n", down_data[0]);
+		#if DEBUG_IO
+		printf("DBG_IO %s:%d> rad_data: %f\n", __FUNCTION__, __LINE__, down_data[0]);
+		#endif
 		return down_data;
 	}
 	else{
-		printf("rad_data: %f\n", data[0]);
+		#if DEBUG_IO
+		printf("DBG_IO %s:%d> rad_data: %f\n", __FUNCTION__, __LINE__, data[0]);
+		#endif
 		return data;	
 	}
 	
@@ -184,7 +188,7 @@ double* get_misr_lat(hid_t file, char* resolution, int* size)
 	if(lat_data == NULL){
 		return NULL;
 	}
-	printf("lat_data: %f\n", lat_data[0]);
+	//printf("lat_data: %f\n", lat_data[0]);
 	return lat_data;
 }
 
@@ -233,7 +237,7 @@ double* get_misr_long(hid_t file, char* resolution, int* size)
 	if(long_data == NULL){
 		return NULL;
 	}
-	printf("long_data: %f\n", long_data[0]);
+	//printf("long_data: %f\n", long_data[0]);
 	return long_data;
 }
 
@@ -382,7 +386,9 @@ double* get_modis_rad(hid_t file, char* resolution, std::vector<std::string> &ba
 		free(name);
 	}
 	
-	printf("num granules: %d\n", store_count);
+	#if DEBUG_IO
+	printf("DBG_IO %s:%d> num granules: %d\n", __FUNCTION__, __LINE__, store_count);
+	#endif
 	
 	//Get dataset names from bands
 	printf("Retreving dataset names\n");
