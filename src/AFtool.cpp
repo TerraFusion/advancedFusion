@@ -66,12 +66,28 @@ int AF_GetGeolocationDataFromInstrument(std::string instrument, AF_InputParmeter
 		std::cout << "DBG_TOOL " << __FUNCTION__ << "> Modis resolution: " << resolution << "\n";
 		#endif
 		*latitude = get_modis_lat(inputFile, (char*) resolution.c_str(), &cellNum);
+		if (latitude == NULL) {
+			std::cerr << __FUNCTION__ <<  "> Error: failed to get MODIS latitude.\n";
+			return FAILED;
+		}
 		*longitude = get_modis_long(inputFile, (char*) resolution.c_str(), &cellNum);
+		if (longitude == NULL) {
+			std::cerr << __FUNCTION__ <<  "> Error: failed to get MODIS longitude.\n";
+			return FAILED;
+		}
 	}
 	else if (instrument == "MISR") {
 		std::string resolution = inputArgs.GetMISR_Resolution();
 		*latitude = get_misr_lat(inputFile, (char*) resolution.c_str(), &cellNum);
+		if (latitude == NULL) {
+			std::cerr << __FUNCTION__ <<  "> Error: failed to get MISR latitude.\n";
+			return FAILED;
+		}
 		*longitude = get_misr_long(inputFile, (char*) resolution.c_str(), &cellNum);
+		if (longitude == NULL) {
+			std::cerr << __FUNCTION__ <<  "> Error: failed to get MISR longitude.\n";
+			return FAILED;
+		}
 		#if DEBUG_TOOL
 		std::cout << "DBG_TOOL " << __FUNCTION__ << "> Misr resolution: " << resolution << ", cellNum: " << cellNum << "\n";
 		#endif
@@ -225,7 +241,7 @@ int af_GenerateOutputCumulative_ModisAsTrg(AF_InputParmeterFile &inputArgs, hid_
 	hid_t modisDatatype = H5Tcopy(H5T_NATIVE_DOUBLE);
 	herr_t	status = H5Tset_order(modisDatatype, H5T_ORDER_LE);
 	if(status < 0) {
-		printf("Error: MODIS write error in H5Tset_order\n");
+		std::cerr << __FUNCTION__ <<  "> Error: MODIS write error in H5Tset_order.\n";
 		return FAILED;
 	}
 
@@ -263,6 +279,10 @@ int af_GenerateOutputCumulative_ModisAsTrg(AF_InputParmeterFile &inputArgs, hid_
 		StartElapseTime();
 		#endif
 		modisSingleData = get_modis_rad(srcFile, (char*)modisResolution.c_str(), singleBandVec, 1, &numCells);
+		if (modisSingleData == NULL) {
+			std::cerr << __FUNCTION__ <<  "> Error: failed to get MODIS radiance.\n";
+			return FAILED;
+		}
 		#if DEBUG_TOOL
 		std::cout << "DBG_TOOL " << __FUNCTION__ << "> numCells: " << numCells << "\n";
 		#endif
@@ -290,6 +310,8 @@ int af_GenerateOutputCumulative_ModisAsTrg(AF_InputParmeterFile &inputArgs, hid_
 	#if DEBUG_TOOL
 	std::cout << "DBG_TOOL " << __FUNCTION__ << "> END \n";
 	#endif
+
+	return SUCCEED;
 }
 
 
@@ -298,6 +320,8 @@ int   AF_GenerateTargetRadiancesOutput(AF_InputParmeterFile &inputArgs, hid_t ou
 	#if DEBUG_TOOL
 	std::cout << "DBG_TOOL " << __FUNCTION__ << "> BEGIN \n";
 	#endif
+
+	int ret;
 
 	// JK_TODO - change to "/Target/Data_Fields"
 	//----------------------------------
@@ -334,7 +358,11 @@ int   AF_GenerateTargetRadiancesOutput(AF_InputParmeterFile &inputArgs, hid_t ou
 
 		// TODO_LATER - decide for loop inside or loop outside
 		#if 1 // case for looping inside
-		af_GenerateOutputCumulative_ModisAsTrg(inputArgs, outputFile, srcFile, trgCellNum, trgInputMultiVarsMap);
+		ret = af_GenerateOutputCumulative_ModisAsTrg(inputArgs, outputFile, srcFile, trgCellNum, trgInputMultiVarsMap);
+		if(ret == FAILED) {
+			std::cerr << __FUNCTION__ <<  "> Error: MODIS write error in H5Tset_order.\n";
+			return FAILED;
+		}
 		#else // case for looping from outside
 		for(int j = 0; j < trgInputMultiVarsMap[multiVarNames[0]].size(); ++j) {
 			std::cout << trgInputMultiVarsMap[multiVarNames[0]][j]	<< ", ";
@@ -542,6 +570,10 @@ int af_GenerateOutputCumulative_ModisAsSrc(hid_t outputFile,hid_t srcFile, int s
 		StartElapseTime();
 		#endif
 		modisSingleData = get_modis_rad(srcFile, (char*)modisResolution.c_str(), singleBandVec, 1, &numCells);
+		if (modisSingleData == NULL) {
+			std::cerr << __FUNCTION__ <<  "> Error: failed to get Modis radiance.\n";
+			return FAILED;
+		}
 		#if DEBUG_TOOL
 		std::cout << "DBG_TOOL " << __FUNCTION__ << "> numCells: " << numCells << "\n";
 		#endif
@@ -727,6 +759,10 @@ int af_GenerateOutputCumulative_MisrAsSrc(AF_InputParmeterFile &inputArgs, hid_t
 			StartElapseTime();
 			#endif
 			misrSingleData = get_misr_rad(srcFile, (char*) singleCamera.c_str(), (char*)misrResolution.c_str(), (char*)singleRad.c_str(), &numCells);
+			if (misrSingleData == NULL) {
+				std::cerr << __FUNCTION__ <<  "> Error: failed to get MISR radiance.\n";
+				return FAILED;
+			}
 			#if DEBUG_TOOL
 			std::cout << "DBG_TOOL " << __FUNCTION__ << "> numCells: " << numCells << "\n";
 			#endif
@@ -847,7 +883,12 @@ int   AF_GenerateSourceRadiancesOutput(AF_InputParmeterFile &inputArgs, hid_t ou
 		// TODO - decide for loop inside or loop outside
 		#if 1 // case for looping inside
 		// [0] is cause we know modis has only one multi-value valriable at this point
-		af_GenerateOutputCumulative_ModisAsSrc(outputFile, srcFile, trgCellNum, inputArgs.GetMODIS_Resolution(), srcInputMultiVarsMap[multiVarNames[0]]);
+		ret = af_GenerateOutputCumulative_ModisAsSrc(outputFile, srcFile, trgCellNum, inputArgs.GetMODIS_Resolution(), srcInputMultiVarsMap[multiVarNames[0]]);
+		if (ret == FAILED) {
+			std::cout << __FUNCTION__ << ":" << __LINE__ <<  "> failed generating output for MISR.\n";
+			ret = FAILED;
+			goto done;
+		}
 		#else // case for looping from outside
 		for(int j = 0; j < srcInputMultiVarsMap[multiVarNames[0]].size(); ++j) {
 			std::cout << srcInputMultiVarsMap[multiVarNames[0]][j]	<< ", ";
@@ -870,7 +911,7 @@ int   AF_GenerateSourceRadiancesOutput(AF_InputParmeterFile &inputArgs, hid_t ou
 
 		ret = af_GenerateOutputCumulative_MisrAsSrc(inputArgs, outputFile, targetNNsrcID,  trgCellNum, srcFile, srcCellNum, srcInputMultiVarsMap);
 		if (ret == FAILED) {
-			std::cout << __FUNCTION__ << ":" << __LINE__ <<  "> returned failure.\n";
+			std::cout << __FUNCTION__ << ":" << __LINE__ <<  "> failed generating output for MISR.\n";
 			ret = FAILED;
 			goto done;
 		}
