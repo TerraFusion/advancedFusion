@@ -15,7 +15,7 @@
 #
 # TARGET_INSTRUMENT: MODIS
 # MODIS_RESOLUTION: one of < 1KM 500M or 250M >
-# MODIS_BANDS: any of < 1~12 13L 13H 14L 14H 15~36 >
+# MODIS_BANDS: any of < 1~12 13L 13H 14L 14H 15~36 > or ALL
 #=============================================================
 
 INPUT_FILE_PATH: /projects/sciteam/jq0/TerraFusion/testFiles/TERRA_BF_L1B_O69400_20130104000439_F000_V000.h5
