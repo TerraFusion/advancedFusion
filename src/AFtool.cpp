@@ -32,6 +32,16 @@
 #define FAILED -1
 
 
+/*------------------------
+ * hdf5 related names
+ */
+const std::string SRC_DATA_GROUP = "/Source/Data_Fields";
+const std::string TRG_DATA_GROUP = "/Target/Data_Fields";
+const std::string MODIS_RADIANCE_DSET = "MODIS_Radiance";
+const std::string MISR_RADIANCE_DSET = "MISR_Radiance";
+
+
+
 void DisplayTimeval (struct timeval *tv)
 {
 	long milliseconds;
@@ -159,15 +169,17 @@ static int af_WriteSingleRadiance_ModisAsTrg(hid_t outputFile, hid_t modisDataty
 
 	herr_t status;
 	hid_t modis_dataset;
+	std::string dsetPath = TRG_DATA_GROUP + "/" + MODIS_RADIANCE_DSET;
+
 	if(bandIdx==0) { // means new
-		modis_dataset = H5Dcreate2(outputFile, "/Data_Fields/modis_rad", modisDatatype, modisFilespace,H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+		modis_dataset = H5Dcreate2(outputFile, dsetPath.c_str(), modisDatatype, modisFilespace,H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
 		if(modis_dataset < 0) {
 			std::cerr << __FUNCTION__ << ":" << __LINE__ <<  "> Error: H5Dcreate2 target data in output file.\n";
 			return FAILED;
 		}
 	}
 	else {
-		modis_dataset = H5Dopen2(outputFile, "/Data_Fields/modis_rad", H5P_DEFAULT);
+		modis_dataset = H5Dopen2(outputFile, dsetPath.c_str(), H5P_DEFAULT);
 		if(modis_dataset < 0) {
 			std::cerr <<  __FUNCTION__ << ":" << __LINE__ <<  "> Error: H5Dopen2 target data in output file.\n";
 			return FAILED;
@@ -323,18 +335,27 @@ int   AF_GenerateTargetRadiancesOutput(AF_InputParmeterFile &inputArgs, hid_t ou
 
 	int ret;
 
-	// JK_TODO - change to "/Target/Data_Fields"
 	//----------------------------------
 	// prepare group of dataset
-	printf("writing data fields\n");
-	hid_t group_id = H5Gcreate2(outputFile, "/Data_Fields", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+	printf("Creating target group...\n");
+	hid_t gcpl_id = H5Pcreate (H5P_LINK_CREATE);
+	if(gcpl_id < 0) {
+		std::cerr << __FUNCTION__ <<  "> Error: H5Pcreate.\n";
+		return FAILED;
+	}
+	herr_t status = H5Pset_create_intermediate_group (gcpl_id, 1);
+	if(status < 0) {
+		std::cerr << __FUNCTION__ <<  "> Error: H5Pset_create_intermediate_group.\n";
+		return FAILED;
+	}
+	hid_t group_id = H5Gcreate2(outputFile, TRG_DATA_GROUP.c_str(), gcpl_id, H5P_DEFAULT, H5P_DEFAULT);
 	if(group_id < 0) {
-		std::cerr <<  "Error: H5Gcreate2 in output file.\n";
+		std::cerr << __FUNCTION__ <<  "> Error: H5Gcreate2 in output file.\n";
 		return FAILED;
 	}
 	herr_t grp_status = H5Gclose(group_id);
 	if(grp_status < 0) {
-		std::cerr <<  "Error: H5Gclose in output file.\n";
+		std::cerr << __FUNCTION__ <<  "> Error: H5Gclose in output file.\n";
 		return FAILED;
 	}
 
@@ -617,16 +638,17 @@ static int af_WriteSingleRadiance_MisrAsSrc(hid_t outputFile, hid_t misrDatatype
 	int ret = SUCCEED;
 	herr_t status;
 	hid_t misr_dataset;
+	std::string dsetPath = SRC_DATA_GROUP + "/" + MISR_RADIANCE_DSET;
 
 	if(cameraIdx==0 && radIdx==0) { // means new
-		misr_dataset = H5Dcreate2(outputFile, "/Data_Fields/misr_out", misrDatatype, misrFilespace,H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+		misr_dataset = H5Dcreate2(outputFile, dsetPath.c_str(), misrDatatype, misrFilespace,H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
 		if(misr_dataset < 0) {
 			std::cerr << __FUNCTION__ << ":" << __LINE__ <<  "> Error: H5Dcreate2 target data in output file.\n";
 			return FAILED;
 		}
 	}
 	else {
-		misr_dataset = H5Dopen2(outputFile, "/Data_Fields/misr_out", H5P_DEFAULT);
+		misr_dataset = H5Dopen2(outputFile, dsetPath.c_str(), H5P_DEFAULT);
 		if(misr_dataset < 0) {
 			std::cerr <<  __FUNCTION__ << ":" << __LINE__ <<  "> Error: H5Dopen2 target data in output file.\n";
 			return FAILED;
@@ -845,21 +867,29 @@ int   AF_GenerateSourceRadiancesOutput(AF_InputParmeterFile &inputArgs, hid_t ou
 	#endif
 	int ret = SUCCEED;
 
-	#if 0 // JK_TODO_LATER - change to	"/Source/Data_Fields"
 	//----------------------------------
 	// prepare group of dataset
 	printf("writing data fields\n");
-	hid_t group_id = H5Gcreate2(outputFile, "/Data_Fields", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+	hid_t gcpl_id = H5Pcreate (H5P_LINK_CREATE);
+	if(gcpl_id < 0) {
+		std::cerr << __FUNCTION__ <<  "> Error: H5Pcreate.\n";
+		return FAILED;
+	}
+	herr_t status = H5Pset_create_intermediate_group (gcpl_id, 1);
+	if(status < 0) {
+		std::cerr << __FUNCTION__ <<  "> Error: H5Pset_create_intermediate_group.\n";
+		return FAILED;
+	}
+	hid_t group_id = H5Gcreate2(outputFile, SRC_DATA_GROUP.c_str(), gcpl_id, H5P_DEFAULT, H5P_DEFAULT);
 	if(group_id < 0) {
-		std::cerr <<  "Error: H5Gcreate2 in output file.\n";
+		std::cerr << __FUNCTION__ <<  "> Error: H5Gcreate2 in output file.\n";
 		return FAILED;
 	}
 	herr_t grp_status = H5Gclose(group_id);
 	if(grp_status < 0) {
-		std::cerr <<  "Error: H5Gclose in output file.\n";
+		std::cerr << __FUNCTION__ <<  "> Error: H5Gclose in output file.\n";
 		return FAILED;
 	}
-	#endif
 
 	strVec_t multiVarNames;
 	std::string instrument = inputArgs.GetSourceInstrument();
