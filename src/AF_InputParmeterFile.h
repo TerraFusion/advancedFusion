@@ -49,7 +49,7 @@ class AF_InputParmeterFile
 	 * Handle multi-value variables
 	 */
 	std::vector<std::string> &GetMultiVariableNames(std::string instrument);
-	void BuildMultiValueVariableMap(std::string &instrument, std::map<std::string, strVec_t> &inputMultiVarsMap);
+	int BuildMultiValueVariableMap(std::string &instrument, std::map<std::string, strVec_t> &inputMultiVarsMap);
 	void DBG_displayinputListMap(std::string &instrument, std::map<std::string, strVec_t> &trgInputMultiVarsMap, const std::string &mixType);
 
 

@@ -586,8 +586,12 @@ void AF_InputParmeterFile::DBG_displayinputListMap(std::string &instrument, std:
  * Parameters:
  *  - instrument [IN] : name string of an instrument.
  *  - trgInputMultiVarsMap [OUT] : multi-value variable map to build
+ *
+ * Return:
+ *  - 0 : Succeed
+ *  - -1: Failed
  */
-void AF_InputParmeterFile::BuildMultiValueVariableMap(std::string &instrument, std::map<std::string, strVec_t> &inputMultiVarsMap)
+int AF_InputParmeterFile::BuildMultiValueVariableMap(std::string &instrument, std::map<std::string, strVec_t> &inputMultiVarsMap)
 {
 	std::vector<std::string> strVecTmp;
 
@@ -600,14 +604,66 @@ void AF_InputParmeterFile::BuildMultiValueVariableMap(std::string &instrument, s
 		std::cout << "DBG_PARSER " << __FUNCTION__ << ":" << __LINE__ << "> modis_MultiVars.size(): " << modis_MultiVars.size() << "\n";
 		std::cout << "DBG_PARSER " << __FUNCTION__ << ":" << __LINE__ << "> modis_Bands.size(): " << modis_Bands.size() << "\n";
 		#endif
+
 		if (modis_MultiVars.size() != 1) {
 			std::cout << __FUNCTION__ << ":" << __LINE__ <<  "> Error building input list with MODIS. There must be only one multi-value variable.\n";
+			return -1;
 		}
 
+
+		// Note - This can be common function among instruments
+		/*----------------------------
+		 * Check if ALL is in bands
+		 */
+		bool isAllbands = false;
+		for(int i=0; i < modis_Bands.size(); i++) {
+			if (CompareStrCaseInsensitive(modis_Bands[i], "ALL")) {
+				isAllbands = true;
+				#if DEBUG_TOOL_PARSER
+				std::cout << "DBG_PARSER " << __FUNCTION__ << ":" << __LINE__ << "> ALL for Modis bands.\n";
+				#endif
+				break;
+			}
+        }
+
+		/*------------------------------------
+		 * if ALL is in bands, build all list
+		 */
+		std::vector<std::string> modisBandsUpdated;
+		if (isAllbands) {
+			if(modis_Resolution == "_1KM") {
+				// 38 bands total
+				modisBandsUpdated = {"1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13L", "13H", "14L", "14H", "15", "16", "17", "18", "19", "20", "21", "22", "23", "24", "25", "26", "27", "28", "29", "30", "31", "32", "33", "34", "35", "36"};
+			}
+			else if(modis_Resolution == "_500m") {
+				// 8 bands total
+				modisBandsUpdated = {"1", "2", "3","4", "5", "6", "7"};
+			}
+			else if(modis_Resolution == "_250m") {
+				// 2 bands total
+				modisBandsUpdated = {"1","2"};
+			}
+		}
+		else {
+			modisBandsUpdated = modis_Bands;
+		}
+
+		#if DEBUG_TOOL_PARSER
+		std::cout << __FUNCTION__ << ":" << __LINE__ << "> modisBandsUpdated: ";
+		for (int i=0; i< modisBandsUpdated.size(); i++) {
+			std::cout << modisBandsUpdated[i] << " ";
+		}
+		std::cout << "\n";
+		#endif
+
+
+		/*----------------------------
+		 * Note: used modisBandsUpdated not modis_Bands directly to handle
+		 */
 		if(modis_MultiVars[0] == MODIS_BANDS) {
 			strVecTmp.clear();
-			for(int j=0; j < modis_Bands.size(); j++) {
-				strVecTmp.push_back(modis_Bands[j]);
+			for(int j=0; j < modisBandsUpdated.size(); j++) {
+				strVecTmp.push_back(modisBandsUpdated[j]);
 			}
 			inputMultiVarsMap[modis_MultiVars[0]] = strVecTmp;
 			/*---------------------
@@ -661,4 +717,6 @@ void AF_InputParmeterFile::BuildMultiValueVariableMap(std::string &instrument, s
 			}
 		}
 	}
+
+	return 0;
 }

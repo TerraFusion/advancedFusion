@@ -953,15 +953,15 @@ int main(int argc, char *argv[])
 #if 0 // TEST : multi-value variable map , remove later
 	//---------------------------------------------------
 	// build target instrument multi-value variable map
-	std::map<std::string, strVec_t> trgInputMultiVarsMap;
-	inputArgs.BuildMultiValueVariableMap(trgInstrument, trgInputMultiVarsMap);
-	inputArgs.DBG_displayinputListMap(trgInstrument, trgInputMultiVarsMap, "COMBINATION");
+	std::map<std::string, strVec_t> trgInputMultiVarsMapTEST;
+	inputArgs.BuildMultiValueVariableMap(trgInstrument, trgInputMultiVarsMapTEST);
+	inputArgs.DBG_displayinputListMap(trgInstrument, trgInputMultiVarsMapTEST, "COMBINATION");
 
 	//---------------------------------------------------
 	// build source instrument multi-value variable map 
-	std::map<std::string, strVec_t> srcInputMultiVarsMap;
-	inputArgs.BuildMultiValueVariableMap(srcInstrument, srcInputMultiVarsMap);
-	inputArgs.DBG_displayinputListMap(srcInstrument, srcInputMultiVarsMap, "COMBINATION");
+	std::map<std::string, strVec_t> srcInputMultiVarsMapTEST;
+	inputArgs.BuildMultiValueVariableMap(srcInstrument, srcInputMultiVarsMapTEST);
+	inputArgs.DBG_displayinputListMap(srcInstrument, srcInputMultiVarsMapTEST, "COMBINATION");
 	exit(1);
 #endif
 
@@ -1096,7 +1096,11 @@ int main(int argc, char *argv[])
 	std::cout  <<  "\nGenerating target instrument " << trgInstrument << " radiance output...\n";
 	// build target instrument multi-value variable map
 	std::map<std::string, strVec_t> trgInputMultiVarsMap;
-	inputArgs.BuildMultiValueVariableMap(trgInstrument, trgInputMultiVarsMap);
+	ret = inputArgs.BuildMultiValueVariableMap(trgInstrument, trgInputMultiVarsMap);
+	if (ret < 0) {
+		std::cerr << __FUNCTION__ << "> Error: build multi-value variable map for " << trgInstrument << ".\n";
+		return FAILED;
+	}
 	// write target instrument radiances to output file
 	ret = AF_GenerateTargetRadiancesOutput(inputArgs, output_file, trgCellNum, inputFile, trgInputMultiVarsMap);
 	if (ret < 0) {
@@ -1112,7 +1116,11 @@ int main(int argc, char *argv[])
 	std::cout  <<  "\nGenerating source instrument " << srcInstrument << " radiance output...\n";
 	// build source instrument multi-value variable map
 	std::map<std::string, strVec_t> srcInputMultiVarsMap;
-	inputArgs.BuildMultiValueVariableMap(srcInstrument, srcInputMultiVarsMap);
+	ret = inputArgs.BuildMultiValueVariableMap(srcInstrument, srcInputMultiVarsMap);
+	if (ret < 0) {
+		std::cerr << __FUNCTION__ << "> Error: build multi-value variable map for " << srcInstrument << ".\n";
+		return FAILED;
+	}
 	// write source instrument radiances to output file
 	ret = AF_GenerateSourceRadiancesOutput(inputArgs, output_file, targetNNsrcID, trgCellNum, inputFile, srcCellNum, srcInputMultiVarsMap);
 	if (ret < 0) {
