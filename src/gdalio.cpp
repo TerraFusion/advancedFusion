@@ -11,6 +11,7 @@
 #include <ogr_srs_api.h>
 #include <ogr_api.h>
 #include <cpl_conv.h>
+#include <omp.h>
 
 /**
  * NAME:	gdalIORegister
@@ -70,8 +71,13 @@ int getCellCenterLatLon(int outputEPSG, double xMin, double yMin, double xMax, d
 	int i, j;
 	double rowY;
 
+#pragma omp parallel for private(j, rowY)
 	for(i = 0; i < nRow; i++)
 	{
+		if(i == 0)
+		{
+			printf("%d threads\n", omp_get_num_threads());
+		}
 		rowY = yMax - cellSize * (i + 0.5);
 		for(j = 0; j < nCol; j++) 
 		{
@@ -82,21 +88,41 @@ int getCellCenterLatLon(int outputEPSG, double xMin, double yMin, double xMax, d
 
 	if(outputEPSG != 4326) 
 	{
+#pragma omp parallel
+		{
+			int nThreads = omp_get_num_threads();
+			int threadID = omp_get_thread_num();
 
-		OGRSpatialReferenceH sourceSRS, targetSRS;
-		OGRCoordinateTransformationH cTransform;
 
-		sourceSRS = OSRNewSpatialReference(NULL);
-		targetSRS = OSRNewSpatialReference(NULL);
+			int start = nPoints / nThreads * threadID;
+			int nPointsThread;
+			if(threadID != nThreads - 1)
+			{
+			 	nPointsThread = nPoints / nThreads;
+			}
+			else
+			{
+				nPointsThread = nPoints - start;
+			}
 
-		OSRImportFromEPSG(sourceSRS, outputEPSG);
-		OSRImportFromEPSG(targetSRS, 4326);
+			OGRSpatialReferenceH sourceSRS, targetSRS;
+			OGRCoordinateTransformationH cTransform;
 
-		cTransform = OCTNewCoordinateTransformation(sourceSRS, targetSRS);
+			sourceSRS = OSRNewSpatialReference(NULL);
+			targetSRS = OSRNewSpatialReference(NULL);
 
-		OCTTransform(cTransform, nPoints, x, y, NULL);		
+			OSRImportFromEPSG(sourceSRS, outputEPSG);
+			OSRImportFromEPSG(targetSRS, 4326);
 
-		OCTDestroyCoordinateTransformation(cTransform);
+			cTransform = OCTNewCoordinateTransformation(sourceSRS, targetSRS);
+
+			OCTTransform(cTransform, nPointsThread, x + start, y + start, NULL);		
+
+			OCTDestroyCoordinateTransformation(cTransform);
+	//	printf("%d of %d: %d - %d\n", threadID, nThreads, start, nPointsThread);
+
+		}
+
 	}
 
 	return nPoints;

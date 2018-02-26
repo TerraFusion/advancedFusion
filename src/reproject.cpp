@@ -295,6 +295,12 @@ void nearestNeighborBlockIndex(double ** psouLat, double ** psouLon, int nSou, d
 	int i, j, k, kk, l;
 #pragma omp parallel for
 	for(i = 0; i < nSou; i++) {
+		
+/*		if(i == 0)
+		{
+			printf("%d threads\n", omp_get_num_threads());
+		}
+*/
 		souLat[i] = souLat[i] * M_PI / 180;
 		souLon[i] = souLon[i] * M_PI / 180;
 	}
@@ -319,6 +325,11 @@ void nearestNeighborBlockIndex(double ** psouLat, double ** psouLon, int nSou, d
 #pragma omp parallel for private(j, k, kk, l)
 	for(i = 0; i < nTar; i ++) {
 		
+/*		if(i == 0)
+		{
+			printf("%d threads\n", omp_get_num_threads());
+		}
+*/
 		double tLat = tarLat[i];
 		double tLon = tarLon[i];
 		double sLat, sLon;

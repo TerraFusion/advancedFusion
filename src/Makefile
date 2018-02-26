@@ -1,5 +1,5 @@
 
-CXXFLAGS=-std=c++11 -Wno-write-strings
+CXXFLAGS=-std=c++11 -Wno-write-strings -fopenmp
 
 # Use this on BW
 CXX=CC ${CXXFLAGS}
