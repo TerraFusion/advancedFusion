@@ -12,6 +12,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <omp.h>
 
 /**
  * NAME:	getMISRFinalImageSize
@@ -72,9 +73,10 @@ void MISRBlockOffset(double * originalGrid, double * newGrid, int highResolution
 	//Finally, the minium prefix sum value is substracted from each element of the prefix sum to make all values non-negative
 	//The resulting list is the "int offsets[180]"
 
-	for(int i = 0; i < nRow; i++)
+	int i, j;
+	for(i = 0; i < nRow; i++)
 	{
-		for(int j = 0; j < nCol; j ++)
+		for(j = 0; j < nCol; j ++)
 		{
 			newGrid[i * nCol + j] = -999;
 		}
@@ -89,17 +91,19 @@ void MISRBlockOffset(double * originalGrid, double * newGrid, int highResolution
 	{
 		nRowPerBlock = 512;
 		nColPerBlock = 2048;
-		for(int i = 0; i < 180; i++)
+		for(i = 0; i < 180; i++)
 		{
 			offsets[i] *= 4;
 		}	
 	}
 
 	int blockID;
-	for(int i = 0; i < nRow; i++)
+
+#pragma omp parallel for private(blockID, j)
+	for(i = 0; i < nRow; i++)
 	{
 		blockID = i / nRowPerBlock;
-		for(int j = 0; j < nColPerBlock; j++ )
+		for(j = 0; j < nColPerBlock; j++ )
 		{
 			newGrid[i * nCol + j + offsets[blockID]] = originalGrid[i * nColPerBlock + j];
 		}

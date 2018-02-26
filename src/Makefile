@@ -59,7 +59,7 @@ gdalio.o: gdalio.cpp
 	$(CXX) -I. -I$(GDALDIR)/include -o $@ -c $< 	
 
 misrutil.o: misrutil.cpp
-	$(H5CXX) -c $< -o $@
+	$(CXX) -c $< -o $@
 
 # testRepro: testRepro.o reproject.o
 #	$(CXX) -o ../$@ $+ -lm
