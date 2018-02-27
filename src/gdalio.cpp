@@ -74,10 +74,12 @@ int getCellCenterLatLon(int outputEPSG, double xMin, double yMin, double xMax, d
 #pragma omp parallel for private(j, rowY)
 	for(i = 0; i < nRow; i++)
 	{
+/*
 		if(i == 0)
 		{
 			printf("%d threads\n", omp_get_num_threads());
 		}
+*/
 		rowY = yMax - cellSize * (i + 0.5);
 		for(j = 0; j < nCol; j++) 
 		{
@@ -119,7 +121,7 @@ int getCellCenterLatLon(int outputEPSG, double xMin, double yMin, double xMax, d
 			OCTTransform(cTransform, nPointsThread, x + start, y + start, NULL);		
 
 			OCTDestroyCoordinateTransformation(cTransform);
-	//	printf("%d of %d: %d - %d\n", threadID, nThreads, start, nPointsThread);
+		//	printf("%d of %d: %d - %d\n", threadID, nThreads, start, nPointsThread);
 
 		}
 
