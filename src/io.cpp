@@ -424,7 +424,9 @@ double* get_modis_rad(hid_t file, char* resolution, std::vector<std::string> &ba
 			free(curr_dim);
 		}
 	}
-	printf("Get total data size: %d\n", total_size);
+	#if DEBUG_IO
+	printf("DBG_IO %s:%d> Get total data size: %d\n", __FUNCTION__, __LINE__, total_size);
+	#endif
 	
 	double* result_data = (double*) calloc(total_size, sizeof(double));
 	int start_point = 0;
@@ -475,11 +477,15 @@ double* get_modis_rad(hid_t file, char* resolution, std::vector<std::string> &ba
 
 double* get_modis_rad_by_band(hid_t file, char* resolution, char* d_name, int* band_index, int* size)
 {
-	printf("Reading MODIS rad by band\n");
+	#if DEBUG_IO
+	printf("DBG_IO %s:%d> Reading MODIS rad by band\n", __FUNCTION__, __LINE__);
+	#endif
 	char* instrument = "MODIS";
 	char* d_fields = "Data_Fields";
 	//Get all granule file names
-	printf("Retrieving granule group names\n");
+	#if DEBUG_IO
+	printf("DBG_IO %s:%d> Retrieving granule group names\n", __FUNCTION__, __LINE__);
+	#endif
 	hid_t group = H5Gopen(file, instrument, H5P_DEFAULT);
 	if(group < 0){
 		printf("Group not found\n");
@@ -537,7 +543,9 @@ double* get_modis_rad_by_band(hid_t file, char* resolution, char* d_name, int* b
 		total_size += curr_dim[1]*curr_dim[2];
 		free(curr_dim);
 	}
-	printf("Get total data size: %d\n", total_size);
+	#if DEBUG_IO
+	printf("DBG_IO %s:%d> Get total data size: %d\n", __FUNCTION__, __LINE__, total_size);
+	#endif
 	
 	//Allocate data size
 	double* result_data = (double*)calloc(total_size, sizeof(double));

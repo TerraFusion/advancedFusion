@@ -272,6 +272,7 @@ int af_GenerateOutputCumulative_ModisAsTrg(AF_InputParmeterFile &inputArgs, hid_
 	double *modisSingleData;
 	std::vector<std::string> singleBandVec;
 	for (int i=0; i< bands.size(); i++) {
+		std::cout << "Processing MODIS band: " << bands[i] << "\n";
 		#if DEBUG_TOOL
 		std::cout << "DBG_TOOL " << __FUNCTION__ << "> bands[" << i << "]: " << bands[i] << "\n";
 		#endif
@@ -789,7 +790,7 @@ int af_GenerateOutputCumulative_MisrAsSrc(AF_InputParmeterFile &inputArgs, hid_t
 			std::cout << "DBG_TOOL " << __FUNCTION__ << "> numCells: " << numCells << "\n";
 			#endif
 			#if DEBUG_ELAPSE_TIME
-			StopElapseTimeAndShow("DBG_TIME> Read target Misr single band data	DONE.");
+			StopElapseTimeAndShow("DBG_TIME> Read source Misr single band data	DONE.");
 			#endif
 	
 			//-------------------------------------------------
@@ -831,7 +832,7 @@ int af_GenerateOutputCumulative_MisrAsSrc(AF_InputParmeterFile &inputArgs, hid_t
 				std::cerr << __FUNCTION__ << "> Error: returned fail.\n";
 			}
 			#if DEBUG_ELAPSE_TIME
-			StopElapseTimeAndShow("DBG_TIME> Write target Misr single band data  DONE.");
+			StopElapseTimeAndShow("DBG_TIME> Write source Misr single band data  DONE.");
 			#endif
 			//
 			// TODO: buffer is not reused. make memory allocation out of get_misr_rad() to improve performance
@@ -1056,7 +1057,7 @@ int main(int argc, char *argv[])
 		return FAILED;
 	}
 	#if DEBUG_ELAPSE_TIME
-	StopElapseTimeAndShow("DBG_TIME> get source lat/long DONE.");
+	StopElapseTimeAndShow("DBG_TIME> get target lat/long DONE.");
 	#endif
 	#if DEBUG_TOOL
 	std::cout << "DBG_TOOL main> trgCellNum: " <<  trgCellNum << "\n";
