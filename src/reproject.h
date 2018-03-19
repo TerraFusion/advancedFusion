@@ -27,6 +27,7 @@
  */ 
 void nearestNeighborBlockIndex(double ** psouLat, double ** psouLon, int nSou, double * tarLat, double * tarLon, int * tarNNSouID, double * tarNNDis, int nTar, double maxR);
 
+
 /**
  * NAME:	nearestNeighbor
  * DESCRIPTION:	Find the nearest neighboring source cell's ID for each target cell
@@ -46,6 +47,7 @@ void nearestNeighborBlockIndex(double ** psouLat, double ** psouLon, int nSou, d
  */ 
 void nearestNeighbor(double ** psouLat, double ** psouLon, int nSou, double * tarLat, double * tarLon, int * tarNNSouID, double * tarNNDis, int nTar, double maxR);
 
+
 /**
  * NAME:	nnInterpolate
  * DESCRIPTION:	Nearest neighbor interpolation
@@ -58,6 +60,7 @@ void nearestNeighbor(double ** psouLat, double ** psouLon, int nSou, double * ta
  * 	double * tarVal:	the output values at target cells
  */ 
 void nnInterpolate(double * souVal, double * tarVal, int * tarNNSouID, int nTar);
+
 
 /**
  * NAME:	summaryInterpolate
@@ -94,6 +97,17 @@ void summaryInterpolate(double * souVal, int * souNNTarID, int nSou, double * ta
  * 	int * nSouPixels:	the output numbers of contributing source cells to each target cell
  */
 void summaryInterpolate(double * souVal, int * souNNTarID, int nSou, double * tarVal, int * nSouPixels, int nTar);
+
+
+/**
+ * NAME:	clipping
+ * DESCRIPTION:	Clip output radiance values based on mask
+ * PARAMETERS:
+ *	double * val: 		the output radicance values to be clipped; radiance values will be set to -999 if the mask value is also -999
+ *	double * mask:		the mask for cliping, could be the radiance value after resampling
+ *	double * nPixels:	the number of pixels for both val and mask
+ */
+void clipping(double * val, double * mask, int nPixels);
 
 #endif
 
