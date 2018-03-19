@@ -21,7 +21,7 @@
 #include "io.h"
 
 int main(int argc, char ** argv){
-	hid_t output_file = H5Fcreate("/projects/sciteam/jq0/TerraFusion/yizhao/misr_on_modis_3N_TestOMP2.h5", H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
+	hid_t output_file = H5Fcreate("/projects/sciteam/jq0/TerraFusion/yizhao/misr_on_modis_3N_TestClipping.h5", H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
 	char* file_path = "/projects/sciteam/jq0/TerraFusion/yizhao/TERRA_BF_L1B_O69626_20130119123228_F000_V001.h5";
 	hid_t src_file;
 	if(0 > (src_file = af_open(file_path))) {
@@ -92,7 +92,14 @@ int main(int argc, char ** argv){
 //	summaryInterpolate(src_rad, tarNNSouID, nCellsrc, src_rad_out, nsrcPixels, nCelldest);
 	nnInterpolate(src_rad, src_rad_out, tarNNSouID, nCelldest);
 
-	printf("No nodata values: \n");
+/*
+ * Clipping Example
+ * This clips the MODIS radiance values to areas where there are MISR values after resampling
+ */
+
+	clipping(dest_rad, src_rad_out, nCelldest);
+
+
 //	for(int i = 0; i < nCelldest; i++) {
 //		if(nsrcPixels[i] > 0) {
 //			printf("%d,\t%lf\n", nsrcPixels[i], src_rad_out[i]);
