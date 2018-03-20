@@ -30,6 +30,7 @@ AF_InputParmeterFile::AF_InputParmeterFile()
 	std::cout << "DBG_PARSER " << __FUNCTION__ << ":" << __LINE__ << "> Constructor AF_InputParmeterFile()\n";
 	#endif
 	didReadHeaderFile = false;
+	misr_Shift = "ON";
 
 	/*------------------------------
 	 * init multi-value variables
@@ -186,6 +187,29 @@ void AF_InputParmeterFile::ParseByLine()
 
 
 		// parse single exact token without '\n', '\r' or space.
+		found = line.find(TARGET_INSTRUMENT.c_str());
+		if(found != std::string::npos)
+		{
+			line = line.substr(strlen(TARGET_INSTRUMENT.c_str()));
+			while(line[0] == ' ' || line[0] == ':')
+				line = line.substr(1);
+			pos = line.find_first_of(' ', 0);
+			std::stringstream ss(line); // Insert the string into a stream
+			std::string token;
+			while (ss >> token) {  // get exact string
+				targetInstrument = token;
+			}
+			#if DEBUG_TOOL_PARSER
+			std::cout << "DBG_PARSER " << __FUNCTION__ << ":" << __LINE__ << "> " <<  TARGET_INSTRUMENT << ": " << targetInstrument << std::endl;
+			#endif
+			continue;
+		}
+
+		/*---------------
+		 * MISR
+		 */
+
+		// parse single exact token without '\n', '\r' or space.
 		found = line.find(MISR_RESOLUTION.c_str());
 		if(found != std::string::npos)
 		{
@@ -250,26 +274,29 @@ void AF_InputParmeterFile::ParseByLine()
 			continue;
 		}
 
-
 		// parse single exact token without '\n', '\r' or space.
-		found = line.find(TARGET_INSTRUMENT.c_str());
+		found = line.find(MISR_SHIFT.c_str());
 		if(found != std::string::npos)
 		{
-			line = line.substr(strlen(TARGET_INSTRUMENT.c_str()));
+			line = line.substr(strlen(MISR_SHIFT.c_str()));
 			while(line[0] == ' ' || line[0] == ':')
 				line = line.substr(1);
 			pos = line.find_first_of(' ', 0);
 			std::stringstream ss(line); // Insert the string into a stream
 			std::string token;
 			while (ss >> token) {  // get exact string
-				targetInstrument = token;
+				misr_Shift = token;
 			}
 			#if DEBUG_TOOL_PARSER
-			std::cout << "DBG_PARSER " << __FUNCTION__ << ":" << __LINE__ << "> " <<  TARGET_INSTRUMENT << ": " << targetInstrument << std::endl;
+			std::cout << "DBG_PARSER " << __FUNCTION__ << ":" << __LINE__ << "> " <<  MISR_SHIFT << ": " << misr_Shift << std::endl;
 			#endif
 			continue;
 		}
 
+
+		/*---------------
+		 * MODIS
+		 */
 
 		// parse single exact token without '\n', '\r' or space.
 		found = line.find(MODIS_RESOLUTION.c_str());
@@ -444,6 +471,12 @@ std::string AF_InputParmeterFile::GetSourceInstrument()
 	return sourceInstrument;
 }
 
+std::string AF_InputParmeterFile::GetTargetInstrument()
+{
+	return targetInstrument;
+}
+
+// MISR
 std::string AF_InputParmeterFile::GetMISR_Resolution()
 {
 	return misr_Resolution;
@@ -459,11 +492,13 @@ std::vector<std::string> AF_InputParmeterFile::GetMISR_Radiance()
 	return misr_Radiances;
 }
 
-std::string AF_InputParmeterFile::GetTargetInstrument()
+std::string AF_InputParmeterFile::GetMISR_Shift()
 {
-	return targetInstrument;
+	return misr_Shift;
 }
 
+
+// MODIS
 std::string AF_InputParmeterFile::GetMODIS_Resolution()
 {
 	return modis_Resolution;

@@ -12,10 +12,11 @@ const std::string INPUT_FILE_PATH="INPUT_FILE_PATH";
 const std::string OUTPUT_FILE_PATH="OUTPUT_FILE_PATH";
 const std::string RESAMPLE_METHOD="RESAMPLE_METHOD";
 const std::string SOURCE_INSTRUMENT="SOURCE_INSTRUMENT";
+const std::string TARGET_INSTRUMENT="TARGET_INSTRUMENT";
 const std::string MISR_RESOLUTION="MISR_RESOLUTION";
 const std::string MISR_CAMERA_ANGLE="MISR_CAMERA_ANGLE";
 const std::string MISR_RADIANCE="MISR_RADIANCE";
-const std::string TARGET_INSTRUMENT="TARGET_INSTRUMENT";
+const std::string MISR_SHIFT="MISR_SHIFT";
 const std::string MODIS_RESOLUTION="MODIS_RESOLUTION";
 const std::string MODIS_BANDS="MODIS_BANDS";
 
@@ -37,10 +38,13 @@ class AF_InputParmeterFile
 	std::string GetInputBFdataPath();
 	std::string GetResampleMethod();
 	std::string GetSourceInstrument();
+	std::string GetTargetInstrument();
+	// MISR
 	std::string GetMISR_Resolution();
 	std::vector<std::string>  GetMISR_CameraAngles();
 	std::vector<std::string>  GetMISR_Radiance();
-	std::string GetTargetInstrument();
+	std::string GetMISR_Shift();
+	// MODIS
 	std::string GetMODIS_Resolution();
 	std::vector<std::string>  GetMODIS_Bands();
 
@@ -76,10 +80,13 @@ class AF_InputParmeterFile
 	std::string outputFilePath;
 	std::string resampleMethod;
 	std::string sourceInstrument;
+	std::string targetInstrument;
+	// MISR
 	std::string misr_Resolution;
 	std::vector<std::string> misr_CameraAngles;
 	std::vector<std::string> misr_Radiances;
-	std::string targetInstrument;
+	std::string misr_Shift;
+	// MODIS
 	std::string modis_Resolution;
 	std::vector<std::string> modis_Bands;
 
