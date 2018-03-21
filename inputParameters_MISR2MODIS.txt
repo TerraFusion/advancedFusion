@@ -12,7 +12,6 @@
 # MISR_RESOLUTION: one of < L or H >
 # MISR_CAMERA_ANGLE: any of < DF CF BF AF AN AA BA CA DA >
 # MISR_RADIANCE: any of < Blue_Radiance Green_Radiance Red_Radiance NIR_Radiance >
-# MISR_SHIFT: one of < ON or OFF >       (optional. default is ON if not specified)
 #
 # TARGET_INSTRUMENT: MODIS
 # MODIS_RESOLUTION: one of < 1KM 500M or 250M >
@@ -28,7 +27,6 @@ SOURCE_INSTRUMENT: MISR
 MISR_RESOLUTION: L
 MISR_CAMERA_ANGLE: AN AF
 MISR_RADIANCE: Blue_Radiance Green_Radiance
-MISR_SHIFT: OFF
 
 TARGET_INSTRUMENT: MODIS
 MODIS_RESOLUTION: 1KM

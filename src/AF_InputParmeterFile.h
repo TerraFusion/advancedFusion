@@ -16,7 +16,7 @@ const std::string TARGET_INSTRUMENT="TARGET_INSTRUMENT";
 const std::string MISR_RESOLUTION="MISR_RESOLUTION";
 const std::string MISR_CAMERA_ANGLE="MISR_CAMERA_ANGLE";
 const std::string MISR_RADIANCE="MISR_RADIANCE";
-const std::string MISR_SHIFT="MISR_SHIFT";
+const std::string MISR_SHIFT="MISR_TARGET_BLOCKUNSTACK";
 const std::string MODIS_RESOLUTION="MODIS_RESOLUTION";
 const std::string MODIS_BANDS="MODIS_BANDS";
 

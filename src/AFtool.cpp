@@ -639,24 +639,25 @@ int af_GenerateOutputCumulative_MisrAsTrg(AF_InputParmeterFile &inputArgs, hid_t
 				std::cerr << __FUNCTION__ <<  "> Error: failed to get MISR radiance.\n";
 				return FAILED;
 			}
-			#if DEBUG_TOOL
-			std::cout << "DBG_TOOL " << __FUNCTION__ << "> numCells: " << numCells << "\n";
-			#endif
 			#if DEBUG_ELAPSE_TIME
 			StopElapseTimeAndShow("DBG_TIME> Read target Misr single band data  DONE.");
 			#endif
 
+			#if DEBUG_TOOL
+			std::cout << "DBG_TOOL " << __FUNCTION__ << "> numCells: " << numCells << "\n";
+			#endif
 			//-----------------------------------------------------------------------
-			// check if need to shift by MISR_SHIFT==ON & MISR target case for writing
+			// check if need to shift by MISR_TARGET_BLOCKUNSTACK==ON & MISR target case for writing
 			double * misrSingleDataShifted = NULL;
 			if(misrShift == "ON") {
+				std::cout << "\nTarget MISR radiance block unstacking...\n";
 				#if DEBUG_ELAPSE_TIME
 				StartElapseTime();
 				#endif
 				misrSingleDataShifted = (double *) malloc(sizeof(double) * widthShifted * heightShifted);
 				MISRBlockOffset(misrSingleData, misrSingleDataShifted, (misrResolution == "L") ? 0 : 1);
 				#if DEBUG_ELAPSE_TIME
-				StopElapseTimeAndShow("DBG_TIME> target MISR radiance shift DONE.");
+				StopElapseTimeAndShow("DBG_TIME> target MISR radiance block unstack DONE.");
 				#endif
 
 				misrSingleDataPtr = misrSingleDataShifted;
@@ -1001,13 +1002,14 @@ int af_GenerateOutputCumulative_ModisAsSrc(AF_InputParmeterFile &inputArgs, hid_
 		double * srcProcessedDataShifted = NULL;
 		double * srcProcessedDataPtr = NULL;
 		if(inputArgs.GetMISR_Shift() == "ON" && inputArgs.GetTargetInstrument() == "MISR") {
+			std::cout << "\nSource MODIS radiance MISR-base shifting...\n";
 			#if DEBUG_ELAPSE_TIME
 			StartElapseTime();
 			#endif
 			srcProcessedDataShifted = new double [widthShifted * heightShifted];
 			MISRBlockOffset(srcProcessedData, srcProcessedDataShifted, (inputArgs.GetMISR_Resolution() == "L") ? 0 : 1);
 			#if DEBUG_ELAPSE_TIME
-			StopElapseTimeAndShow("DBG_TIME> source MODIS radiance shift DONE.");
+			StopElapseTimeAndShow("DBG_TIME> source MODIS radiance MISR-base shift DONE.");
 			#endif
 
 			srcProcessedDataPtr = srcProcessedDataShifted;
@@ -1419,11 +1421,6 @@ int main(int argc, char *argv[])
 	/* ===================================================
 	 * Output Target instrument latitude and longitude
 	 */
-	std::cout << "\nWriting target geolocation data...\n";
-	#if DEBUG_ELAPSE_TIME
-	StartElapseTime();
-	#endif
-
 	int trgCellNumNew;
 	int trgOutputWidth;
 	double * targetLatitudePtr = NULL;
@@ -1435,7 +1432,7 @@ int main(int argc, char *argv[])
 	trgOutputWidth = widthShifted;
 	// misr-target base shift
 	if(inputArgs.GetMISR_Shift() == "ON" && inputArgs.GetTargetInstrument() == "MISR") {
-		std::cout << "\nTarget latitude MISR-base Shifting...\n";
+		std::cout << "Target latitude MISR-base block unstacking...\n";
 		#if DEBUG_ELAPSE_TIME
 		StartElapseTime();
 		#endif
@@ -1443,7 +1440,7 @@ int main(int argc, char *argv[])
 		std::string misrResolution = inputArgs.GetMISR_Resolution();
 		MISRBlockOffset(targetLatitude, targetLatitudeShifted, (misrResolution == "L") ? 0 : 1);
 		#if DEBUG_ELAPSE_TIME
-		StopElapseTimeAndShow("DBG_TIME> Target latitude MISR-base Shift DONE.");
+		StopElapseTimeAndShow("DBG_TIME> Target latitude MISR-base block unstacking DONE.");
 		#endif
 
 		targetLatitudePtr = targetLatitudeShifted;
@@ -1459,28 +1456,28 @@ int main(int argc, char *argv[])
 	std::cout << "DBG_TOOL main> trgOutputWidth: " <<  trgOutputWidth << "\n";
 	#endif
 
+	std::cout << "\nWriting target geolocation data...\n";
+	#if DEBUG_ELAPSE_TIME
+	StartElapseTime();
+	#endif
 	int lat_status =  af_write_mm_geo(output_file, 0, targetLatitudePtr, trgCellNumNew, trgOutputWidth);
-
-
 	if(lat_status < 0) {
 		std::cerr << "Error: writing latitude geolocation.\n";
 		return FAILED;
 	}
-	if (targetLatitudeShifted)
-		free(targetLatitudeShifted);
-
 	#if DEBUG_ELAPSE_TIME
 	StopElapseTimeAndShow("DBG_TIME> write geo lattitude data DONE.");
 	#endif
 
-	#if DEBUG_ELAPSE_TIME
-	StartElapseTime();
-	#endif
+	if (targetLatitudeShifted)
+		free(targetLatitudeShifted);
+
+
 	double * targetLongitudePtr = NULL;
 	double * targetLongitudeShifted = NULL;
 
 	if(inputArgs.GetMISR_Shift() == "ON" && inputArgs.GetTargetInstrument() == "MISR") {
-		std::cout << "\nTarget longitude MISR-base shifting...\n";
+		std::cout << "Target longitude MISR-base block unstacking...\n";
 		#if DEBUG_ELAPSE_TIME
 		StartElapseTime();
 		#endif
@@ -1488,7 +1485,7 @@ int main(int argc, char *argv[])
 		std::string misrResolution = inputArgs.GetMISR_Resolution();
 		MISRBlockOffset(targetLongitude, targetLongitudeShifted, (misrResolution == "L") ? 0 : 1);
 		#if DEBUG_ELAPSE_TIME
-		StopElapseTimeAndShow("DBG_TIME> Target longitude MISR-base Shift DONE.");
+		StopElapseTimeAndShow("DBG_TIME> Target longitude MISR-base block unstacking DONE.");
 		#endif
 
 		targetLongitudePtr = targetLongitudeShifted;
@@ -1497,18 +1494,20 @@ int main(int argc, char *argv[])
 		targetLongitudePtr = targetLongitude;
 	}
 
+	#if DEBUG_ELAPSE_TIME
+	StartElapseTime();
+	#endif
 	int long_status = af_write_mm_geo(output_file, 1, targetLongitudePtr, trgCellNumNew, trgOutputWidth);
 	if(long_status < 0) {
 		std::cerr << "Error: writing longitude geolocation.\n";
 		return FAILED;
 	}
-
-	if (targetLongitudeShifted)
-		free(targetLongitudeShifted);
-
 	#if DEBUG_ELAPSE_TIME
 	StopElapseTimeAndShow("DBG_TIME> write geo longitude data DONE.");
 	#endif
+
+	if (targetLongitudeShifted)
+		free(targetLongitudeShifted);
 
 
 
