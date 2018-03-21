@@ -189,8 +189,108 @@ int af_GetWidthAndHeightForOutputDataSize(std::string instrument, AF_InputParmet
  *
  *#############################################################*/
 
+/* 
+ * function prototype for AF_GenerateTargetRadiancesOutput()
+ */
+int af_GenerateOutputCumulative_ModisAsTrg(AF_InputParmeterFile &inputArgs, hid_t outputFile,hid_t srcFile, int trgCellNum, std::map<std::string, strVec_t> &inputMultiVarsMap);
+int af_GenerateOutputCumulative_MisrAsTrg(AF_InputParmeterFile &inputArgs, hid_t outputFile,hid_t srcFile, int trgCellNumOri, std::map<std::string, strVec_t> &inputMultiVarsMap);
+
+
+/*=================================================
+ * Generate target instrument randiance output.
+ * Initial function.
+ */
+int   AF_GenerateTargetRadiancesOutput(AF_InputParmeterFile &inputArgs, hid_t outputFile, int trgCellNum, hid_t srcFile, std::map<std::string, strVec_t> & trgInputMultiVarsMap)
+{
+	#if DEBUG_TOOL
+	std::cout << "DBG_TOOL " << __FUNCTION__ << "> BEGIN \n";
+	#endif
+
+	int ret;
+
+	//----------------------------------
+	// prepare group of dataset
+	printf("Creating target group...\n");
+	hid_t gcpl_id = H5Pcreate (H5P_LINK_CREATE);
+	if(gcpl_id < 0) {
+		std::cerr << __FUNCTION__ <<  "> Error: H5Pcreate.\n";
+		return FAILED;
+	}
+	herr_t status = H5Pset_create_intermediate_group (gcpl_id, 1);
+	if(status < 0) {
+		std::cerr << __FUNCTION__ <<  "> Error: H5Pset_create_intermediate_group.\n";
+		return FAILED;
+	}
+	hid_t group_id = H5Gcreate2(outputFile, TRG_DATA_GROUP.c_str(), gcpl_id, H5P_DEFAULT, H5P_DEFAULT);
+	if(group_id < 0) {
+		std::cerr << __FUNCTION__ <<  "> Error: H5Gcreate2 in output file.\n";
+		return FAILED;
+	}
+	herr_t grp_status = H5Gclose(group_id);
+	if(grp_status < 0) {
+		std::cerr << __FUNCTION__ <<  "> Error: H5Gclose in output file.\n";
+		return FAILED;
+	}
+
+	strVec_t multiVarNames;
+	std::string instrument = inputArgs.GetTargetInstrument();
+	// std::string mixType = "COMBINATION"; // Default
+	//--------------------------------------------------------
+	// Use this for Single multi-value Variable case. MODIS
+
+	#if DEBUG_TOOL
+	std::cout << "DBG_TOOL " << __FUNCTION__ << "> trgInputMultiVarsMap.size(): " << trgInputMultiVarsMap.size() << "\n";
+	#endif
+	// display strBuf with array index
+	if (instrument == "MODIS") {
+		multiVarNames = inputArgs.GetMultiVariableNames("MODIS"); // modis_MultiVars;
+
+		if (trgInputMultiVarsMap.size() != 1) {
+			std::cout << __FUNCTION__ << ":" << __LINE__ <<  "> Error building target input list with MODIS. There must be only one multi-value variable.\n";
+			return FAILED;
+		}
+
+		// TODO_LATER - decide for loop inside or loop outside
+		#if 1 // case for looping inside
+		ret = af_GenerateOutputCumulative_ModisAsTrg(inputArgs, outputFile, srcFile, trgCellNum, trgInputMultiVarsMap);
+		if(ret == FAILED) {
+			std::cerr << __FUNCTION__ <<  "> Error: Generating MODIS target output.\n";
+			return FAILED;
+		}
+		#else // case for looping from outside
+		for(int j = 0; j < trgInputMultiVarsMap[multiVarNames[0]].size(); ++j) {
+			std::cout << trgInputMultiVarsMap[multiVarNames[0]][j]	<< ", ";
+			AF_Method2_MODIStrg_ReadWriteSingleBandData(outputFile, srcFile, trgCellNum, trgInputMultiVarsMap[multiVarNames[0]][j] /* single Band*/);
+		}
+		std::cout << std::endl;
+		#endif
+	}
+	//--------------------------------------------------------
+	// Use these for two multi-value Variable case. MISR and ASTER
+	else if (instrument == "MISR") {
+
+		if (trgInputMultiVarsMap.size() != 2) {
+			std::cout << __FUNCTION__ << ":" << __LINE__ <<  "> Error building target input list with MISR. There must be only two multi-value variables.\n";
+			return FAILED;
+		}
+
+		ret = af_GenerateOutputCumulative_MisrAsTrg(inputArgs, outputFile, srcFile, trgCellNum, trgInputMultiVarsMap);
+		if(ret == FAILED) {
+			std::cerr << __FUNCTION__ <<  "> Error: Generating MISR target output.\n";
+			return FAILED;
+		}
+	}
+
+	#if DEBUG_TOOL
+	std::cout << "DBG_TOOL " << __FUNCTION__ << "> END \n";
+	#endif
+	return SUCCEED;
+}
+
+
+
 /*============================================================
- * Target as MODIS functions
+ * Target as MODIS functions for the output
  */
 static int af_WriteSingleRadiance_ModisAsTrg(hid_t outputFile, hid_t modisDatatype, hid_t modisFilespace, double* modisData, int modisDataSize, int outputWidth, int bandIdx)
 {
@@ -375,7 +475,7 @@ int af_GenerateOutputCumulative_ModisAsTrg(AF_InputParmeterFile &inputArgs, hid_
 
 
 /*==================================================================
- * Target as MISR functions
+ * Target as MISR functions for the output
  */
 static int af_WriteSingleRadiance_MisrAsTrg(hid_t outputFile, hid_t misrDatatype, hid_t misrFilespace, double* misrData, int misrDataSize, int outputWidth, int cameraIdx, int radianceIdx)
 {
@@ -595,17 +695,35 @@ int af_GenerateOutputCumulative_MisrAsTrg(AF_InputParmeterFile &inputArgs, hid_t
 	return SUCCEED;
 }
 
-int   AF_GenerateTargetRadiancesOutput(AF_InputParmeterFile &inputArgs, hid_t outputFile, int trgCellNum, hid_t srcFile, std::map<std::string, strVec_t> & trgInputMultiVarsMap)
+
+
+/*##############################################################
+ *
+ * Generate Source instrument radiance to output file
+ *
+ *#############################################################*/
+
+/* 
+ * function prototype for AF_GenerateTargetRadiancesOutput()
+ */
+int af_GenerateOutputCumulative_ModisAsSrc(AF_InputParmeterFile &inputArgs, hid_t outputFile, int *targetNNsrcID,  int trgCellNumNoShift, hid_t srcFile, int srcCellNum, std::map<std::string, strVec_t> &inputMultiVarsMap);
+int af_GenerateOutputCumulative_MisrAsSrc(AF_InputParmeterFile &inputArgs, hid_t outputFile, int *targetNNsrcID,  int trgCellNum, hid_t srcFile, int srcCellNum, std::map<std::string, strVec_t> &inputMultiVarsMap);
+
+
+/*===================================================================
+ * Generate source instrument randiance output.
+ * Initial function.
+ */
+int   AF_GenerateSourceRadiancesOutput(AF_InputParmeterFile &inputArgs, hid_t outputFile, int * targetNNsrcID, int trgCellNum, hid_t srcFile, int srcCellNum, std::map<std::string, strVec_t> & srcInputMultiVarsMap)
 {
 	#if DEBUG_TOOL
 	std::cout << "DBG_TOOL " << __FUNCTION__ << "> BEGIN \n";
 	#endif
-
-	int ret;
+	int ret = SUCCEED;
 
 	//----------------------------------
 	// prepare group of dataset
-	printf("Creating target group...\n");
+	printf("writing data fields\n");
 	hid_t gcpl_id = H5Pcreate (H5P_LINK_CREATE);
 	if(gcpl_id < 0) {
 		std::cerr << __FUNCTION__ <<  "> Error: H5Pcreate.\n";
@@ -616,7 +734,7 @@ int   AF_GenerateTargetRadiancesOutput(AF_InputParmeterFile &inputArgs, hid_t ou
 		std::cerr << __FUNCTION__ <<  "> Error: H5Pset_create_intermediate_group.\n";
 		return FAILED;
 	}
-	hid_t group_id = H5Gcreate2(outputFile, TRG_DATA_GROUP.c_str(), gcpl_id, H5P_DEFAULT, H5P_DEFAULT);
+	hid_t group_id = H5Gcreate2(outputFile, SRC_DATA_GROUP.c_str(), gcpl_id, H5P_DEFAULT, H5P_DEFAULT);
 	if(group_id < 0) {
 		std::cerr << __FUNCTION__ <<  "> Error: H5Gcreate2 in output file.\n";
 		return FAILED;
@@ -628,71 +746,56 @@ int   AF_GenerateTargetRadiancesOutput(AF_InputParmeterFile &inputArgs, hid_t ou
 	}
 
 	strVec_t multiVarNames;
-	std::string instrument = inputArgs.GetTargetInstrument();
-	// std::string mixType = "COMBINATION"; // Default
+	std::string instrument = inputArgs.GetSourceInstrument();
+	//std::string mixType = "COMBINATION"; // Default
 	//--------------------------------------------------------
 	// Use this for Single multi-value Variable case. MODIS
 
 	#if DEBUG_TOOL
-	std::cout << "DBG_TOOL " << __FUNCTION__ << "> trgInputMultiVarsMap.size(): " << trgInputMultiVarsMap.size() << "\n";
+	std::cout << "DBG_TOOL " << __FUNCTION__ << "> srcInputMultiVarsMap.size(): " << srcInputMultiVarsMap.size() << "\n";
 	#endif
-	// display strBuf with array index
-	if (instrument == "MODIS") {
-		multiVarNames = inputArgs.GetMultiVariableNames("MODIS"); // modis_MultiVars;
 
-		if (trgInputMultiVarsMap.size() != 1) {
+	if (instrument == "MODIS") {
+		if (srcInputMultiVarsMap.size() != 1) {
 			std::cout << __FUNCTION__ << ":" << __LINE__ <<  "> Error building target input list with MODIS. There must be only one multi-value variable.\n";
 			return FAILED;
 		}
 
-		// TODO_LATER - decide for loop inside or loop outside
-		#if 1 // case for looping inside
-		ret = af_GenerateOutputCumulative_ModisAsTrg(inputArgs, outputFile, srcFile, trgCellNum, trgInputMultiVarsMap);
-		if(ret == FAILED) {
-			std::cerr << __FUNCTION__ <<  "> Error: Generating MODIS target output.\n";
-			return FAILED;
+		ret = af_GenerateOutputCumulative_ModisAsSrc(inputArgs, outputFile, targetNNsrcID,  trgCellNum, srcFile, srcCellNum, srcInputMultiVarsMap);
+		if (ret == FAILED) {
+			std::cout << __FUNCTION__ << ":" << __LINE__ <<  "> failed generating output for MISR.\n";
+			ret = FAILED;
+			goto done;
 		}
-		#else // case for looping from outside
-		for(int j = 0; j < trgInputMultiVarsMap[multiVarNames[0]].size(); ++j) {
-			std::cout << trgInputMultiVarsMap[multiVarNames[0]][j]	<< ", ";
-			AF_Method2_MODIStrg_ReadWriteSingleBandData(outputFile, srcFile, trgCellNum, trgInputMultiVarsMap[multiVarNames[0]][j] /* single Band*/);
-		}
-		std::cout << std::endl;
-		#endif
 	}
 	//--------------------------------------------------------
 	// Use these for two multi-value Variable case. MISR and ASTER
 	else if (instrument == "MISR") {
 
-		if (trgInputMultiVarsMap.size() != 2) {
+		if (srcInputMultiVarsMap.size() != 2) {
 			std::cout << __FUNCTION__ << ":" << __LINE__ <<  "> Error building target input list with MISR. There must be only two multi-value variables.\n";
-			return FAILED;
+			ret = FAILED;
+			goto done;
 		}
 
-		ret = af_GenerateOutputCumulative_MisrAsTrg(inputArgs, outputFile, srcFile, trgCellNum, trgInputMultiVarsMap);
-		if(ret == FAILED) {
-			std::cerr << __FUNCTION__ <<  "> Error: Generating MISR target output.\n";
-			return FAILED;
+		ret = af_GenerateOutputCumulative_MisrAsSrc(inputArgs, outputFile, targetNNsrcID,  trgCellNum, srcFile, srcCellNum, srcInputMultiVarsMap);
+		if (ret == FAILED) {
+			std::cout << __FUNCTION__ << ":" << __LINE__ <<  "> failed generating output for MISR.\n";
+			ret = FAILED;
+			goto done;
 		}
 	}
 
 	#if DEBUG_TOOL
 	std::cout << "DBG_TOOL " << __FUNCTION__ << "> END \n";
 	#endif
-	return SUCCEED;
+done:
+	return ret;
 }
 
 
-
-
-/*##############################################################
- *
- * Generate Source instrument radiance to output file
- *
- *#############################################################*/
-
 /*======================================================
- * Source output as MODIS 
+ * Source as MODIS functions for the output
  */
 static int af_WriteSingleRadiance_ModisAsSrc(hid_t outputFile, hid_t modisDatatype, hid_t modisFilespace, double* processedData, int trgCellNum, int outputWidth, int bandIdx)
 {
@@ -953,7 +1056,7 @@ int af_GenerateOutputCumulative_ModisAsSrc(AF_InputParmeterFile &inputArgs, hid_
 
 
 /*=================================================
- * Source output as MISR 
+ * Source as MISR functions for the output
  */
 static int af_WriteSingleRadiance_MisrAsSrc(hid_t outputFile, hid_t misrDatatype, hid_t misrFilespace, double* processedData, int trgCellNum, int outputWidth, int cameraIdx, int radIdx)
 {
@@ -1193,90 +1296,11 @@ int af_GenerateOutputCumulative_MisrAsSrc(AF_InputParmeterFile &inputArgs, hid_t
 
 
 
-/*===================================================================
- * Generate source instrument randiance output.
- * Initial function.
+
+
+/*===========================================
+ * Main 
  */
-int   AF_GenerateSourceRadiancesOutput(AF_InputParmeterFile &inputArgs, hid_t outputFile, int * targetNNsrcID, int trgCellNum, hid_t srcFile, int srcCellNum, std::map<std::string, strVec_t> & srcInputMultiVarsMap)
-{
-	#if DEBUG_TOOL
-	std::cout << "DBG_TOOL " << __FUNCTION__ << "> BEGIN \n";
-	#endif
-	int ret = SUCCEED;
-
-	//----------------------------------
-	// prepare group of dataset
-	printf("writing data fields\n");
-	hid_t gcpl_id = H5Pcreate (H5P_LINK_CREATE);
-	if(gcpl_id < 0) {
-		std::cerr << __FUNCTION__ <<  "> Error: H5Pcreate.\n";
-		return FAILED;
-	}
-	herr_t status = H5Pset_create_intermediate_group (gcpl_id, 1);
-	if(status < 0) {
-		std::cerr << __FUNCTION__ <<  "> Error: H5Pset_create_intermediate_group.\n";
-		return FAILED;
-	}
-	hid_t group_id = H5Gcreate2(outputFile, SRC_DATA_GROUP.c_str(), gcpl_id, H5P_DEFAULT, H5P_DEFAULT);
-	if(group_id < 0) {
-		std::cerr << __FUNCTION__ <<  "> Error: H5Gcreate2 in output file.\n";
-		return FAILED;
-	}
-	herr_t grp_status = H5Gclose(group_id);
-	if(grp_status < 0) {
-		std::cerr << __FUNCTION__ <<  "> Error: H5Gclose in output file.\n";
-		return FAILED;
-	}
-
-	strVec_t multiVarNames;
-	std::string instrument = inputArgs.GetSourceInstrument();
-	//std::string mixType = "COMBINATION"; // Default
-	//--------------------------------------------------------
-	// Use this for Single multi-value Variable case. MODIS
-
-	#if DEBUG_TOOL
-	std::cout << "DBG_TOOL " << __FUNCTION__ << "> srcInputMultiVarsMap.size(): " << srcInputMultiVarsMap.size() << "\n";
-	#endif
-
-	if (instrument == "MODIS") {
-		if (srcInputMultiVarsMap.size() != 1) {
-			std::cout << __FUNCTION__ << ":" << __LINE__ <<  "> Error building target input list with MODIS. There must be only one multi-value variable.\n";
-			return FAILED;
-		}
-
-		ret = af_GenerateOutputCumulative_ModisAsSrc(inputArgs, outputFile, targetNNsrcID,  trgCellNum, srcFile, srcCellNum, srcInputMultiVarsMap);
-		if (ret == FAILED) {
-			std::cout << __FUNCTION__ << ":" << __LINE__ <<  "> failed generating output for MISR.\n";
-			ret = FAILED;
-			goto done;
-		}
-	}
-	//--------------------------------------------------------
-	// Use these for two multi-value Variable case. MISR and ASTER
-	else if (instrument == "MISR") {
-
-		if (srcInputMultiVarsMap.size() != 2) {
-			std::cout << __FUNCTION__ << ":" << __LINE__ <<  "> Error building target input list with MISR. There must be only two multi-value variables.\n";
-			ret = FAILED;
-			goto done;
-		}
-
-		ret = af_GenerateOutputCumulative_MisrAsSrc(inputArgs, outputFile, targetNNsrcID,  trgCellNum, srcFile, srcCellNum, srcInputMultiVarsMap);
-		if (ret == FAILED) {
-			std::cout << __FUNCTION__ << ":" << __LINE__ <<  "> failed generating output for MISR.\n";
-			ret = FAILED;
-			goto done;
-		}
-	}
-
-	#if DEBUG_TOOL
-	std::cout << "DBG_TOOL " << __FUNCTION__ << "> END \n";
-	#endif
-done:
-	return ret;
-}
-
-
 
 int main(int argc, char *argv[])
 {
