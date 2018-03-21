@@ -138,7 +138,6 @@ int AF_GetGeolocationDataFromInstrument(std::string instrument, AF_InputParmeter
  *						This is only valid for Misr target shift case.
  *						If 0, caller should not use this.
  */
-// JK_TODO_SHIFT_MISRasTrg
 int af_GetWidthAndHeightForOutputDataSize(std::string instrument, AF_InputParmeterFile &inputArgs, int &crossTrackWidth /*OUT*/, int &alongTrackHeight /*OUT*/)
 {
 	int ret = 0;
@@ -190,8 +189,8 @@ int af_GetWidthAndHeightForOutputDataSize(std::string instrument, AF_InputParmet
  *
  *#############################################################*/
 
-/*==================================
- * Target output as MODIS 
+/*============================================================
+ * Target as MODIS functions
  */
 static int af_WriteSingleRadiance_ModisAsTrg(hid_t outputFile, hid_t modisDatatype, hid_t modisFilespace, double* modisData, int modisDataSize, int outputWidth, int bandIdx)
 {
@@ -298,7 +297,6 @@ int af_GenerateOutputCumulative_ModisAsTrg(AF_InputParmeterFile &inputArgs, hid_
 	 */
 	/* handle different data width and height. no need to care for misr-trg shift case
 	 */
-	#if 1 // JK_TODO - DONE
 	int ret;
 	int widthShifted = 0;
 	int heightShifted = 0;
@@ -308,9 +306,6 @@ int af_GenerateOutputCumulative_ModisAsTrg(AF_InputParmeterFile &inputArgs, hid_
 		return FAILED;
 	}
     int targetOutputWidth = widthShifted;
-	#else
-	int targetOutputWidth = af_GetWidthForOutput(inputArgs.GetTargetInstrument() /* MODIS */, inputArgs);
-	#endif
 	const int rankSpace=3;  // [bands][y][x]
 	hsize_t modis_dim[rankSpace];
 	modis_dim[0] = bands.size();
@@ -377,10 +372,11 @@ int af_GenerateOutputCumulative_ModisAsTrg(AF_InputParmeterFile &inputArgs, hid_
 	return SUCCEED;
 }
 
-/*==================================
- * Target output as MISR
+
+
+/*==================================================================
+ * Target as MISR functions
  */
-#if 1 // JK_TODO_MISRasTrg_CHECK
 static int af_WriteSingleRadiance_MisrAsTrg(hid_t outputFile, hid_t misrDatatype, hid_t misrFilespace, double* misrData, int misrDataSize, int outputWidth, int cameraIdx, int radianceIdx)
 {
 	#if DEBUG_TOOL
@@ -462,7 +458,6 @@ done:
 	#endif
 	return ret;
 }
-#endif
 
 
 int af_GenerateOutputCumulative_MisrAsTrg(AF_InputParmeterFile &inputArgs, hid_t outputFile,hid_t srcFile, int trgCellNumOri, std::map<std::string, strVec_t> &inputMultiVarsMap)
@@ -499,7 +494,6 @@ int af_GenerateOutputCumulative_MisrAsTrg(AF_InputParmeterFile &inputArgs, hid_t
 	/*
 	 * get targetOutputWidth and trgCellNum
 	 */
-	// JK_TODO_MisrShift v2 // DONE
 	ret = af_GetWidthAndHeightForOutputDataSize("MISR", inputArgs, widthShifted, heightShifted);
 	if(ret < 0) {
 		return FAILED;
@@ -553,12 +547,17 @@ int af_GenerateOutputCumulative_MisrAsTrg(AF_InputParmeterFile &inputArgs, hid_t
 			#endif
 
 			//-----------------------------------------------------------------------
-			// check if need to shift by MISR shift==ON & target case before writing
-			// JK_TODO_MisrShift // DONE
+			// check if need to shift by MISR_SHIFT==ON & MISR target case for writing
 			double * misrSingleDataShifted = NULL;
 			if(misrShift == "ON") {
+				#if DEBUG_ELAPSE_TIME
+				StartElapseTime();
+				#endif
 				misrSingleDataShifted = (double *) malloc(sizeof(double) * widthShifted * heightShifted);
 				MISRBlockOffset(misrSingleData, misrSingleDataShifted, (misrResolution == "L") ? 0 : 1);
+				#if DEBUG_ELAPSE_TIME
+				StopElapseTimeAndShow("DBG_TIME> target MISR radiance shift DONE.");
+				#endif
 
 				misrSingleDataPtr = misrSingleDataShifted;
 				numCells = widthShifted * heightShifted;
@@ -572,7 +571,6 @@ int af_GenerateOutputCumulative_MisrAsTrg(AF_InputParmeterFile &inputArgs, hid_t
 			#if DEBUG_ELAPSE_TIME
 			StartElapseTime();
 			#endif
-			//af_WriteSingleRadiance_MisrAsTrg(outputFile, misrDatatype, misrDataspace,  misrSingleData, numCells, targetOutputWidth, i, j);
 			af_WriteSingleRadiance_MisrAsTrg(outputFile, misrDatatype, misrDataspace,  misrSingleDataPtr, numCells, targetOutputWidth, i, j);
 			#if DEBUG_ELAPSE_TIME
 			StopElapseTimeAndShow("DBG_TIME> Write target Misr single band data  DONE.");
@@ -586,58 +584,6 @@ int af_GenerateOutputCumulative_MisrAsTrg(AF_InputParmeterFile &inputArgs, hid_t
 				free(misrSingleDataShifted);
 		}
 	}
-
-
-	#if 0 // JK_TODO_MISRasTrg_REMOVE
-	int numCells;
-	double *misrSingleData;
-	std::vector<std::string> singleBandVec;
-	for (int i=0; i< bands.size(); i++) {
-		std::cout << "Processing MODIS band: " << bands[i] << "\n";
-		#if DEBUG_TOOL
-		std::cout << "DBG_TOOL " << __FUNCTION__ << "> bands[" << i << "]: " << bands[i] << "\n";
-		#endif
-		// insert to only begin
-		singleBandVec.insert(singleBandVec.begin(), bands[i]);
-		#if DEBUG_TOOL
-		std::cout << "DBG_TOOL " << __FUNCTION__ << "> singleBandVec[0]: " << singleBandVec[0] << "\n";
-		#endif
-		#if 0 // TOOL_TEST remove later
-		//Read multi bands (instead Generate single band data for test)
-		//GenerateDataDouble2D(singleData, singleDataDims2D, atoi(bands[i].c_str()));
-		//DisplayDataDouble2D(singleData, singleDataDims2D);
-		#endif
-		//---------------------------------
-		// read trg radiance from BF file
-		#if DEBUG_ELAPSE_TIME
-		StartElapseTime();
-		#endif
-		misrSingleData = get_modis_rad(srcFile, (char*)modisResolution.c_str(), singleBandVec, 1, &numCells);
-		if (misrSingleData == NULL) {
-			std::cerr << __FUNCTION__ <<  "> Error: failed to get MISR radiance.\n";
-			return FAILED;
-		}
-		#if DEBUG_TOOL
-		std::cout << "DBG_TOOL " << __FUNCTION__ << "> numCells: " << numCells << "\n";
-		#endif
-		#if DEBUG_ELAPSE_TIME
-		StopElapseTimeAndShow("DBG_TIME> Read target Misr single band data  DONE.");
-		#endif
-
-		//---------------------------------
-		// write trg radiance to AF file
-		#if DEBUG_ELAPSE_TIME
-		StartElapseTime();
-		#endif
-		af_WriteSingleRadiance_MisrAsTrg(outputFile, misrDatatype, misrDataspace,  misrSingleData, numCells, targetOutputWidth, i);
-		#if DEBUG_ELAPSE_TIME
-		StopElapseTimeAndShow("DBG_TIME> Write target Misr single band data  DONE.");
-		#endif
-		//
-		// TODO: buffer is not reused. make memory allocation out of get_misr_rad() to improve performance
-		free(misrSingleData);
-	}
-	#endif
 
 	H5Tclose(misrDatatype);
 	H5Sclose(misrDataspace);
@@ -737,16 +683,17 @@ int   AF_GenerateTargetRadiancesOutput(AF_InputParmeterFile &inputArgs, hid_t ou
 }
 
 
+
+
 /*##############################################################
  *
  * Generate Source instrument radiance to output file
  *
  *#############################################################*/
 
-/*==================================
+/*======================================================
  * Source output as MODIS 
  */
-#if 1 // JK_TODO_MODISasSrc
 static int af_WriteSingleRadiance_ModisAsSrc(hid_t outputFile, hid_t modisDatatype, hid_t modisFilespace, double* processedData, int trgCellNum, int outputWidth, int bandIdx)
 {
 	#if DEBUG_TOOL
@@ -825,84 +772,7 @@ done:
 	#endif
 	return ret;
 }
-#if 0 // JK_TODO_MODISasSrc_REMOVE
-static int af_WriteSingleRadiance_ModisAsSrc(hid_t outputFile, hid_t modisDatatype, hid_t modisFilespace, double* modisData, int modisDataSize, int bandIdx)
-{
-	#if DEBUG_TOOL
-	std::cout << "DBG_TOOL " << __FUNCTION__ << "> BEGIN \n";
-	#endif
 
-	int ret = SUCCEED;
-
-	herr_t status;
-	hid_t modis_dataset;
-	if(bandIdx==0) { // means new
-		modis_dataset = H5Dcreate2(outputFile, "/Data_Fields/modis_rad", modisDatatype, modisFilespace,H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-		if(modis_dataset < 0) {
-			std::cerr << __FUNCTION__ << ":" << __LINE__ <<  "> Error: H5Dcreate2 target data in output file.\n";
-			return FAILED;
-		}
-	}
-	else {
-		modis_dataset = H5Dopen2(outputFile, "/Data_Fields/modis_rad", H5P_DEFAULT);
-		if(modis_dataset < 0) {
-			std::cerr <<  __FUNCTION__ << ":" << __LINE__ <<  "> Error: H5Dopen2 target data in output file.\n";
-			return FAILED;
-		}
-	}
-
-
-	//------------------------------
-	// select memspace
-	int ranksMem=2;
-	hsize_t dim2dMem[2];
-	hsize_t start2dMem[2];
-	hsize_t count2dMem[2];
-	dim2dMem[0] = modisDataSize/RESAMPLE_MODIS_DATA_WIDTH; // y
-	dim2dMem[1] = RESAMPLE_MODIS_DATA_WIDTH; // x
-	hid_t memspace = H5Screate_simple(ranksMem, dim2dMem, NULL);
-
-	start2dMem[0] = 0; // y
-	start2dMem[1] = 0; // x
-	count2dMem[0] = modisDataSize/RESAMPLE_MODIS_DATA_WIDTH; // y
-	count2dMem[1] = RESAMPLE_MODIS_DATA_WIDTH; // x
-
-	status = H5Sselect_hyperslab(memspace, H5S_SELECT_SET, start2dMem, NULL, count2dMem, NULL);
-
-	//------------------------------
-	// select filespace
-	hsize_t star3dFile[3];
-	hsize_t count3dFile[3];
-	star3dFile[0] = bandIdx;
-	star3dFile[1] = 0; // y
-	star3dFile[2] = 0; // x
-	count3dFile[0] = 1;
-	count3dFile[1] = modisDataSize/RESAMPLE_MODIS_DATA_WIDTH; // y
-	count3dFile[2] = RESAMPLE_MODIS_DATA_WIDTH;  // x
-
-	status = H5Sselect_hyperslab(modisFilespace, H5S_SELECT_SET, star3dFile, NULL, count3dFile, NULL);
-	if(status < 0) {
-		std::cerr << __FUNCTION__ << ":" << __LINE__ <<  "> Error: H5Sselect_hyperslab for Modis target .\n";
-		ret = -1;
-		goto done;
-	}
-
-	status = H5Dwrite(modis_dataset, H5T_NATIVE_DOUBLE, memspace, modisFilespace, H5P_DEFAULT, modisData);
-	if(status < 0) {
-		std::cerr << __FUNCTION__ << ":" << __LINE__ <<  "> Error: H5Dwrite for Modis target .\n";
-		ret = -1;
-		goto done;
-	}
-
-done:
-	H5Dclose(modis_dataset);
-
-	#if DEBUG_TOOL
-	std::cout << "DBG_TOOL " << __FUNCTION__ << "> END \n";
-	#endif
-	return ret;
-}
-#endif // REMOVE
 
 
 int af_GenerateOutputCumulative_ModisAsSrc(AF_InputParmeterFile &inputArgs, hid_t outputFile, int *targetNNsrcID,  int trgCellNumNoShift, hid_t srcFile, int srcCellNum, std::map<std::string, strVec_t> &inputMultiVarsMap)
@@ -928,14 +798,13 @@ int af_GenerateOutputCumulative_ModisAsSrc(AF_InputParmeterFile &inputArgs, hid_
 	}
 
 
-	/*------------------------
+	/*------------------------------------------
 	 * create space for modis
 	 */
 	const int rankSpace=3;  // [bands][y][x]
 	hsize_t modisDims[rankSpace];
 	/* handle different data width and height, also misr-trg shift case
 	 */
-	#if 1 // JK_TODO_MisrShift v2 // DONE
 	int widthShifted;
 	int heightShifted;
 	int trgCellNum;
@@ -950,9 +819,6 @@ int af_GenerateOutputCumulative_ModisAsSrc(AF_InputParmeterFile &inputArgs, hid_
 	else {
 		trgCellNum = trgCellNumNoShift;
 	}
-	#else
-	int srcOutputWidth = af_GetWidthForOutput(inputArgs.GetTargetInstrument() /*target base*/, inputArgs);
-	#endif
 	modisDims[0] = bands.size();
 	modisDims[1] = trgCellNum/srcOutputWidth; // NY;
 	modisDims[2] = srcOutputWidth; // NX;
@@ -999,7 +865,6 @@ int af_GenerateOutputCumulative_ModisAsSrc(AF_InputParmeterFile &inputArgs, hid_
 
 		//-------------------------------------------------
 		// handle resample method
-		#if 1 // JK_TODO_MISRshift // DONE
 		srcProcessedData = new double [trgCellNumNoShift];
 		int new_src_size = trgCellNumNoShift;
 		//Interpolating
@@ -1027,43 +892,20 @@ int af_GenerateOutputCumulative_ModisAsSrc(AF_InputParmeterFile &inputArgs, hid_
 		StopElapseTimeAndShow("DBG> nnInterpolate  DONE.");
 		#endif
 
-		#else // JK_ORI_REMOVE
-		srcProcessedData = new double [trgCellNum];
-		int new_src_size = trgCellNum;
-		//Interpolating
-		std::string resampleMethod =  inputArgs.GetResampleMethod();
-		std::cout << "Interpolating with '" << resampleMethod << "' method on " << inputArgs.GetSourceInstrument() << " by " << bands[i] << ".\n";
-		#if DEBUG_ELAPSE_TIME
-		StartElapseTime();
-		#endif
-		if (inputArgs.CompareStrCaseInsensitive(resampleMethod, "nnInterpolate")) {
-			nnInterpolate(modisSingleData, srcProcessedData, targetNNsrcID, trgCellNum);
-		}
-		else if (inputArgs.CompareStrCaseInsensitive(resampleMethod, "summaryInterpolate")) {
-			nsrcPixels = new int [trgCellNum];
-			summaryInterpolate(modisSingleData, targetNNsrcID, srcCellNum, srcProcessedData, nsrcPixels, trgCellNum);
-			#if 0 // DEBUG_TOOL
-			std::cout << "DBG_TOOL> No nodata values: \n";
-			for(int i = 0; i < trgCellNum; i++) {
-				if(nsrcPixels[i] > 0) {
-					printf("%d,\t%lf\n", nsrcPixels[i], srcProcessedData[i]);
-				}
-			}
-			#endif
-		}
-		#if DEBUG_ELAPSE_TIME
-		StopElapseTimeAndShow("DBG> nnInterpolate  DONE.");
-		#endif
-		#endif
 
 		//-----------------------------------------------------------------------
 		// check if need to shift by MISR (shift==ON & target) case before writing
-		#if 1 //  JK_TODO_MisrShift // DONE
 		double * srcProcessedDataShifted = NULL;
 		double * srcProcessedDataPtr = NULL;
 		if(inputArgs.GetMISR_Shift() == "ON" && inputArgs.GetTargetInstrument() == "MISR") {
+			#if DEBUG_ELAPSE_TIME
+			StartElapseTime();
+			#endif
 			srcProcessedDataShifted = new double [widthShifted * heightShifted];
 			MISRBlockOffset(srcProcessedData, srcProcessedDataShifted, (inputArgs.GetMISR_Resolution() == "L") ? 0 : 1);
+			#if DEBUG_ELAPSE_TIME
+			StopElapseTimeAndShow("DBG_TIME> source MODIS radiance shift DONE.");
+			#endif
 
 			srcProcessedDataPtr = srcProcessedDataShifted;
 			numCells = widthShifted * heightShifted;
@@ -1072,18 +914,13 @@ int af_GenerateOutputCumulative_ModisAsSrc(AF_InputParmeterFile &inputArgs, hid_
 			srcProcessedDataPtr = srcProcessedData;
 			numCells = trgCellNum;
 		}
-		#endif
 
 		//---------------------------------
 		// write src band to AF file
 		#if DEBUG_ELAPSE_TIME
 		StartElapseTime();
 		#endif
-		#if 1 //  JK_TODO_MisrShift // DONE
 		ret = af_WriteSingleRadiance_ModisAsSrc(outputFile, modisDatatype, modisDataspace,  srcProcessedDataPtr, numCells /*processed size*/, srcOutputWidth, i /*bandIdx*/);
-		#else // ORI
-		ret = af_WriteSingleRadiance_ModisAsSrc(outputFile, modisDatatype, modisDataspace,  srcProcessedData, trgCellNum /*processed size*/, srcOutputWidth, i /*bandIdx*/);
-		#endif
 		if (ret == FAILED) {
 			std::cerr << __FUNCTION__ << "> Error: returned fail.\n";
 		}
@@ -1100,10 +937,8 @@ int af_GenerateOutputCumulative_ModisAsSrc(AF_InputParmeterFile &inputArgs, hid_
 			delete [] srcProcessedData;
 		if (nsrcPixels)
 			delete [] nsrcPixels;
-		#if 1 //  JK_TODO_MisrShift // DONE
 		if(srcProcessedDataShifted)
 			delete [] srcProcessedDataShifted;
-		#endif
 	} // i loop
 
 	H5Tclose(modisDatatype);
@@ -1116,101 +951,8 @@ int af_GenerateOutputCumulative_ModisAsSrc(AF_InputParmeterFile &inputArgs, hid_
 	return ret;
 }
 
-#if 0  // JK_TODO_MODISasSrc_REMOVE
-int af_GenerateOutputCumulative_ModisAsSrc(hid_t outputFile,hid_t srcFile, int singleDataSize, std::string modisResolution,  std::vector<std::string> &bands)
-{
-	#if DEBUG_TOOL
-	std::cout << "DBG_TOOL " << __FUNCTION__ << "> BEGIN \n";
-	#endif
 
-	//----------------------------------
-	// prepare group of dataset
-	printf("writing data fields\n");
-	hid_t group_id = H5Gcreate2(outputFile, "/Data_Fields", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-	if(group_id < 0) {
-		std::cerr <<  "Error: H5Gcreate2 in output file.\n";
-		return FAILED;
-	}
-	herr_t grp_status = H5Gclose(group_id);
-	if(grp_status < 0) {
-		std::cerr <<  "Error: H5Gclose in output file.\n";
-		return FAILED;
-	}
-
-	hid_t modisDatatype = H5Tcopy(H5T_NATIVE_DOUBLE);
-	herr_t	status = H5Tset_order(modisDatatype, H5T_ORDER_LE);
-	if(status < 0) {
-		printf("Error: MODIS write error in H5Tset_order\n");
-		return FAILED;
-	}
-
-
-	hsize_t modis_dim[3];
-	modis_dim[0] = bands.size();
-	modis_dim[1] = singleDataSize/RESAMPLE_MODIS_DATA_WIDTH; // NY;
-	modis_dim[2] = RESAMPLE_MODIS_DATA_WIDTH; // NX;
-	hid_t modisDataspace = H5Screate_simple(3, modis_dim, NULL);
-
-	int numCells;
-	double *modisSingleData;
-	std::vector<std::string> singleBandVec;
-	for (int i=0; i< bands.size(); i++) {
-		#if DEBUG_TOOL
-		std::cout << "DBG_TOOL " << __FUNCTION__ << "> bands[" << i << "]" << bands[i] << "\n";
-		#endif
-		// insert to only begin
-		singleBandVec.insert(singleBandVec.begin(), bands[i]);
-		#if DEBUG_TOOL
-		std::cout << "DBG_TOOL " << __FUNCTION__ << "> singleBandVec[0]: " << singleBandVec[0] << "\n";
-		#endif
-		#if 0 // TOOL_TEST remove later
-		//Read multi bands (instead Generate single band data for test)
-		//GenerateDataDouble2D(singleData, singleDataDims2D, atoi(bands[i].c_str()));
-		//DisplayDataDouble2D(singleData, singleDataDims2D);
-		#endif
-		//---------------------------------
-		// read src radiance from BF file
-		#if DEBUG_ELAPSE_TIME
-		StartElapseTime();
-		#endif
-		modisSingleData = get_modis_rad(srcFile, (char*)modisResolution.c_str(), singleBandVec, 1, &numCells);
-		if (modisSingleData == NULL) {
-			std::cerr << __FUNCTION__ <<  "> Error: failed to get Modis radiance.\n";
-			return FAILED;
-		}
-		#if DEBUG_TOOL
-		std::cout << "DBG_TOOL " << __FUNCTION__ << "> numCells: " << numCells << "\n";
-		#endif
-		#if DEBUG_ELAPSE_TIME
-		StopElapseTimeAndShow("DBG_TIME> Read target Modis single band data  DONE.");
-		#endif
-
-		//---------------------------------
-		// write src radiance to AF file
-		#if DEBUG_ELAPSE_TIME
-		StartElapseTime();
-		#endif
-		af_WriteSingleRadiance_ModisAsSrc(outputFile, modisDatatype, modisDataspace,  modisSingleData, numCells, i);
-		#if DEBUG_ELAPSE_TIME
-		StopElapseTimeAndShow("DBG_TIME> Write target Modis single band data  DONE.");
-		#endif
-		//
-		// TODO: buffer is not reused. make memory allocation out of get_modis_rad() to improve performance
-		free(modisSingleData);
-	}
-
-	H5Tclose(modisDatatype);
-	H5Sclose(modisDataspace);
-
-	#if DEBUG_TOOL
-	std::cout << "DBG_TOOL " << __FUNCTION__ << "> END \n";
-	#endif
-}
-#endif // REMOVE 
-#endif // JK_TODO
-
-
-/*==================================
+/*=================================================
  * Source output as MISR 
  */
 static int af_WriteSingleRadiance_MisrAsSrc(hid_t outputFile, hid_t misrDatatype, hid_t misrFilespace, double* processedData, int trgCellNum, int outputWidth, int cameraIdx, int radIdx)
@@ -1324,9 +1066,8 @@ int af_GenerateOutputCumulative_MisrAsSrc(AF_InputParmeterFile &inputArgs, hid_t
 	 */
 	const int rankSpace=4;  // [cameras][radiances][y][x]
 	hsize_t misrDims[rankSpace];
-	/* handle different data width and height. no need to care for misr-trg shift case
+	/* handle different data width and height for output. no need to care for misr-trg shift in this
 	 */
-	#if 1 // JK_TODO - DONE 
 	int widthShifted = 0;
 	int heightShifted = 0;
 	ret = af_GetWidthAndHeightForOutputDataSize(inputArgs.GetTargetInstrument() /*target base output*/, inputArgs, widthShifted, heightShifted);
@@ -1335,9 +1076,6 @@ int af_GenerateOutputCumulative_MisrAsSrc(AF_InputParmeterFile &inputArgs, hid_t
 		return FAILED;
 	}
     int srcOutputWidth = widthShifted;
-	#else
-	int srcOutputWidth = af_GetWidthForOutput(inputArgs.GetTargetInstrument() /*target base*/, inputArgs);
-	#endif
 	misrDims[0] = cameras.size();
 	misrDims[1] = radiances.size();
 	misrDims[2] = trgCellNum/srcOutputWidth; // NY;
@@ -1453,7 +1191,9 @@ int af_GenerateOutputCumulative_MisrAsSrc(AF_InputParmeterFile &inputArgs, hid_t
 	return ret;
 }
 
-/*===============================================
+
+
+/*===================================================================
  * Generate source instrument randiance output.
  * Initial function.
  */
@@ -1499,8 +1239,6 @@ int   AF_GenerateSourceRadiancesOutput(AF_InputParmeterFile &inputArgs, hid_t ou
 	#endif
 
 	if (instrument == "MODIS") {
-
-		#if 1 // JK_TODO_MODISasSrc - DONE
 		if (srcInputMultiVarsMap.size() != 1) {
 			std::cout << __FUNCTION__ << ":" << __LINE__ <<  "> Error building target input list with MODIS. There must be only one multi-value variable.\n";
 			return FAILED;
@@ -1512,8 +1250,6 @@ int   AF_GenerateSourceRadiancesOutput(AF_InputParmeterFile &inputArgs, hid_t ou
 			ret = FAILED;
 			goto done;
 		}
-
-		#endif 
 	}
 	//--------------------------------------------------------
 	// Use these for two multi-value Variable case. MISR and ASTER
@@ -1581,7 +1317,8 @@ int main(int argc, char *argv[])
 	exit(1);
 #endif
 
-	/* ---------------------------------------------------
+
+	/* ===================================================
 	 * Create output file
 	 */
 	std::string outputFile = inputArgs.GetOuputFilePath();
@@ -1592,7 +1329,7 @@ int main(int argc, char *argv[])
 	hid_t output_file = H5Fcreate(outputFile.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
 
 
-	/* ---------------------------------------------------
+	/* ===================================================
 	 * Handle input BF data file
 	 */
 	std::string inputDataPath = inputArgs.GetInputBFdataPath();
@@ -1604,8 +1341,10 @@ int main(int argc, char *argv[])
 		std::cerr << "Error: File not found - " << inputDataPath << std::endl;
 		exit(1);
 	}
+
+
 	
-	/* ---------------------------------------------------
+	/* ===================================================
 	 * Get Source instrument latitude and longitude
 	 */
 	std::cout << "\nGetting source instrument latitude & longitude data...\n";
@@ -1627,7 +1366,9 @@ int main(int argc, char *argv[])
 	std::cout << "DBG_TOOL main> srcCellNum: " <<  srcCellNum << "\n";
 	#endif
 
-	/* ---------------------------------------------------
+
+
+	/* ===================================================
 	 * Get Target instrument latitude and longitude
 	 */
 	std::cout << "\nGetting target instrument latitude & longitude data...\n";
@@ -1650,7 +1391,8 @@ int main(int argc, char *argv[])
 	#endif
 	
 
-	/* ---------------------------------------------------
+
+	/* ===================================================
 	 * Output Target instrument latitude and longitude
 	 */
 	std::cout << "\nWriting target geolocation data...\n";
@@ -1658,7 +1400,6 @@ int main(int argc, char *argv[])
 	StartElapseTime();
 	#endif
 
-	#if 1 // JK_MISRshift DONE
 	int trgCellNumNew;
 	int trgOutputWidth;
 	double * targetLatitudePtr = NULL;
@@ -1689,29 +1430,20 @@ int main(int argc, char *argv[])
 		trgCellNumNew = trgCellNum;
 	}
 	
-	#else
-	int trgOutputWidth = af_GetWidthForOutput(inputArgs.GetTargetInstrument(),  inputArgs);
-	#endif
 
 	#if DEBUG_TOOL
 	std::cout << "DBG_TOOL main> trgOutputWidth: " <<  trgOutputWidth << "\n";
 	#endif
 
-	#if 1 // JK_MISRshift DONE
 	int lat_status =  af_write_mm_geo(output_file, 0, targetLatitudePtr, trgCellNumNew, trgOutputWidth);
-	#else
-	int lat_status =  af_write_mm_geo(output_file, 0, targetLatitude, trgCellNum, trgOutputWidth);
-	#endif
 
 
 	if(lat_status < 0) {
 		std::cerr << "Error: writing latitude geolocation.\n";
 		return FAILED;
 	}
-	#if 1 // JK_MISRshift DONE
 	if (targetLatitudeShifted)
 		free(targetLatitudeShifted);
-	#endif
 
 	#if DEBUG_ELAPSE_TIME
 	StopElapseTimeAndShow("DBG_TIME> write geo lattitude data DONE.");
@@ -1720,12 +1452,11 @@ int main(int argc, char *argv[])
 	#if DEBUG_ELAPSE_TIME
 	StartElapseTime();
 	#endif
-	#if 1 // JK_MISRshift DONE
 	double * targetLongitudePtr = NULL;
 	double * targetLongitudeShifted = NULL;
 
 	if(inputArgs.GetMISR_Shift() == "ON" && inputArgs.GetTargetInstrument() == "MISR") {
-		std::cout << "\nTarget longitude MISR-base Shifting...\n";
+		std::cout << "\nTarget longitude MISR-base shifting...\n";
 		#if DEBUG_ELAPSE_TIME
 		StartElapseTime();
 		#endif
@@ -1737,33 +1468,27 @@ int main(int argc, char *argv[])
 		#endif
 
 		targetLongitudePtr = targetLongitudeShifted;
-		//trgCellNumNew = widthShifted * heightShifted;
 	}
 	else { // no misr shift
 		targetLongitudePtr = targetLongitude;
-		//trgCellNumNew = trgCellNum;
 	}
 
 	int long_status = af_write_mm_geo(output_file, 1, targetLongitudePtr, trgCellNumNew, trgOutputWidth);
-	#else
-	int long_status = af_write_mm_geo(output_file, 1, targetLongitude, trgCellNum, trgOutputWidth);
-	#endif
 	if(long_status < 0) {
 		std::cerr << "Error: writing longitude geolocation.\n";
 		return FAILED;
 	}
 
-	#if 1 // JK_MISRshift DONE
 	if (targetLongitudeShifted)
 		free(targetLongitudeShifted);
-	#endif
 
 	#if DEBUG_ELAPSE_TIME
 	StopElapseTimeAndShow("DBG_TIME> write geo longitude data DONE.");
 	#endif
 
 
-	/* -----------------------------------------------------------
+
+	/* ===========================================================
 	 * Calculate nearest neighbot source over target geolocation
 	 */
 	int * targetNNsrcID = NULL;
@@ -1788,7 +1513,8 @@ int main(int argc, char *argv[])
 		free(targetLongitude);
 	
 
-	/*------------------------------------------------------
+
+	/*======================================================
 	 * Target instrument: Generate radiance to output file
 	 */
 	std::cout  <<  "\nGenerating target instrument " << trgInstrument << " radiance output...\n";
@@ -1808,7 +1534,8 @@ int main(int argc, char *argv[])
 	std::cout << "Writing target radiance output done.\n";
 
 
-	/*------------------------------------------------------
+
+	/*======================================================
 	 * Source instrument: Generate radiance to output file
 	 */
 	std::cout  <<  "\nGenerating source instrument " << srcInstrument << " radiance output...\n";
@@ -1831,7 +1558,8 @@ int main(int argc, char *argv[])
 		delete [] targetNNsrcID;
 
 
-	//----------------------------------------
+
+	//==========================================
 	// Closing data files
 	#if DEBUG_ELAPSE_TIME
 	StartElapseTime();
