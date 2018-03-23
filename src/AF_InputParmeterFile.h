@@ -13,12 +13,19 @@ const std::string OUTPUT_FILE_PATH="OUTPUT_FILE_PATH";
 const std::string RESAMPLE_METHOD="RESAMPLE_METHOD";
 const std::string SOURCE_INSTRUMENT="SOURCE_INSTRUMENT";
 const std::string TARGET_INSTRUMENT="TARGET_INSTRUMENT";
+// MISR
 const std::string MISR_RESOLUTION="MISR_RESOLUTION";
 const std::string MISR_CAMERA_ANGLE="MISR_CAMERA_ANGLE";
 const std::string MISR_RADIANCE="MISR_RADIANCE";
 const std::string MISR_SHIFT="MISR_TARGET_BLOCKUNSTACK";
+// MODIS
 const std::string MODIS_RESOLUTION="MODIS_RESOLUTION";
 const std::string MODIS_BANDS="MODIS_BANDS";
+#if 1 // JK_ASTER2MODIS
+// ASTER
+const std::string ASTER_RESOLUTION="ASTER_RESOLUTION";
+const std::string ASTER_BANDS="ASTER_BANDS";
+#endif
 
 typedef std::vector<std::string> strVec_t;
 
@@ -47,6 +54,11 @@ class AF_InputParmeterFile
 	// MODIS
 	std::string GetMODIS_Resolution();
 	std::vector<std::string>  GetMODIS_Bands();
+	#if 1 // JK_ASTER2MODIS
+	// ASTER 
+	std::string GetASTER_Resolution();
+	std::vector<std::string>  GetASTER_Bands();
+	#endif
 
 
 	/*-------------------------------
@@ -68,7 +80,13 @@ class AF_InputParmeterFile
 	 */
 	bool CheckInputBFdataPath(const std::string &str);
 	bool IsSourceTargetInstrumentSame();
+	// MODIS
 	bool CheckMODIS_Resolution(std::string &str);
+	#if 1 // JK_ASTER2MODIS
+	// ASTER
+	bool CheckASTER_Resolution(std::string &str);
+	bool CheckASTER_Bands(std::vector<std::string> &strVec);
+	#endif
 
 	private:
 	bool didReadHeaderFile;
@@ -89,10 +107,18 @@ class AF_InputParmeterFile
 	// MODIS
 	std::string modis_Resolution;
 	std::vector<std::string> modis_Bands;
+	#if 1 // JK_ASTER2MODIS
+	// ASTER 
+	std::string aster_Resolution;
+	std::vector<std::string> aster_Bands;
+	#endif
 
 	/*-----------------------------------
 	 * Store multi-value variables names
 	 */
 	std::vector<std::string> modis_MultiVars;
 	std::vector<std::string> misr_MultiVars;
+	#if 1 // JK_ASTER2MODIS
+	std::vector<std::string> aster_MultiVars;
+	#endif
 };

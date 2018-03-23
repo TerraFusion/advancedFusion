@@ -30,7 +30,7 @@ AF_InputParmeterFile::AF_InputParmeterFile()
 	std::cout << "DBG_PARSER " << __FUNCTION__ << ":" << __LINE__ << "> Constructor AF_InputParmeterFile()\n";
 	#endif
 	didReadHeaderFile = false;
-	misr_Shift = "ON";
+	misr_Shift = "ON"; // if not specified, but only effective when MISR is target
 
 	/*------------------------------
 	 * init multi-value variables
@@ -40,6 +40,10 @@ AF_InputParmeterFile::AF_InputParmeterFile()
 	// MISR
 	misr_MultiVars.push_back(MISR_CAMERA_ANGLE);
 	misr_MultiVars.push_back(MISR_RADIANCE);
+	#if 1 // JK_ASTER2MODIS
+	// ASTER
+	aster_MultiVars.push_back(ASTER_BANDS);
+	#endif
 }
 
 /*=================================================================
@@ -205,10 +209,11 @@ void AF_InputParmeterFile::ParseByLine()
 			continue;
 		}
 
-		/*---------------
+
+
+		/*======================================================================
 		 * MISR
 		 */
-
 		// parse single exact token without '\n', '\r' or space.
 		found = line.find(MISR_RESOLUTION.c_str());
 		if(found != std::string::npos)
@@ -294,10 +299,9 @@ void AF_InputParmeterFile::ParseByLine()
 		}
 
 
-		/*---------------
+		/*======================================================================
 		 * MODIS
 		 */
-
 		// parse single exact token without '\n', '\r' or space.
 		found = line.find(MODIS_RESOLUTION.c_str());
 		if(found != std::string::npos)
@@ -341,6 +345,60 @@ void AF_InputParmeterFile::ParseByLine()
 			#endif
 			continue;
 		}
+
+
+		#if 1 // JK_ASTER2MODIS
+		/*======================================================================
+		 * ASTER
+		 */
+		// parse single exact token without '\n', '\r' or space.
+		found = line.find(ASTER_RESOLUTION.c_str());
+		if(found != std::string::npos)
+		{
+			line = line.substr(strlen(ASTER_RESOLUTION.c_str()));
+			while(line[0] == ' ' || line[0] == ':')
+				line = line.substr(1);
+			pos = line.find_first_of(' ', 0);
+			std::stringstream ss(line); // Insert the string into a stream
+			std::string token;
+			while (ss >> token) {  // get exact string
+				aster_Resolution = token;
+			}
+
+			isValidInput = CheckASTER_Resolution(aster_Resolution);
+			#if DEBUG_TOOL_PARSER
+			std::cout << "DBG_PARSER " << __FUNCTION__ << ":" << __LINE__ << "> " <<  ASTER_RESOLUTION << ": " << aster_Resolution << std::endl;
+			#endif
+			continue;
+		}
+
+
+		// parse multiple
+		found = line.find(ASTER_BANDS.c_str());
+		if(found != std::string::npos)
+		{
+			line = line.substr(strlen(ASTER_BANDS.c_str()));
+			while(line[0] == ' ' || line[0] == ':')
+				line = line.substr(1);
+			pos = line.find_first_of(' ', 0);
+			std::stringstream ss(line); // Insert the string into a stream
+			std::string token;
+			while (ss >> token) {
+				aster_Bands.push_back(token.c_str());
+			}
+			#if 1 // JK_ASTER2MODIS
+			isValidInput = CheckASTER_Bands(aster_Bands);
+			#endif
+			#if DEBUG_TOOL_PARSER
+			std::cout << "DBG_PARSER " << __FUNCTION__ << ":" << __LINE__ << "> Num of aster bands:" << aster_Bands.size() << std::endl;
+			for(int i = 0; i < aster_Bands.size(); i++) {
+				std::cout << "DBG_PARSER " << __FUNCTION__ << ":" << __LINE__ << "> aster_Bands[" << i << "]:" << aster_Bands[i] << std::endl;
+			}
+			#endif
+			continue;
+		}
+		#endif
+
 	} // end of while
 
 	if (isValidInput == false) {
@@ -415,7 +473,8 @@ bool AF_InputParmeterFile::IsSourceTargetInstrumentSame()
  * Check Modis resolution input
  *
  * Parameter:
- *  - str [IN] : resolution string
+ *  - str [IN/OUT] : resolution string.
+ *					 Check and convert it for internal notation.
  *
  * Return:
  *  - true - success
@@ -446,6 +505,98 @@ bool AF_InputParmeterFile::CheckMODIS_Resolution(std::string &str)
 
 	return ret;
 }
+
+#if 1 // JK_ASTER2MODIS
+/*=================================================================
+ * Check Aster resolution input
+ *
+ * Parameter:
+ *  - str [IN/OUT] : resolution string.
+ *					 Check and convert it for internal notation.
+ *
+ * Return:
+ *  - true - success
+ * -  false - fail
+ */
+bool AF_InputParmeterFile::CheckASTER_Resolution(std::string &str)
+{
+	bool ret = true;
+	#if DEBUG_TOOL_PARSER
+	std::cout << "DBG_PARSER " << __FUNCTION__ << ":" << __LINE__ << "> reolution: " << str <<	".\n";
+	#endif
+
+	if (CompareStrCaseInsensitive(str, "90M")) {
+		str = "TIR";
+	}
+	else if  (CompareStrCaseInsensitive(str, "30M")) {
+		str = "SWIR";
+	}
+	else if (CompareStrCaseInsensitive(str, "15M")) {
+		str = "VNIR";
+	}
+	else {
+		std::cerr	<< "Invalid ASTER resolution '" << str << "'.\n"
+					<< "Only allowed 90M , 30M or 15M\n"
+					<< std::endl;
+		ret = false;
+	}
+
+	return ret;
+}
+
+/*=================================================================
+ * Check Aster bands input
+ *
+ * Parameter:
+ *  - str [IN/OUT] : band string.
+ *					 Check and convert it for internal notation.
+ *
+ * Return:
+ *  - true - success
+ * -  false - fail
+ */
+bool AF_InputParmeterFile::CheckASTER_Bands(std::vector<std::string> &strVec)
+{
+	bool ret = true;
+	#if DEBUG_TOOL_PARSER
+	for(int i = 0; i < strVec.size(); i++) {
+		std::cout << "DBG_PARSER " << __FUNCTION__ << ":" << __LINE__ << "> asterBands[" << i << "]:" << strVec[i] << std::endl;
+    }
+	#endif
+
+
+	// JK_TODO - allow range by Resolution
+	// if (CompareStrCaseInsensitive(aster_Resolution 
+	for(int i = 0; i < strVec.size(); i++) {
+		if (CompareStrCaseInsensitive(strVec[i], "1") ||
+			CompareStrCaseInsensitive(strVec[i], "2") ||
+			CompareStrCaseInsensitive(strVec[i], "4") ||
+			CompareStrCaseInsensitive(strVec[i], "5") ||
+			CompareStrCaseInsensitive(strVec[i], "6") ||
+			CompareStrCaseInsensitive(strVec[i], "7") ||
+			CompareStrCaseInsensitive(strVec[i], "8") ||
+			CompareStrCaseInsensitive(strVec[i], "9") ||
+			CompareStrCaseInsensitive(strVec[i], "10") ||
+			CompareStrCaseInsensitive(strVec[i], "11") ||
+			CompareStrCaseInsensitive(strVec[i], "12") ||
+			CompareStrCaseInsensitive(strVec[i], "13") ||
+			CompareStrCaseInsensitive(strVec[i], "14") ) {
+			strVec[i] = "ImageData" + strVec[i];
+		}
+		else if  (CompareStrCaseInsensitive(strVec[i], "3")) {
+			strVec[i] = "ImageData3N";
+		}
+		else {
+			std::cerr	<< "Invalid ASTER band '" << strVec[i] << "'.\n"
+						<< "Only allowed 1 to 14 integer value.\n"
+						<< std::endl;
+			ret = false;
+		}
+	}
+
+	return ret;
+}
+#endif
 
 
 //=============================================================
@@ -508,6 +659,20 @@ std::vector<std::string>  AF_InputParmeterFile::GetMODIS_Bands()
 {
 	return modis_Bands;
 }
+
+
+#if 1 // JK_ASTER2MODIS
+// ASTER
+std::string AF_InputParmeterFile::GetASTER_Resolution()
+{
+	return aster_Resolution;
+}
+
+std::vector<std::string>  AF_InputParmeterFile::GetASTER_Bands()
+{
+	return aster_Bands;
+}
+#endif
 
 /* #####################################
  *
