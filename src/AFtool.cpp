@@ -1306,7 +1306,7 @@ int af_GenerateOutputCumulative_MisrAsSrc(AF_InputParmeterFile &inputArgs, hid_t
 
 int main(int argc, char *argv[])
 {
-	int ret = SUCCEED;
+	int ret;
 
 	if (argc < 2) {
 		Usage(argc, argv);
@@ -1315,9 +1315,14 @@ int main(int argc, char *argv[])
 
 	//----------------------------------
 	// parse input parameter from file 
+	std::cout << "\nValidating user inputs ...\n";
 	AF_InputParmeterFile inputArgs;
 	inputArgs.headerFileName = argv[1];
 	inputArgs.ParseByLine();
+	ret = inputArgs.CheckParsedValues();
+	if (ret < 0) {
+		return FAILED;
+	}
 
 	//-------------------------
 	// get instrument names

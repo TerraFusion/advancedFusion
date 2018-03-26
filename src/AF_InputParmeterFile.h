@@ -35,10 +35,12 @@ class AF_InputParmeterFile
 	AF_InputParmeterFile();
 	~AF_InputParmeterFile();
 	void ParseByLine();
+	int CheckParsedValues();
 
 	std::string headerFileName;
 
-	/*------------------------------
+
+	/*===========================================
 	 * Get input parameter values
 	 */
 	std::string GetOuputFilePath();
@@ -61,7 +63,7 @@ class AF_InputParmeterFile
 	#endif
 
 
-	/*-------------------------------
+	/*===========================================
 	 * Handle multi-value variables
 	 */
 	std::vector<std::string> &GetMultiVariableNames(std::string instrument);
@@ -69,29 +71,31 @@ class AF_InputParmeterFile
 	void DBG_displayinputListMap(std::string &instrument, std::map<std::string, strVec_t> &trgInputMultiVarsMap, const std::string &mixType);
 
 
-	/*-------------------------------
+	/*===========================================
 	 * Util functions
 	 */
 	bool CompareStrCaseInsensitive(const std::string& s1, const std::string& s2);
 
 	protected:
-	/*------------------------------
-	 * Check input parameter values
+	/*===========================================
+	 * Function to Validate user input values
 	 */
+	// Common
 	bool CheckInputBFdataPath(const std::string &str);
 	bool IsSourceTargetInstrumentSame();
 	// MODIS
-	bool CheckMODIS_Resolution(std::string &str);
+	bool CheckRevise_MODISresolution(std::string &str);
 	#if 1 // JK_ASTER2MODIS
 	// ASTER
-	bool CheckASTER_Resolution(std::string &str);
-	bool CheckASTER_Bands(std::vector<std::string> &strVec);
+	bool CheckRevise_ASTERresolution(std::string &str);
+	bool CheckRevise_ASTERbands(std::vector<std::string> &strVec);
 	#endif
 
 	private:
 	bool didReadHeaderFile;
 
-	/*-------------------------
+
+	/*================================
 	 * Input parameter entries
 	 */
 	std::string inputBFfilePath;
@@ -113,7 +117,8 @@ class AF_InputParmeterFile
 	std::vector<std::string> aster_Bands;
 	#endif
 
-	/*-----------------------------------
+
+	/*=======================================
 	 * Store multi-value variables names
 	 */
 	std::vector<std::string> modis_MultiVars;

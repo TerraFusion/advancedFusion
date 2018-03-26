@@ -92,9 +92,8 @@ void AF_InputParmeterFile::ParseByLine()
 	std::string line;
 	size_t found;
 	int pos;
-	bool isValidInput = true;
 
-	while(headerFile.good() && isValidInput)
+	while(headerFile.good())
 	{
 		std::getline(headerFile, line);
 		#if DEBUG_TOOL_PARSER
@@ -125,7 +124,6 @@ void AF_InputParmeterFile::ParseByLine()
 			#if DEBUG_TOOL_PARSER
 			std::cout << "DBG_PARSER " << __FUNCTION__ << ":" << __LINE__ << "> " << INPUT_FILE_PATH << ": "  << inputBFfilePath << std::endl;
 			#endif
-			isValidInput = CheckInputBFdataPath(inputBFfilePath);
 			continue;
 		}
 
@@ -316,7 +314,6 @@ void AF_InputParmeterFile::ParseByLine()
 				modis_Resolution = token;
 			}
 
-			isValidInput = CheckMODIS_Resolution(modis_Resolution);
 			#if DEBUG_TOOL_PARSER
 			std::cout << "DBG_PARSER " << __FUNCTION__ << ":" << __LINE__ << "> " <<  MODIS_RESOLUTION << ": " << modis_Resolution << std::endl;
 			#endif
@@ -365,7 +362,6 @@ void AF_InputParmeterFile::ParseByLine()
 				aster_Resolution = token;
 			}
 
-			isValidInput = CheckASTER_Resolution(aster_Resolution);
 			#if DEBUG_TOOL_PARSER
 			std::cout << "DBG_PARSER " << __FUNCTION__ << ":" << __LINE__ << "> " <<  ASTER_RESOLUTION << ": " << aster_Resolution << std::endl;
 			#endif
@@ -386,9 +382,6 @@ void AF_InputParmeterFile::ParseByLine()
 			while (ss >> token) {
 				aster_Bands.push_back(token.c_str());
 			}
-			#if 1 // JK_ASTER2MODIS
-			isValidInput = CheckASTER_Bands(aster_Bands);
-			#endif
 			#if DEBUG_TOOL_PARSER
 			std::cout << "DBG_PARSER " << __FUNCTION__ << ":" << __LINE__ << "> Num of aster bands:" << aster_Bands.size() << std::endl;
 			for(int i = 0; i < aster_Bands.size(); i++) {
@@ -400,22 +393,61 @@ void AF_InputParmeterFile::ParseByLine()
 		#endif
 
 	} // end of while
-
-	if (isValidInput == false) {
-		std::cerr << "Error: invlid input detected.\n";
-		exit(1);
-	}
-
-	if (IsSourceTargetInstrumentSame() == true) {
-		exit(1);
-	}
 }
-
 
 
 /*===================================================
  *	Functions to check input values
  */
+
+int AF_InputParmeterFile::CheckParsedValues()
+{
+	bool isValidInput;
+
+	
+	/*-------------------------------------------
+	 * Common section
+	 */
+	isValidInput = CheckInputBFdataPath(inputBFfilePath);
+	if (isValidInput == false) {
+		return -1; // failed
+	}
+
+	if (IsSourceTargetInstrumentSame() == true) {
+		std::cerr << "Error: Source and target instrument must be different.\n";
+		return -1; // failed
+	}
+
+	/*-------------------------------------------
+	 * MODIS section
+	 */
+	if (sourceInstrument == "MODIS" || targetInstrument == "MODIS") {
+		isValidInput = CheckRevise_MODISresolution(modis_Resolution);
+		if (isValidInput == false) {
+			return -1; // failed
+		}
+	}
+
+	#if 1 // JK_ASTER2MODIS
+	/*-------------------------------------------
+	 * ASTER section
+	 */
+	if (sourceInstrument == "ASTER" || targetInstrument == "ASTER") {
+		isValidInput = CheckRevise_ASTERresolution(aster_Resolution);
+		if (isValidInput == false) {
+			return -1; // failed
+		}
+	
+		isValidInput = CheckRevise_ASTERbands(aster_Bands);
+		if (isValidInput == false) {
+			return -1; // failed
+		}
+	}
+	#endif
+	
+	return 0; // succeed
+}
+
 
 /*=================================================================
  * Check if BF input file path is vaild
@@ -438,7 +470,7 @@ bool AF_InputParmeterFile::CheckInputBFdataPath(const std::string &filePath)
 	std::ifstream file(filePath.c_str());
 	ret = (file.good() ? true : false);
 	if(ret == false) {
-		std::cout << "Input data file '" << filePath << "' doesn't exist.\n"; 
+		std::cerr << "Error: Input data file '" << filePath << "' doesn't exist.\n"; 
 	}
 	return ret;
 }
@@ -480,10 +512,11 @@ bool AF_InputParmeterFile::IsSourceTargetInstrumentSame()
  *  - true - success
  * -  false - fail
  */
-bool AF_InputParmeterFile::CheckMODIS_Resolution(std::string &str)
+bool AF_InputParmeterFile::CheckRevise_MODISresolution(std::string &str)
 {
 	bool ret = true;
 	#if DEBUG_TOOL_PARSER
+	std::cout << "DBG_PARSER " << __FUNCTION__ << ":" << __LINE__ << "> Before update. \n";
 	std::cout << "DBG_PARSER " << __FUNCTION__ << ":" << __LINE__ << "> reolution: " << str <<	".\n";
 	#endif
 
@@ -497,11 +530,16 @@ bool AF_InputParmeterFile::CheckMODIS_Resolution(std::string &str)
 		str = "_250m";
 	}
 	else {
-		std::cerr	<< "Invalid MODIS resolution '" << str << "'.\n"
+		std::cerr	<< "Error: Invalid MODIS resolution '" << str << "'.\n"
 					<< "Only allowed 1KM , 500M or 250M\n"
 					<< std::endl;
 		ret = false;
 	}
+
+	#if DEBUG_TOOL_PARSER
+	std::cout << "DBG_PARSER " << __FUNCTION__ << ":" << __LINE__ << "> After update. \n";
+	std::cout << "DBG_PARSER " << __FUNCTION__ << ":" << __LINE__ << "> reolution: " << str <<	".\n";
+	#endif
 
 	return ret;
 }
@@ -518,10 +556,11 @@ bool AF_InputParmeterFile::CheckMODIS_Resolution(std::string &str)
  *  - true - success
  * -  false - fail
  */
-bool AF_InputParmeterFile::CheckASTER_Resolution(std::string &str)
+bool AF_InputParmeterFile::CheckRevise_ASTERresolution(std::string &str)
 {
 	bool ret = true;
 	#if DEBUG_TOOL_PARSER
+	std::cout << "DBG_PARSER " << __FUNCTION__ << ":" << __LINE__ << "> Before update. \n";
 	std::cout << "DBG_PARSER " << __FUNCTION__ << ":" << __LINE__ << "> reolution: " << str <<	".\n";
 	#endif
 
@@ -535,11 +574,15 @@ bool AF_InputParmeterFile::CheckASTER_Resolution(std::string &str)
 		str = "VNIR";
 	}
 	else {
-		std::cerr	<< "Invalid ASTER resolution '" << str << "'.\n"
+		std::cerr	<< "Error: Invalid ASTER resolution '" << str << "'.\n"
 					<< "Only allowed 90M , 30M or 15M\n"
 					<< std::endl;
 		ret = false;
 	}
+	#if DEBUG_TOOL_PARSER
+	std::cout << "DBG_PARSER " << __FUNCTION__ << ":" << __LINE__ << "> After update. \n";
+	std::cout << "DBG_PARSER " << __FUNCTION__ << ":" << __LINE__ << "> reolution: " << str <<	".\n";
+	#endif
 
 	return ret;
 }
@@ -555,10 +598,11 @@ bool AF_InputParmeterFile::CheckASTER_Resolution(std::string &str)
  *  - true - success
  * -  false - fail
  */
-bool AF_InputParmeterFile::CheckASTER_Bands(std::vector<std::string> &strVec)
+bool AF_InputParmeterFile::CheckRevise_ASTERbands(std::vector<std::string> &strVec)
 {
 	bool ret = true;
 	#if DEBUG_TOOL_PARSER
+	std::cout << "DBG_PARSER " << __FUNCTION__ << ":" << __LINE__ << "> Before update" << std::endl;
 	for(int i = 0; i < strVec.size(); i++) {
 		std::cout << "DBG_PARSER " << __FUNCTION__ << ":" << __LINE__ << "> asterBands[" << i << "]:" << strVec[i] << std::endl;
     }
@@ -587,12 +631,19 @@ bool AF_InputParmeterFile::CheckASTER_Bands(std::vector<std::string> &strVec)
 			strVec[i] = "ImageData3N";
 		}
 		else {
-			std::cerr	<< "Invalid ASTER band '" << strVec[i] << "'.\n"
+			std::cerr	<< "Error: Invalid ASTER band '" << strVec[i] << "'.\n"
 						<< "Only allowed 1 to 14 integer value.\n"
 						<< std::endl;
 			ret = false;
 		}
 	}
+
+	#if DEBUG_TOOL_PARSER
+	std::cout << "DBG_PARSER " << __FUNCTION__ << ":" << __LINE__ << "> After update" << std::endl;
+	for(int i = 0; i < strVec.size(); i++) {
+		std::cout << "DBG_PARSER " << __FUNCTION__ << ":" << __LINE__ << "> asterBands[" << i << "]:" << strVec[i] << std::endl;
+    }
+	#endif
 
 	return ret;
 }
