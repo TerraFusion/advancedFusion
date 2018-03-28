@@ -3,6 +3,7 @@
 # Allowed source and target instruments combinations:
 #  - MISR to MODIS
 #  - MODIS to MISR
+#  - ASTER to MODIS
 #  - (more will be added)
 #
 # Refer to below specification. These entries are order free.
@@ -12,7 +13,7 @@
 # OUTPUT_FILE_PATH: <specify a path to result AF HDF5 file>
 # RESAMPLE_METHOD: one of < nnInterpolate or summaryInterpolate >
 #
-# SOURCE_INSTRUMENT: one of < MODIS MISR >
+# SOURCE_INSTRUMENT: one of < MODIS MISR ASTER >
 # <add specified instrument's Input Section from below>
 #
 # TARGET_INSTRUMENT: one of < MODIS MISR >
@@ -30,7 +31,8 @@
 # MODIS_BANDS: any of < 1~12 13L 13H 14L 14H 15~36 > or ALL
 #
 # -- ASTER Input Section -- 
-# (input entries will be added)
+# ASTER_RESOLUTION:  one of  < 15M, 30M or 90M >
+# ASTER_BAND:  any of <1 ~ 3> for 15M, any of <4 ~ 9> for 30 M or any of <10 ~ 14> for 90M
 #
 #=============================================================
 

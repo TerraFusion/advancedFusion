@@ -401,7 +401,9 @@ double* get_modis_rad(hid_t file, char* resolution, std::vector<std::string> &ba
 			printf("Band %s is not supported for %s resolution\n", bands[j].c_str(), resolution);
 			return NULL;
 		}
-		printf("dname: %s\n", dname);
+		#if DEBUG_IO
+		printf("DBG_IO %s:%d> dname: %d\n", __FUNCTION__, __LINE__, dname);
+		#endif
 		strcpy(dnames[j], dname);
 	}
 	
@@ -1666,7 +1668,9 @@ double* get_ast_rad(hid_t file, char* subsystem, char* d_name, int*size)
 		const char* d_arr[] = {instrument, name, subsystem, d_name};
 		char* dataset_name;
 		concat_by_sep(&dataset_name, d_arr, "/", strlen(instrument) + strlen(name) + strlen(subsystem) + strlen(d_name) + 5, 4);
-		printf("dataset name: %s\n", dataset_name);
+		#if DEBUG_IO
+		printf("DBG_IO %s:%d> radiance dataset name: %d\n", __FUNCTION__, __LINE__, dataset_name);
+		#endif
 		double* data = af_read(file, dataset_name);
 		if(data == NULL){
 				continue;
@@ -1679,13 +1683,6 @@ double* get_ast_rad(hid_t file, char* subsystem, char* d_name, int*size)
 		free(curr_dim);
 	}
 	*size = curr_size;
-	
-	//Print statements to verify data's existence
-	if(result_data != NULL){
-		printf("test data: %f\n", result_data[0]);
-		printf("test_data: %f\n", result_data[1]);
-		printf("test data: %f\n", result_data[2]);
-	}	
 	
 	return result_data;
 }
@@ -1776,7 +1773,9 @@ double* get_ast_lat(hid_t file, char* subsystem, char* d_name, int*size)
 		const char* lat_arr[] = {instrument, name, subsystem, location, lat};
 		char* lat_dataset_name;
 		concat_by_sep(&lat_dataset_name, lat_arr, "/", strlen(instrument) + strlen(name) + strlen(subsystem) + strlen(location) + strlen(lat) + 5, 5);
-	    printf("dataset name: %s\n", lat_dataset_name);	
+		#if DEBUG_IO
+		printf("DBG_IO %s:%d> latitude dataset name: %d\n", __FUNCTION__, __LINE__, lat_dataset_name);
+		#endif
 		double* data = af_read(file, lat_dataset_name);
 		if(data == NULL){
 				continue;
@@ -1789,12 +1788,7 @@ double* get_ast_lat(hid_t file, char* subsystem, char* d_name, int*size)
 		free(curr_dim);
 	}
 	*size = curr_lat_size;
-	//Print statements to verify data's existence
-	if(lat_data != NULL){	
-		printf("test_lat_data: %f\n", lat_data[0]);
-		printf("test_lat_data: %f\n", lat_data[1]);
-		printf("test_lat_data: %f\n", lat_data[2]);
-	}
+
 	return lat_data;
 }
 
@@ -1882,7 +1876,9 @@ double* get_ast_long(hid_t file, char* subsystem, char* d_name, int* size)
 		const char* long_arr[] = {instrument, name, subsystem, location, longitude};
 		char* long_dataset_name;
 		concat_by_sep(&long_dataset_name, long_arr, "/", strlen(instrument) + strlen(name) + strlen(subsystem) + strlen(location) + strlen(longitude) + 5, 5);
-		printf("dataset name: %s\n", long_dataset_name);	
+		#if DEBUG_IO
+		printf("DBG_IO %s:%d> longitude dataset name: %d\n", __FUNCTION__, __LINE__, long_dataset_name);
+		#endif
 		double* data = af_read(file, long_dataset_name);
 		if(data == NULL){
 				continue;
@@ -1895,12 +1891,6 @@ double* get_ast_long(hid_t file, char* subsystem, char* d_name, int* size)
 		free(curr_dim);
 	}
 	*size = curr_long_size;
-	//Print statements to verify data's existence
-	if(long_data != NULL){
-		printf("test_long_data: %f\n", long_data[0]);
-		printf("test_long_data: %f\n", long_data[1]);
-		printf("test_long_data: %f\n", long_data[2]);
-	}
 	
 	return long_data;
 }
@@ -2270,10 +2260,6 @@ int af_write_misr_on_modis(hid_t output_file, double* misr_out, double* modis, i
 int af_write_mm_geo(hid_t output_file, int geo_flag, double* geo_data, int geo_size, int outputWidth)
 {
 	//Check if geolocation group exists --- TODO - change it to H5Lexists
-	#if DEBUG_IO
-	printf("DBG_IO %s:%d> geo_data[0]: %f\n", geo_data[0]);
-	printf("DBG_IO %s:%d> geo_data[1]: %f\n", geo_data[1]);
-	#endif
 	htri_t status = H5Lexists(output_file, "Geolocation", H5P_DEFAULT);
 	if(status <= 0){
 		hid_t group_id = H5Gcreate2(output_file, "/Geolocation", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);

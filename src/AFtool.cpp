@@ -40,6 +40,7 @@ const std::string SRC_DATA_GROUP = "/Source/Data_Fields";
 const std::string TRG_DATA_GROUP = "/Target/Data_Fields";
 const std::string MODIS_RADIANCE_DSET = "MODIS_Radiance";
 const std::string MISR_RADIANCE_DSET = "MISR_Radiance";
+const std::string ASTER_RADIANCE_DSET = "ASTER_Radiance";
 
 
 
@@ -71,6 +72,9 @@ int AF_GetGeolocationDataFromInstrument(std::string instrument, AF_InputParmeter
 	std::cout << "DBG_TOOL " << __FUNCTION__ << "> BEGIN \n";
 	#endif
 
+	/*======================================================
+ 	 * MODIS section
+ 	 */
 	if (instrument == "MODIS" ) {
 		std::string resolution = inputArgs.GetMODIS_Resolution();
 		#if DEBUG_TOOL
@@ -87,8 +91,14 @@ int AF_GetGeolocationDataFromInstrument(std::string instrument, AF_InputParmeter
 			return FAILED;
 		}
 	}
+	/*======================================================
+ 	 * MISR section
+ 	 */
 	else if (instrument == "MISR") {
 		std::string resolution = inputArgs.GetMISR_Resolution();
+		#if DEBUG_TOOL
+		std::cout << "DBG_TOOL " << __FUNCTION__ << "> Misr resolution: " << resolution << "\n";
+		#endif
 		*latitude = get_misr_lat(inputFile, (char*) resolution.c_str(), &cellNum);
 		if (latitude == NULL) {
 			std::cerr << __FUNCTION__ <<  "> Error: failed to get MISR latitude.\n";
@@ -100,23 +110,33 @@ int AF_GetGeolocationDataFromInstrument(std::string instrument, AF_InputParmeter
 			return FAILED;
 		}
 
-		#if DEBUG_TOOL
-		std::cout << "DBG_TOOL " << __FUNCTION__ << "> Misr resolution: " << resolution << ", cellNum: " << cellNum << "\n";
-		#endif
 	}
-	#if 0 // TODO LATER - place holder
+	/*======================================================
+ 	 * ASTER section
+ 	 */
 	else if (instrument == "ASTER" ) {
 		//Get ASTER input parameters EX: "TIR", "ImageData10"
-		//*latitude = get_ast_lat(inputFile, "TIR", "ImageData10", &cellNum);
-		//*longitude = get_ast_long(inputFile, "TIR", "ImageData10", &cellNum);
+		std::string resolution = inputArgs.GetASTER_Resolution();
+		strVec_t bands = inputArgs.GetASTER_Bands();
+		// pass the first band (bands[0]) as it always exists and lat&lon is the same for a resolution.
+		*latitude = get_ast_lat(inputFile, (char*) resolution.c_str(), (char*)bands[0].c_str(), &cellNum);
+		if (latitude == NULL) {
+			std::cerr << __FUNCTION__ <<  "> Error: failed to get ASTER latitude.\n";
+			return FAILED;
+		}
+		*longitude = get_ast_long(inputFile, (char*) resolution.c_str(), (char*)bands[0].c_str(), &cellNum);
+		if (longitude == NULL) {
+			std::cerr << __FUNCTION__ <<  "> Error: failed to get ASTER longitude.\n";
+			return FAILED;
+		}
 	}
-	#endif
 	else {
 		std::cerr << __FUNCTION__ << "> Error: invalid instrument - " << instrument << "\n";
 		return FAILED;
 	}
 
 	#if DEBUG_TOOL
+	std::cout << "DBG_TOOL " << __FUNCTION__ << "> Instrument: " << instrument << "cellNum: " << cellNum << "\n";
 	std::cout << "DBG_TOOL " << __FUNCTION__ << "> END \n";
 	#endif
 	
@@ -197,7 +217,7 @@ int af_GenerateOutputCumulative_MisrAsTrg(AF_InputParmeterFile &inputArgs, hid_t
 
 
 /*=================================================
- * Generate target instrument randiance output.
+ * Generate Target instrument randiance outputs.
  * Initial function.
  */
 int   AF_GenerateTargetRadiancesOutput(AF_InputParmeterFile &inputArgs, hid_t outputFile, int trgCellNum, hid_t srcFile, std::map<std::string, strVec_t> & trgInputMultiVarsMap)
@@ -290,7 +310,7 @@ int   AF_GenerateTargetRadiancesOutput(AF_InputParmeterFile &inputArgs, hid_t ou
 
 
 /*============================================================
- * Target as MODIS functions for the output
+ * MODIS section as Target. functions for the output.
  */
 static int af_WriteSingleRadiance_ModisAsTrg(hid_t outputFile, hid_t modisDatatype, hid_t modisFilespace, double* modisData, int modisDataSize, int outputWidth, int bandIdx)
 {
@@ -445,7 +465,7 @@ int af_GenerateOutputCumulative_ModisAsTrg(AF_InputParmeterFile &inputArgs, hid_
 		std::cout << "DBG_TOOL " << __FUNCTION__ << "> numCells: " << numCells << "\n";
 		#endif
 		#if DEBUG_ELAPSE_TIME
-		StopElapseTimeAndShow("DBG_TIME> Read target Modis single band data  DONE.");
+		StopElapseTimeAndShow("DBG_TIME> Read target MODIS single band data  DONE.");
 		#endif
 
 		//---------------------------------
@@ -455,7 +475,7 @@ int af_GenerateOutputCumulative_ModisAsTrg(AF_InputParmeterFile &inputArgs, hid_
 		#endif
 		af_WriteSingleRadiance_ModisAsTrg(outputFile, modisDatatype, modisDataspace,  modisSingleData, numCells, targetOutputWidth, i);
 		#if DEBUG_ELAPSE_TIME
-		StopElapseTimeAndShow("DBG_TIME> Write target Modis single band data  DONE.");
+		StopElapseTimeAndShow("DBG_TIME> Write target MODIS single band data  DONE.");
 		#endif
 		//
 		// TODO: buffer is not reused. make memory allocation out of get_modis_rad() to improve performance
@@ -475,7 +495,7 @@ int af_GenerateOutputCumulative_ModisAsTrg(AF_InputParmeterFile &inputArgs, hid_
 
 
 /*==================================================================
- * Target as MISR functions for the output
+ * MISR section as Target. functions for the output.
  */
 static int af_WriteSingleRadiance_MisrAsTrg(hid_t outputFile, hid_t misrDatatype, hid_t misrFilespace, double* misrData, int misrDataSize, int outputWidth, int cameraIdx, int radianceIdx)
 {
@@ -640,7 +660,7 @@ int af_GenerateOutputCumulative_MisrAsTrg(AF_InputParmeterFile &inputArgs, hid_t
 				return FAILED;
 			}
 			#if DEBUG_ELAPSE_TIME
-			StopElapseTimeAndShow("DBG_TIME> Read target Misr single band data  DONE.");
+			StopElapseTimeAndShow("DBG_TIME> Read target MISR single band data  DONE.");
 			#endif
 
 			#if DEBUG_TOOL
@@ -674,7 +694,7 @@ int af_GenerateOutputCumulative_MisrAsTrg(AF_InputParmeterFile &inputArgs, hid_t
 			#endif
 			af_WriteSingleRadiance_MisrAsTrg(outputFile, misrDatatype, misrDataspace,  misrSingleDataPtr, numCells, targetOutputWidth, i, j);
 			#if DEBUG_ELAPSE_TIME
-			StopElapseTimeAndShow("DBG_TIME> Write target Misr single band data  DONE.");
+			StopElapseTimeAndShow("DBG_TIME> Write target MISR single band data  DONE.");
 			#endif
 
 			// TODO: buffer is not reused. make memory allocation out of get_misr_rad() to improve performance
@@ -709,10 +729,11 @@ int af_GenerateOutputCumulative_MisrAsTrg(AF_InputParmeterFile &inputArgs, hid_t
  */
 int af_GenerateOutputCumulative_ModisAsSrc(AF_InputParmeterFile &inputArgs, hid_t outputFile, int *targetNNsrcID,  int trgCellNumNoShift, hid_t srcFile, int srcCellNum, std::map<std::string, strVec_t> &inputMultiVarsMap);
 int af_GenerateOutputCumulative_MisrAsSrc(AF_InputParmeterFile &inputArgs, hid_t outputFile, int *targetNNsrcID,  int trgCellNum, hid_t srcFile, int srcCellNum, std::map<std::string, strVec_t> &inputMultiVarsMap);
+int af_GenerateOutputCumulative_AsterAsSrc(AF_InputParmeterFile &inputArgs, hid_t outputFile, int *targetNNsrcID,  int trgCellNumNoShift, hid_t srcFile, int srcCellNum, std::map<std::string, strVec_t> &inputMultiVarsMap);
 
 
 /*===================================================================
- * Generate source instrument randiance output.
+ * Generate Source instrument randiance outputs.
  * Initial function.
  */
 int   AF_GenerateSourceRadiancesOutput(AF_InputParmeterFile &inputArgs, hid_t outputFile, int * targetNNsrcID, int trgCellNum, hid_t srcFile, int srcCellNum, std::map<std::string, strVec_t> & srcInputMultiVarsMap)
@@ -756,7 +777,11 @@ int   AF_GenerateSourceRadiancesOutput(AF_InputParmeterFile &inputArgs, hid_t ou
 	std::cout << "DBG_TOOL " << __FUNCTION__ << "> srcInputMultiVarsMap.size(): " << srcInputMultiVarsMap.size() << "\n";
 	#endif
 
+	/*======================================================
+ 	 * MODIS section
+ 	 */
 	if (instrument == "MODIS") {
+		// for one multi-value Variable case.
 		if (srcInputMultiVarsMap.size() != 1) {
 			std::cout << __FUNCTION__ << ":" << __LINE__ <<  "> Error building target input list with MODIS. There must be only one multi-value variable.\n";
 			return FAILED;
@@ -769,10 +794,11 @@ int   AF_GenerateSourceRadiancesOutput(AF_InputParmeterFile &inputArgs, hid_t ou
 			goto done;
 		}
 	}
-	//--------------------------------------------------------
-	// Use these for two multi-value Variable case. MISR and ASTER
+	/*======================================================
+ 	 * MISR section
+ 	 */
 	else if (instrument == "MISR") {
-
+		// for two multi-value Variable case.
 		if (srcInputMultiVarsMap.size() != 2) {
 			std::cout << __FUNCTION__ << ":" << __LINE__ <<  "> Error building target input list with MISR. There must be only two multi-value variables.\n";
 			ret = FAILED;
@@ -782,6 +808,23 @@ int   AF_GenerateSourceRadiancesOutput(AF_InputParmeterFile &inputArgs, hid_t ou
 		ret = af_GenerateOutputCumulative_MisrAsSrc(inputArgs, outputFile, targetNNsrcID,  trgCellNum, srcFile, srcCellNum, srcInputMultiVarsMap);
 		if (ret == FAILED) {
 			std::cout << __FUNCTION__ << ":" << __LINE__ <<  "> failed generating output for MISR.\n";
+			ret = FAILED;
+			goto done;
+		}
+	}
+	/*======================================================
+ 	 * ASTER section
+ 	 */
+	else if (instrument == "ASTER") {
+		// for one multi-value Variable case.
+		if (srcInputMultiVarsMap.size() != 1) {
+			std::cout << __FUNCTION__ << ":" << __LINE__ <<  "> Error building target input list with ASTER. There must be only one multi-value variable.\n";
+			return FAILED;
+		}
+
+		ret = af_GenerateOutputCumulative_AsterAsSrc(inputArgs, outputFile, targetNNsrcID,  trgCellNum, srcFile, srcCellNum, srcInputMultiVarsMap);
+		if (ret == FAILED) {
+			std::cout << __FUNCTION__ << ":" << __LINE__ <<  "> failed generating output for ASTER.\n";
 			ret = FAILED;
 			goto done;
 		}
@@ -796,7 +839,7 @@ done:
 
 
 /*======================================================
- * Source as MODIS functions for the output
+ * MODIS section as Source. functions for the output.
  */
 static int af_WriteSingleRadiance_ModisAsSrc(hid_t outputFile, hid_t modisDatatype, hid_t modisFilespace, double* processedData, int trgCellNum, int outputWidth, int bandIdx)
 {
@@ -964,7 +1007,7 @@ int af_GenerateOutputCumulative_ModisAsSrc(AF_InputParmeterFile &inputArgs, hid_
 		std::cout << "DBG_TOOL " << __FUNCTION__ << "> numCells: " << numCells << "\n";
 		#endif
 		#if DEBUG_ELAPSE_TIME
-		StopElapseTimeAndShow("DBG_TIME> Read source Misr single band data	DONE.");
+		StopElapseTimeAndShow("DBG_TIME> Read source MODIS single band data	DONE.");
 		#endif
 
 		//-------------------------------------------------
@@ -1030,7 +1073,7 @@ int af_GenerateOutputCumulative_ModisAsSrc(AF_InputParmeterFile &inputArgs, hid_
 			std::cerr << __FUNCTION__ << "> Error: returned fail.\n";
 		}
 		#if DEBUG_ELAPSE_TIME
-		StopElapseTimeAndShow("DBG_TIME> Write source Misr single band data  DONE.");
+		StopElapseTimeAndShow("DBG_TIME> Write source MODIS single band data  DONE.");
 		#endif
 		//
 		// TODO: buffer is not reused. make memory allocation out of get_modis_rad() to improve performance
@@ -1058,7 +1101,7 @@ int af_GenerateOutputCumulative_ModisAsSrc(AF_InputParmeterFile &inputArgs, hid_
 
 
 /*=================================================
- * Source as MISR functions for the output
+ * MISR section as Source. functions for the output.
  */
 static int af_WriteSingleRadiance_MisrAsSrc(hid_t outputFile, hid_t misrDatatype, hid_t misrFilespace, double* processedData, int trgCellNum, int outputWidth, int cameraIdx, int radIdx)
 {
@@ -1229,7 +1272,7 @@ int af_GenerateOutputCumulative_MisrAsSrc(AF_InputParmeterFile &inputArgs, hid_t
 			std::cout << "DBG_TOOL " << __FUNCTION__ << "> numCells: " << numCells << "\n";
 			#endif
 			#if DEBUG_ELAPSE_TIME
-			StopElapseTimeAndShow("DBG_TIME> Read source Misr single band data	DONE.");
+			StopElapseTimeAndShow("DBG_TIME> Read source MISR single band data	DONE.");
 			#endif
 	
 			//-------------------------------------------------
@@ -1271,7 +1314,7 @@ int af_GenerateOutputCumulative_MisrAsSrc(AF_InputParmeterFile &inputArgs, hid_t
 				std::cerr << __FUNCTION__ << "> Error: returned fail.\n";
 			}
 			#if DEBUG_ELAPSE_TIME
-			StopElapseTimeAndShow("DBG_TIME> Write source Misr single band data  DONE.");
+			StopElapseTimeAndShow("DBG_TIME> Write source MISR single band data  DONE.");
 			#endif
 			//
 			// TODO: buffer is not reused. make memory allocation out of get_misr_rad() to improve performance
@@ -1297,6 +1340,262 @@ int af_GenerateOutputCumulative_MisrAsSrc(AF_InputParmeterFile &inputArgs, hid_t
 }
 
 
+/*======================================================
+ * ASTER section as Source. functions for the output.
+ */
+static int af_WriteSingleRadiance_AsterAsSrc(hid_t outputFile, hid_t asterDatatype, hid_t asterFilespace, double* processedData, int trgCellNum, int outputWidth, int bandIdx)
+{
+	#if DEBUG_TOOL
+	std::cout << "DBG_TOOL " << __FUNCTION__ << "> BEGIN \n";
+	#endif
+
+	int ret = SUCCEED;
+	herr_t status;
+	hid_t aster_dataset;
+	std::string dsetPath = SRC_DATA_GROUP + "/" + ASTER_RADIANCE_DSET;
+
+	if(bandIdx==0) { // means new
+		aster_dataset = H5Dcreate2(outputFile, dsetPath.c_str(), asterDatatype, asterFilespace,H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+		if(aster_dataset < 0) {
+			std::cerr << __FUNCTION__ << ":" << __LINE__ <<  "> Error: H5Dcreate2 target data in output file.\n";
+			return FAILED;
+		}
+	}
+	else {
+		aster_dataset = H5Dopen2(outputFile, dsetPath.c_str(), H5P_DEFAULT);
+		if(aster_dataset < 0) {
+			std::cerr <<  __FUNCTION__ << ":" << __LINE__ <<  "> Error: H5Dopen2 target data in output file.\n";
+			return FAILED;
+		}
+	}
+
+
+	//------------------------------
+	// select memspace
+	int ranksMem=2;
+	hsize_t dim2dMem[ranksMem];
+	hsize_t start2dMem[ranksMem];
+	hsize_t count2dMem[ranksMem];
+	dim2dMem[0] = trgCellNum/outputWidth; // y
+	dim2dMem[1] = outputWidth; // x
+	hid_t memspace = H5Screate_simple(ranksMem, dim2dMem, NULL);
+
+	start2dMem[0] = 0; // y
+	start2dMem[1] = 0; // x
+	count2dMem[0] = trgCellNum/outputWidth; // y
+	count2dMem[1] = outputWidth; // x
+
+	status = H5Sselect_hyperslab(memspace, H5S_SELECT_SET, start2dMem, NULL, count2dMem, NULL);
+
+	//------------------------------
+	// select filespace for aster
+	const int ranksFile=3; // [bands][y][x]
+	hsize_t startFile[ranksFile];
+	hsize_t countFile[ranksFile];
+	startFile[0] = bandIdx;
+	startFile[1] = 0; // y
+	startFile[2] = 0; // x
+	countFile[0] = 1;
+	countFile[1] = trgCellNum/outputWidth; // y
+	countFile[2] = outputWidth;  // x
+
+	status = H5Sselect_hyperslab(asterFilespace, H5S_SELECT_SET, startFile, NULL, countFile, NULL);
+	if(status < 0) {
+		std::cerr << __FUNCTION__ << ":" << __LINE__ <<  "> Error: H5Sselect_hyperslab for Aster target .\n";
+		ret = -1;
+		goto done;
+	}
+
+	status = H5Dwrite(aster_dataset, H5T_NATIVE_DOUBLE, memspace, asterFilespace, H5P_DEFAULT, processedData);
+	if(status < 0) {
+		std::cerr << __FUNCTION__ << ":" << __LINE__ <<  "> Error: H5Dwrite for Aster target .\n";
+		ret = -1;
+		goto done;
+	}
+
+done:
+	H5Dclose(aster_dataset);
+
+	#if DEBUG_TOOL
+	std::cout << "DBG_TOOL " << __FUNCTION__ << "> END \n";
+	#endif
+	return ret;
+}
+
+
+int af_GenerateOutputCumulative_AsterAsSrc(AF_InputParmeterFile &inputArgs, hid_t outputFile, int *targetNNsrcID,  int trgCellNumNoShift, hid_t srcFile, int srcCellNum, std::map<std::string, strVec_t> &inputMultiVarsMap)
+{
+	#if DEBUG_TOOL
+	std::cout << "DBG_TOOL " << __FUNCTION__ << "> BEGIN \n";
+	#endif
+
+	int ret = SUCCEED;
+
+	// strVec_t multiVarNames = inputArgs.GetMultiVariableNames("ASTER"); // aster_MultiVars;
+	std::string asterResolution = inputArgs.GetASTER_Resolution();
+
+	// two multi-value variables are expected as this point
+	strVec_t bands = inputMultiVarsMap[ASTER_BANDS];
+
+	// data type
+	hid_t asterDatatype = H5Tcopy(H5T_NATIVE_DOUBLE);
+	herr_t	status = H5Tset_order(asterDatatype, H5T_ORDER_LE);
+	if(status < 0) {
+		printf("Error: ASTER write error in H5Tset_order\n");
+		return FAILED;
+	}
+
+
+	/*------------------------------------------
+	 * create space for aster
+	 */
+	const int rankSpace=3;  // [bands][y][x]
+	hsize_t asterDims[rankSpace];
+	/* handle different data width and height, also misr-trg shift case
+	 */
+	int widthShifted;
+	int heightShifted;
+	int trgCellNum;
+	ret = af_GetWidthAndHeightForOutputDataSize(inputArgs.GetTargetInstrument() /*target base output */, inputArgs, widthShifted, heightShifted);
+	if(ret < 0) {
+		return FAILED;
+	}
+    int srcOutputWidth = widthShifted;
+	if(inputArgs.GetMISR_Shift() == "ON" && inputArgs.GetTargetInstrument() == "MISR") {
+		trgCellNum = widthShifted * heightShifted;
+	}
+	else {
+		trgCellNum = trgCellNumNoShift;
+	}
+	asterDims[0] = bands.size();
+	asterDims[1] = trgCellNum/srcOutputWidth; // NY;
+	asterDims[2] = srcOutputWidth; // NX;
+	hid_t asterDataspace = H5Screate_simple(rankSpace, asterDims, NULL);
+
+	#if DEBUG_TOOL
+	std::cout << "DBG_TOOL " << __FUNCTION__ << "> trgCellNum: " << trgCellNum << ", srcCellNum: " << srcCellNum << "\n";
+	std::cout << "DBG_TOOL " << __FUNCTION__ << "> srcOutputWidth: " << srcOutputWidth <<  "\n";
+	#endif
+	int numCells;
+	double *asterSingleData=NULL;
+
+	//-----------------------------------------------------------------
+	// TODO: improve by preparing these memory allocation out of loop
+	// srcProcessedData , nsrcPixels
+	// asterSingleData
+	double * srcProcessedData = NULL;
+	int * nsrcPixels = NULL;
+	// Note: This is Combination case only
+	for (int i=0; i< bands.size(); i++) {
+		#if DEBUG_TOOL
+		std::cout << "DBG_TOOL " << __FUNCTION__ << "> bands[" << i << "]" << bands[i] << "\n";
+		#endif
+
+		//---------------------------------
+		// read src band from BF file
+		#if DEBUG_ELAPSE_TIME
+		StartElapseTime();
+		#endif
+		asterSingleData = get_ast_rad(srcFile, (char*)asterResolution.c_str(), (char*)bands[i].c_str(), &numCells);
+		if (asterSingleData == NULL) {
+			std::cerr << __FUNCTION__ <<  "> Error: failed to get ASTER band.\n";
+			return FAILED;
+		}
+		#if DEBUG_TOOL
+		std::cout << "DBG_TOOL " << __FUNCTION__ << "> numCells: " << numCells << "\n";
+		#endif
+		#if DEBUG_ELAPSE_TIME
+		StopElapseTimeAndShow("DBG_TIME> Read source ASTER single band data	DONE.");
+		#endif
+
+		//-------------------------------------------------
+		// handle resample method
+		srcProcessedData = new double [trgCellNumNoShift];
+		int new_src_size = trgCellNumNoShift;
+		//Interpolating
+		std::string resampleMethod =  inputArgs.GetResampleMethod();
+		std::cout << "Interpolating with '" << resampleMethod << "' method on " << inputArgs.GetSourceInstrument() << " by " << bands[i] << ".\n";
+		#if DEBUG_ELAPSE_TIME
+		StartElapseTime();
+		#endif
+		if (inputArgs.CompareStrCaseInsensitive(resampleMethod, "nnInterpolate")) {
+			nnInterpolate(asterSingleData, srcProcessedData, targetNNsrcID, trgCellNumNoShift);
+		}
+		else if (inputArgs.CompareStrCaseInsensitive(resampleMethod, "summaryInterpolate")) {
+			nsrcPixels = new int [trgCellNumNoShift];
+			summaryInterpolate(asterSingleData, targetNNsrcID, srcCellNum, srcProcessedData, nsrcPixels, trgCellNumNoShift);
+			#if 0 // DEBUG_TOOL
+			std::cout << "DBG_TOOL> No nodata values: \n";
+			for(int i = 0; i < trgCellNumNoShift; i++) {
+				if(nsrcPixels[i] > 0) {
+					printf("%d,\t%lf\n", nsrcPixels[i], srcProcessedData[i]);
+				}
+			}
+			#endif
+		}
+		#if DEBUG_ELAPSE_TIME
+		StopElapseTimeAndShow("DBG> nnInterpolate  DONE.");
+		#endif
+
+
+		//-----------------------------------------------------------------------
+		// check if need to shift by MISR (shift==ON & target) case before writing
+		double * srcProcessedDataShifted = NULL;
+		double * srcProcessedDataPtr = NULL;
+		if(inputArgs.GetMISR_Shift() == "ON" && inputArgs.GetTargetInstrument() == "MISR") {
+			std::cout << "\nSource ASTER radiance MISR-base shifting...\n";
+			#if DEBUG_ELAPSE_TIME
+			StartElapseTime();
+			#endif
+			srcProcessedDataShifted = new double [widthShifted * heightShifted];
+			MISRBlockOffset(srcProcessedData, srcProcessedDataShifted, (inputArgs.GetMISR_Resolution() == "L") ? 0 : 1);
+			#if DEBUG_ELAPSE_TIME
+			StopElapseTimeAndShow("DBG_TIME> source ASTER radiance MISR-base shift DONE.");
+			#endif
+
+			srcProcessedDataPtr = srcProcessedDataShifted;
+			numCells = widthShifted * heightShifted;
+		}
+		else { // no misr-trg shift
+			srcProcessedDataPtr = srcProcessedData;
+			numCells = trgCellNum;
+		}
+
+		//---------------------------------
+		// write src band to AF file
+		#if DEBUG_ELAPSE_TIME
+		StartElapseTime();
+		#endif
+		ret = af_WriteSingleRadiance_AsterAsSrc(outputFile, asterDatatype, asterDataspace,  srcProcessedDataPtr, numCells /*processed size*/, srcOutputWidth, i /*bandIdx*/);
+		if (ret == FAILED) {
+			std::cerr << __FUNCTION__ << "> Error: returned fail.\n";
+		}
+		#if DEBUG_ELAPSE_TIME
+		StopElapseTimeAndShow("DBG_TIME> Write source ASTER single band data  DONE.");
+		#endif
+		//
+		// TODO: buffer is not reused. make memory allocation out of get_aster_rad() to improve performance
+
+		// free memory
+		if (asterSingleData)
+			free(asterSingleData);
+		if(srcProcessedData)
+			delete [] srcProcessedData;
+		if (nsrcPixels)
+			delete [] nsrcPixels;
+		if(srcProcessedDataShifted)
+			delete [] srcProcessedDataShifted;
+	} // i loop
+
+	H5Tclose(asterDatatype);
+	H5Sclose(asterDataspace);
+
+	#if DEBUG_TOOL
+	std::cout << "DBG_TOOL " << __FUNCTION__ << "> END \n";
+	#endif
+
+	return ret;
+}
 
 
 
@@ -1315,7 +1614,7 @@ int main(int argc, char *argv[])
 
 	//----------------------------------
 	// parse input parameter from file 
-	std::cout << "\nValidating user inputs ...\n";
+	std::cout << "\nUser input handling ...\n";
 	AF_InputParmeterFile inputArgs;
 	inputArgs.headerFileName = argv[1];
 	inputArgs.ParseByLine();
@@ -1517,16 +1816,26 @@ int main(int argc, char *argv[])
 
 
 	/* ===========================================================
-	 * Calculate nearest neighbot source over target geolocation
+	 * Calculate nearest neighbor source over target geolocation
 	 */
 	int * targetNNsrcID = NULL;
-	targetNNsrcID = new int [trgCellNum];
 	
 	std::cout <<  "\nRunning nearest neighbor block index method... \n";
 	#if DEBUG_ELAPSE_TIME
 	StartElapseTime();
 	#endif
-	nearestNeighborBlockIndex(&srcLatitude, &srcLongitude, srcCellNum, targetLatitude, targetLongitude, targetNNsrcID, NULL, trgCellNum, 1000);
+	std::string resampleMethod =  inputArgs.GetResampleMethod();
+	// source is low and target is similar or high resolution case (ex: MISRtoMODIS and vice versa)
+	if (inputArgs.CompareStrCaseInsensitive(resampleMethod, "nnInterpolate")) {
+		targetNNsrcID = new int [trgCellNum];
+		nearestNeighborBlockIndex(&srcLatitude, &srcLongitude, srcCellNum, targetLatitude, targetLongitude, targetNNsrcID, NULL, trgCellNum, 1000);
+	} 
+	// source is high and target is low resolution case (ex: ASTERtoMODIS)
+	else if (inputArgs.CompareStrCaseInsensitive(resampleMethod, "summaryInterpolate")) {
+		targetNNsrcID = new int [srcCellNum];
+		// this need to swap source and target for high resolution to low resolution case like ASTER to MODIS
+		nearestNeighborBlockIndex(&targetLatitude, &targetLongitude, trgCellNum, srcLatitude, srcLongitude, targetNNsrcID, NULL, srcCellNum, 1000);
+	}
 	#if DEBUG_ELAPSE_TIME
 	StopElapseTimeAndShow("DBG_TIME> nearestNeighborBlockIndex DONE.");
 	#endif

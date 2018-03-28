@@ -40,10 +40,8 @@ AF_InputParmeterFile::AF_InputParmeterFile()
 	// MISR
 	misr_MultiVars.push_back(MISR_CAMERA_ANGLE);
 	misr_MultiVars.push_back(MISR_RADIANCE);
-	#if 1 // JK_ASTER2MODIS
 	// ASTER
 	aster_MultiVars.push_back(ASTER_BANDS);
-	#endif
 }
 
 /*=================================================================
@@ -210,7 +208,7 @@ void AF_InputParmeterFile::ParseByLine()
 
 
 		/*======================================================================
-		 * MISR
+		 * MISR section
 		 */
 		// parse single exact token without '\n', '\r' or space.
 		found = line.find(MISR_RESOLUTION.c_str());
@@ -298,7 +296,7 @@ void AF_InputParmeterFile::ParseByLine()
 
 
 		/*======================================================================
-		 * MODIS
+		 * MODIS section
 		 */
 		// parse single exact token without '\n', '\r' or space.
 		found = line.find(MODIS_RESOLUTION.c_str());
@@ -344,9 +342,8 @@ void AF_InputParmeterFile::ParseByLine()
 		}
 
 
-		#if 1 // JK_ASTER2MODIS
 		/*======================================================================
-		 * ASTER
+		 * ASTER section
 		 */
 		// parse single exact token without '\n', '\r' or space.
 		found = line.find(ASTER_RESOLUTION.c_str());
@@ -367,7 +364,6 @@ void AF_InputParmeterFile::ParseByLine()
 			#endif
 			continue;
 		}
-
 
 		// parse multiple
 		found = line.find(ASTER_BANDS.c_str());
@@ -390,7 +386,6 @@ void AF_InputParmeterFile::ParseByLine()
 			#endif
 			continue;
 		}
-		#endif
 
 	} // end of while
 }
@@ -405,7 +400,7 @@ int AF_InputParmeterFile::CheckParsedValues()
 	bool isValidInput;
 
 	
-	/*-------------------------------------------
+	/*=================================================
 	 * Common section
 	 */
 	isValidInput = CheckInputBFdataPath(inputBFfilePath);
@@ -418,7 +413,8 @@ int AF_InputParmeterFile::CheckParsedValues()
 		return -1; // failed
 	}
 
-	/*-------------------------------------------
+
+	/*=================================================
 	 * MODIS section
 	 */
 	if (sourceInstrument == "MODIS" || targetInstrument == "MODIS") {
@@ -428,8 +424,8 @@ int AF_InputParmeterFile::CheckParsedValues()
 		}
 	}
 
-	#if 1 // JK_ASTER2MODIS
-	/*-------------------------------------------
+
+	/*=================================================
 	 * ASTER section
 	 */
 	if (sourceInstrument == "ASTER" || targetInstrument == "ASTER") {
@@ -443,7 +439,6 @@ int AF_InputParmeterFile::CheckParsedValues()
 			return -1; // failed
 		}
 	}
-	#endif
 	
 	return 0; // succeed
 }
@@ -544,7 +539,7 @@ bool AF_InputParmeterFile::CheckRevise_MODISresolution(std::string &str)
 	return ret;
 }
 
-#if 1 // JK_ASTER2MODIS
+
 /*=================================================================
  * Check Aster resolution input
  *
@@ -609,8 +604,30 @@ bool AF_InputParmeterFile::CheckRevise_ASTERbands(std::vector<std::string> &strV
 	#endif
 
 
-	// JK_TODO - allow range by Resolution
-	// if (CompareStrCaseInsensitive(aster_Resolution 
+	#if 0 // TODO_LATER - allow range by Resolution 
+	if (CompareStrCaseInsensitive(aster_Resolution, "TIR" /*90M*/)) {
+		for(int i = 0; i < strVec.size(); i++) {
+			if (CompareStrCaseInsensitive(strVec[i], "10") ||
+	        	CompareStrCaseInsensitive(strVec[i], "11") ||
+	        	CompareStrCaseInsensitive(strVec[i], "12") ||
+	        	CompareStrCaseInsensitive(strVec[i], "13") ||
+	        	CompareStrCaseInsensitive(strVec[i], "14")) {
+				strVec[i] = "ImageData" + strVec[i];
+			}
+			else {
+				std::cerr	<< "Error: Invalid ASTER band '" << strVec[i] << "'.\n"
+							<< "Only allowed 10 to 14 for 90M.\n";
+				ret = false;
+			}
+		}
+	}
+	else if (CompareStrCaseInsensitive(aster_Resolution, "SWIR" /*30M*/)) {
+		// only allow 4 ~ 9
+	}
+	else if (CompareStrCaseInsensitive(aster_Resolution, "VNIR" /*15M*/)) {
+		// only allow 1 ~ 3
+	}
+	#else
 	for(int i = 0; i < strVec.size(); i++) {
 		if (CompareStrCaseInsensitive(strVec[i], "1") ||
 			CompareStrCaseInsensitive(strVec[i], "2") ||
@@ -637,6 +654,7 @@ bool AF_InputParmeterFile::CheckRevise_ASTERbands(std::vector<std::string> &strV
 			ret = false;
 		}
 	}
+	#endif
 
 	#if DEBUG_TOOL_PARSER
 	std::cout << "DBG_PARSER " << __FUNCTION__ << ":" << __LINE__ << "> After update" << std::endl;
@@ -647,7 +665,6 @@ bool AF_InputParmeterFile::CheckRevise_ASTERbands(std::vector<std::string> &strV
 
 	return ret;
 }
-#endif
 
 
 //=============================================================
@@ -846,6 +863,9 @@ int AF_InputParmeterFile::BuildMultiValueVariableMap(std::string &instrument, st
 {
 	std::vector<std::string> strVecTmp;
 
+	/*===========================================================
+	 * MODIS section
+	 */
 	if (instrument == "MODIS") {
     	#if DEBUG_TOOL_PARSER
 		if (targetInstrument == "MODIS")
@@ -862,9 +882,9 @@ int AF_InputParmeterFile::BuildMultiValueVariableMap(std::string &instrument, st
 		}
 
 
-		// Note - This can be common function among instruments
+		// Note - can this be common among instruments?
 		/*----------------------------
-		 * Check if ALL is in bands
+		 * Check if 'ALL' is in bands
 		 */
 		bool isAllbands = false;
 		for(int i=0; i < modis_Bands.size(); i++) {
@@ -876,8 +896,7 @@ int AF_InputParmeterFile::BuildMultiValueVariableMap(std::string &instrument, st
 				break;
 			}
         }
-
-		/*------------------------------------
+		/*
 		 * if ALL is in bands, build all list
 		 */
 		std::vector<std::string> modisBandsUpdated;
@@ -927,6 +946,9 @@ int AF_InputParmeterFile::BuildMultiValueVariableMap(std::string &instrument, st
 			std::cout << __FUNCTION__ << ":" << __LINE__ <<  "> Error building input list with MODIS.\n";
 		}
 	}
+	/*===========================================================
+	 * MISR section
+	 */
 	else if (instrument == "MISR") {
     	#if DEBUG_TOOL_PARSER
 		if (targetInstrument == "MISR")
@@ -966,6 +988,92 @@ int AF_InputParmeterFile::BuildMultiValueVariableMap(std::string &instrument, st
 			else {
 				std::cout << __FUNCTION__ << ":" << __LINE__ <<  "> Error building target input list with MISR.\n";
 			}
+		}
+	}
+	/*===========================================================
+	 * ASTER section
+	 */
+	else if (instrument == "ASTER") {
+    	#if DEBUG_TOOL_PARSER
+		if (targetInstrument == "ASTER")
+			std::cout << "DBG_PARSER " << __FUNCTION__ << ":" << __LINE__ << "> Target is ASTER\n";
+		if (sourceInstrument == "ASTER")
+			std::cout << "DBG_PARSER " << __FUNCTION__ << ":" << __LINE__ << "> Source is ASTER\n";
+		std::cout << "DBG_PARSER " << __FUNCTION__ << ":" << __LINE__ << "> aster_MultiVars.size(): " << aster_MultiVars.size() << "\n";
+		std::cout << "DBG_PARSER " << __FUNCTION__ << ":" << __LINE__ << "> aster_Bands.size(): " << aster_Bands.size() << "\n";
+		#endif
+
+		if (aster_MultiVars.size() != 1) {
+			std::cout << __FUNCTION__ << ":" << __LINE__ <<  "> Error building input list with ASTER. There must be only one multi-value variable.\n";
+			return -1;
+		}
+
+		#if 0 // TODO_LATER - handle ALL cases. Placeholder
+		/*----------------------------
+		 * Check if 'ALL' is in bands
+		 */
+		bool isAllbands = false;
+		for(int i=0; i < aster_Bands.size(); i++) {
+			if (CompareStrCaseInsensitive(aster_Bands[i], "ALL")) {
+				isAllbands = true;
+				#if DEBUG_TOOL_PARSER
+				std::cout << "DBG_PARSER " << __FUNCTION__ << ":" << __LINE__ << "> ALL for Aster bands.\n";
+				#endif
+				break;
+			}
+        }
+
+		/* 
+		 * if ALL is in bands, build all list
+		 */
+		std::vector<std::string> asterBandsUpdated;
+		if (isAllbands) {
+			if(aster_Resolution == "TIR") {
+				// 38 bands total
+				asterBandsUpdated = {"10", "11", "12", "13", "14"};
+			}
+			else if(aster_Resolution == "SWIR") {
+				// 8 bands total
+				asterBandsUpdated = {"4", "5", "6", "7", "8", "9"};
+			}
+			else if(aster_Resolution == "VNIR") {
+				// 2 bands total
+				asterBandsUpdated = {"ImageData1","2", "3N"};
+			}
+		}
+		else {
+			asterBandsUpdated = aster_Bands;
+		}
+		#else
+		std::vector<std::string> asterBandsUpdated;
+		asterBandsUpdated = aster_Bands;
+		#endif
+
+		#if DEBUG_TOOL_PARSER
+		std::cout << __FUNCTION__ << ":" << __LINE__ << "> asterBandsUpdated: ";
+		for (int i=0; i< asterBandsUpdated.size(); i++) {
+			std::cout << asterBandsUpdated[i] << " ";
+		}
+		std::cout << "\n";
+		#endif
+
+		/*----------------------------
+		 * Note: used asterBandsUpdated not aster_Bands directly to handle
+		 */
+		if(aster_MultiVars[0] == ASTER_BANDS) {
+			strVecTmp.clear();
+			for(int j=0; j < asterBandsUpdated.size(); j++) {
+				strVecTmp.push_back(asterBandsUpdated[j]);
+			}
+			inputMultiVarsMap[aster_MultiVars[0]] = strVecTmp;
+			/*---------------------
+			Ex:
+			inputMultiVarsMap["ASTER_BANDS"] = "{"8","9","10"}
+			inputMultiVarsMap.size() == 1
+			----------------------*/
+		}
+		else {
+			std::cout << __FUNCTION__ << ":" << __LINE__ <<  "> Error building input list with ASTER.\n";
 		}
 	}
 
