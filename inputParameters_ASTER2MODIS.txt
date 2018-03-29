@@ -1,0 +1,33 @@
+#=============================================================
+# Example of resampling of ASTER to MODIS.
+# Using ASTER as source instrument and MODIS as target instrument.
+#
+# Refer to below specification.
+#
+# INPUT_FILE_PATH: <specify a full path to BF HDF5 data file>
+# OUTPUT_FILE_PATH: <specify a path to result AF file>
+# RESAMPLE_METHOD: summaryInterpolate
+#
+# SOURCE_INSTRUMENT: ASTER
+# TARGET_INSTRUMENT: MODIS
+
+# ASTER_RESOLUTION:  one of  < 15M, 30M or 90M >
+# ASTER_BAND:  any of <1 ~ 3> for 15M, any of <4 ~ 9> for 30 M or any of <10 ~ 14> for 90M
+#
+# MODIS_RESOLUTION: < 1KM, 500M or 250M >
+# MODIS_BANDS: < 1 ~ 36 >
+#=============================================================
+
+INPUT_FILE_PATH: /projects/sciteam/jq0/TerraFusion/testFiles/TERRA_BF_L1B_O69400_20130104000439_F000_V000.h5
+OUTPUT_FILE_PATH: aster2modis_Src90M10_Trg1KM8_Test.h5
+RESAMPLE_METHOD: summaryInterpolate
+
+SOURCE_INSTRUMENT: ASTER
+TARGET_INSTRUMENT: MODIS
+
+ASTER_RESOLUTION:  90M
+ASTER_BANDS: 10 
+
+MODIS_RESOLUTION: 1KM
+MODIS_BANDS: 8
+
