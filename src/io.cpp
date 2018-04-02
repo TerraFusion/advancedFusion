@@ -6,8 +6,8 @@
  *  used for resampling and reprojection. 
  *
  * DEVELOPERS:
- *  - Jonathan Kim (jkm@illinois.edu)
  *  - Yat Long Lo (yllo2@illinois.edu) - Author
+ *  - Jonathan Kim (jkm@illinois.edu)
  *
  */
 
@@ -1736,7 +1736,7 @@ double* get_ast_lat(hid_t file, char* subsystem, char* d_name, int*size)
 		memmove(&rad_group_name[0], &rad_group_name[1], strlen(rad_group_name));
 		htri_t status = H5Lexists(group, rad_group_name, H5P_DEFAULT);
 		if(status <= 0){
-			printf("Dataset does not exist\n");
+			printf("Warning: Dataset '%s' does not exist.\n", rad_group_name);
 			continue;
 		}
 		strcpy(names[i], name);
@@ -1841,7 +1841,7 @@ double* get_ast_long(hid_t file, char* subsystem, char* d_name, int* size)
 		memmove(&rad_group_name[0], &rad_group_name[1], strlen(rad_group_name));
 		htri_t status = H5Lexists(group, rad_group_name, H5P_DEFAULT);
 		if(status <= 0){
-			printf("Dataset does not exist\n");
+			printf("Warning: Dataset '%s' does not exist.\n", rad_group_name);
 			continue;
 		}
 		strcpy(names[i], name);
