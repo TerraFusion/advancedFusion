@@ -106,7 +106,10 @@ void AF_InputParmeterFile::ParseByLine()
 			continue;
 
 
-		// parse single exact token without '\n', '\r' or space. 
+		/*--------------------------- 
+		 * INPUT_FILE_PATH
+		 * parse single exact token without '\n', '\r' or space. 
+		 */
 		found = line.find(INPUT_FILE_PATH.c_str());
 		if(found != std::string::npos)
 		{
@@ -126,7 +129,10 @@ void AF_InputParmeterFile::ParseByLine()
 		}
 
 
-		// parse single exact token without '\n', '\r' or space.
+		/*--------------------------- 
+		 * OUTPUT_FILE_PATH
+		 * parse single exact token without '\n', '\r' or space.
+		 */
 		found = line.find(OUTPUT_FILE_PATH.c_str());
 		if(found != std::string::npos)
 		{
@@ -146,7 +152,10 @@ void AF_InputParmeterFile::ParseByLine()
 		}
 
 
-		// parse single exact token without '\n', '\r' or space.
+		/*--------------------------- 
+		 * RESAMPLE_METHOD
+		 * parse single exact token without '\n', '\r' or space.
+		 */
 		found = line.find(RESAMPLE_METHOD.c_str());
 		if(found != std::string::npos)
 		{
@@ -166,7 +175,10 @@ void AF_InputParmeterFile::ParseByLine()
 		}
 
 
-		// parse single exact token without '\n', '\r' or space.
+		/*--------------------------- 
+		 * SOURCE_INSTRUMENT
+		 * parse single exact token without '\n', '\r' or space.
+		 */
 		found = line.find(SOURCE_INSTRUMENT.c_str());
 		if(found != std::string::npos)
 		{
@@ -186,7 +198,10 @@ void AF_InputParmeterFile::ParseByLine()
 		}
 
 
-		// parse single exact token without '\n', '\r' or space.
+		/*--------------------------- 
+		 * TARGET_INSTRUMENT
+		 * parse single exact token without '\n', '\r' or space.
+		 */
 		found = line.find(TARGET_INSTRUMENT.c_str());
 		if(found != std::string::npos)
 		{
@@ -210,7 +225,11 @@ void AF_InputParmeterFile::ParseByLine()
 		/*======================================================================
 		 * MISR section
 		 */
-		// parse single exact token without '\n', '\r' or space.
+
+		/*--------------------------- 
+		 * MISR_RESOLUTION
+		 * parse single exact token without '\n', '\r' or space.
+		 */
 		found = line.find(MISR_RESOLUTION.c_str());
 		if(found != std::string::npos)
 		{
@@ -230,7 +249,10 @@ void AF_InputParmeterFile::ParseByLine()
 		}
 
 
-		// parse multiple
+		/*--------------------------- 
+		 * MISR_CAMERA_ANGLE
+		 * parse multiple
+		 */
 		found = line.find(MISR_CAMERA_ANGLE.c_str());
 		if(found != std::string::npos)
 		{
@@ -253,7 +275,10 @@ void AF_InputParmeterFile::ParseByLine()
 		}
 
 
-		// parse multiple
+		/*--------------------------- 
+		 * MISR_RADIANCE
+		 * parse multiple
+		 */
 		found = line.find(MISR_RADIANCE.c_str());
 		if(found != std::string::npos)
 		{
@@ -275,7 +300,10 @@ void AF_InputParmeterFile::ParseByLine()
 			continue;
 		}
 
-		// parse single exact token without '\n', '\r' or space.
+		/*--------------------------- 
+		 * MISR_TARGET_BLOCKUNSTACK
+		 * parse single exact token without '\n', '\r' or space.
+		 */
 		found = line.find(MISR_SHIFT.c_str());
 		if(found != std::string::npos)
 		{
@@ -298,7 +326,11 @@ void AF_InputParmeterFile::ParseByLine()
 		/*======================================================================
 		 * MODIS section
 		 */
-		// parse single exact token without '\n', '\r' or space.
+
+		/*-------------------- 
+		 * MODIS_RESOLUTION  
+		 * parse single exact token without '\n', '\r' or space.
+		 */
 		found = line.find(MODIS_RESOLUTION.c_str());
 		if(found != std::string::npos)
 		{
@@ -319,7 +351,10 @@ void AF_InputParmeterFile::ParseByLine()
 		}
 
 
-		// parse multiple
+		/*-------------------- 
+		 * MODIS_BANDS  
+		 * parse multiple
+		 */
 		found = line.find(MODIS_BANDS.c_str());
 		if(found != std::string::npos)
 		{
@@ -345,7 +380,11 @@ void AF_InputParmeterFile::ParseByLine()
 		/*======================================================================
 		 * ASTER section
 		 */
-		// parse single exact token without '\n', '\r' or space.
+
+		/*-------------------- 
+		 * ASTER_RESOLUTION  
+		 * parse single exact token without '\n', '\r' or space.
+		 */
 		found = line.find(ASTER_RESOLUTION.c_str());
 		if(found != std::string::npos)
 		{
@@ -365,7 +404,10 @@ void AF_InputParmeterFile::ParseByLine()
 			continue;
 		}
 
-		// parse multiple
+		/*-------------------- 
+		 * ASTER_BANDS  
+		 * parse multiple
+		 */
 		found = line.find(ASTER_BANDS.c_str());
 		if(found != std::string::npos)
 		{
@@ -383,6 +425,149 @@ void AF_InputParmeterFile::ParseByLine()
 			for(int i = 0; i < aster_Bands.size(); i++) {
 				std::cout << "DBG_PARSER " << __FUNCTION__ << ":" << __LINE__ << "> aster_Bands[" << i << "]:" << aster_Bands[i] << std::endl;
 			}
+			#endif
+			continue;
+		}
+
+
+		/*======================================================================
+		 * USER_DEFINE section
+		 */
+
+		/*-------------------- 
+		 * USER_OUTPUT_EPSG
+		 * parse single exact token without '\n', '\r' or space.
+		 */
+		found = line.find(USER_EPSG.c_str());
+		if(found != std::string::npos)
+		{
+			line = line.substr(strlen(USER_EPSG.c_str()));
+			while(line[0] == ' ' || line[0] == ':')
+				line = line.substr(1);
+			pos = line.find_first_of(' ', 0);
+			std::stringstream ss(line); // Insert the string into a stream
+			std::string token;
+			while (ss >> token) {  // get exact string
+				user_EPSG = token;
+			}
+
+			#if DEBUG_TOOL_PARSER
+			std::cout << "DBG_PARSER " << __FUNCTION__ << ":" << __LINE__ << "> USER_EPSG : " << user_EPSG << std::endl;
+			#endif
+			continue;
+		}
+
+		/*-------------- 
+		 * USER_X_MIN
+		 * parse single exact token without '\n', '\r' or space.
+		 */
+		found = line.find(USER_X_MIN.c_str());
+		if(found != std::string::npos)
+		{
+			line = line.substr(strlen(USER_X_MIN.c_str()));
+			while(line[0] == ' ' || line[0] == ':')
+				line = line.substr(1);
+			pos = line.find_first_of(' ', 0);
+			std::stringstream ss(line); // Insert the string into a stream
+			std::string token;
+			while (ss >> token) {  // get exact string
+				user_xMin = token;
+			}
+
+			#if DEBUG_TOOL_PARSER
+			std::cout << "DBG_PARSER " << __FUNCTION__ << ":" << __LINE__ << "> USER_X_MIN : " << user_xMin << std::endl;
+			#endif
+			continue;
+		}
+
+		/*------------- 
+		 * USER_X_MAX
+		 * parse single exact token without '\n', '\r' or space.
+		 */
+		found = line.find(USER_X_MAX.c_str());
+		if(found != std::string::npos)
+		{
+			line = line.substr(strlen(USER_X_MAX.c_str()));
+			while(line[0] == ' ' || line[0] == ':')
+				line = line.substr(1);
+			pos = line.find_first_of(' ', 0);
+			std::stringstream ss(line); // Insert the string into a stream
+			std::string token;
+			while (ss >> token) {  // get exact string
+				user_xMax = token;
+			}
+
+			#if DEBUG_TOOL_PARSER
+			std::cout << "DBG_PARSER " << __FUNCTION__ << ":" << __LINE__ << "> USER_X_MAX : " << user_xMax << std::endl;
+			#endif
+			continue;
+		}
+
+		/*-------------- 
+		 * USER_Y_MIN
+		 * parse single exact token without '\n', '\r' or space.
+		 */
+		found = line.find(USER_Y_MIN.c_str());
+		if(found != std::string::npos)
+		{
+			line = line.substr(strlen(USER_Y_MIN.c_str()));
+			while(line[0] == ' ' || line[0] == ':')
+				line = line.substr(1);
+			pos = line.find_first_of(' ', 0);
+			std::stringstream ss(line); // Insert the string into a stream
+			std::string token;
+			while (ss >> token) {  // get exact string
+				user_yMin = token;
+			}
+
+			#if DEBUG_TOOL_PARSER
+			std::cout << "DBG_PARSER " << __FUNCTION__ << ":" << __LINE__ << "> USER_Y_MIN : " << user_yMin << std::endl;
+			#endif
+			continue;
+		}
+
+		/*------------- 
+		 * USER_Y_MAX
+		 * parse single exact token without '\n', '\r' or space.
+		 */
+		found = line.find(USER_Y_MAX.c_str());
+		if(found != std::string::npos)
+		{
+			line = line.substr(strlen(USER_Y_MAX.c_str()));
+			while(line[0] == ' ' || line[0] == ':')
+				line = line.substr(1);
+			pos = line.find_first_of(' ', 0);
+			std::stringstream ss(line); // Insert the string into a stream
+			std::string token;
+			while (ss >> token) {  // get exact string
+				user_yMax = token;
+			}
+
+			#if DEBUG_TOOL_PARSER
+			std::cout << "DBG_PARSER " << __FUNCTION__ << ":" << __LINE__ << "> USER_Y_MAX : " << user_yMax << std::endl;
+			#endif
+			continue;
+		}
+
+		/*------------- 
+		 * USER_RESOLUTION
+		 * parse single exact token without '\n', '\r' or space.
+		 */
+		found = line.find(USER_RESOLUTION.c_str());
+		if(found != std::string::npos)
+		{
+			line = line.substr(strlen(USER_RESOLUTION.c_str()));
+			while(line[0] == ' ' || line[0] == ':')
+				line = line.substr(1);
+			pos = line.find_first_of(' ', 0);
+			std::stringstream ss(line); // Insert the string into a stream
+			std::string token;
+			while (ss >> token) {  // get exact string
+				user_Resolution = token;
+			}
+
+			#if DEBUG_TOOL_PARSER
+			std::cout << "DBG_PARSER " << __FUNCTION__ << ":" << __LINE__ << "> USER_RESOLUTION : " << user_Resolution << std::endl;
 			#endif
 			continue;
 		}
@@ -439,6 +624,7 @@ int AF_InputParmeterFile::CheckParsedValues()
 			return -1; // failed
 		}
 	}
+
 	
 	return 0; // succeed
 }
@@ -695,7 +881,9 @@ std::string AF_InputParmeterFile::GetTargetInstrument()
 	return targetInstrument;
 }
 
-// MISR
+/*---------------------
+ * MISR section
+ */
 std::string AF_InputParmeterFile::GetMISR_Resolution()
 {
 	return misr_Resolution;
@@ -717,7 +905,9 @@ std::string AF_InputParmeterFile::GetMISR_Shift()
 }
 
 
-// MODIS
+/*---------------------
+ * MODIS section
+ */
 std::string AF_InputParmeterFile::GetMODIS_Resolution()
 {
 	return modis_Resolution;
@@ -730,7 +920,9 @@ std::vector<std::string>  AF_InputParmeterFile::GetMODIS_Bands()
 
 
 #if 1 // JK_ASTER2MODIS
-// ASTER
+/*---------------------
+ * ASTER section
+ */
 std::string AF_InputParmeterFile::GetASTER_Resolution()
 {
 	return aster_Resolution;
@@ -741,6 +933,36 @@ std::vector<std::string>  AF_InputParmeterFile::GetASTER_Bands()
 	return aster_Bands;
 }
 #endif
+
+
+/*---------------------
+ * USER section
+ */
+std::string AF_InputParmeterFile::GetUSER_EPSG()
+{
+	return user_EPSG;
+}
+std::string AF_InputParmeterFile::GetUSER_xMin()
+{
+	return user_xMin;
+}
+std::string AF_InputParmeterFile::GetUSER_xMax()
+{
+	return user_xMax;
+}
+std::string AF_InputParmeterFile::GetUSER_yMin()
+{
+	return user_yMin;
+}
+std::string AF_InputParmeterFile::GetUSER_yMax()
+{
+	return user_yMax;
+}
+std::string AF_InputParmeterFile::GetUSER_Resolution()
+{
+	return user_Resolution;
+}
+
 
 /* #####################################
  *
