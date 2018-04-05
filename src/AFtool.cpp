@@ -1597,6 +1597,115 @@ int af_GenerateOutputCumulative_AsterAsSrc(AF_InputParmeterFile &inputArgs, hid_
 	return ret;
 }
 
+/*##############################################################
+ * Test functions
+ *#############################################################*/
+void Test_Parser(std::string headerFile)
+{
+	int ret;
+    AF_InputParmeterFile inputArgs;
+    inputArgs.headerFileName = headerFile;
+    inputArgs.ParseByLine();
+    ret = inputArgs.CheckParsedValues();
+    if (ret < 0) {
+		std::cout << __FUNCTION__ << ":" << __LINE__ << " > Failed inputArgs.CheckParsedValues()\n";
+        return;
+    }
+
+	/*-------------------------------------------------------
+	 * COMMON section
+	 */
+	std::string inputDataPath = inputArgs.GetInputBFdataPath();
+	std::cout << "TEST Parser> INPUT_FILE_PATH: " << inputDataPath << std::endl;
+
+	std::string outputFile = inputArgs.GetOuputFilePath();
+	std::cout << "TEST Parser> OUTPUT_FILE_PATH: " << outputFile << std::endl;
+
+	std::string resampleMethod =  inputArgs.GetResampleMethod();
+    std::cout << "TEST Parser> Resample Method: " << resampleMethod << std::endl;
+
+    // Instruments
+    std::string srcInstrument = inputArgs.GetSourceInstrument();
+    std::string trgInstrument = inputArgs.GetTargetInstrument();
+    std::cout << "TEST Parser> SOURCE instrument: " << srcInstrument << std::endl;
+    std::cout << "TEST Parser> TARGET instrument: " << trgInstrument << std::endl;
+	std::cout << "\n";
+
+
+	/*-------------------------------------------------------
+	 * MODIS section
+	 */
+	if(srcInstrument == "MODIS" || trgInstrument == "MODIS") {
+		std::string modisResolution = inputArgs.GetMODIS_Resolution();
+		std::cout << "TEST Parser>  MODIS resolution: " << modisResolution << "\n";
+
+		strVec_t modisBands = inputArgs.GetMODIS_Bands();
+		std::cout << "TEST Parser>  MODIS bands: ";
+		for(int i=0; i < modisBands.size(); i++) {
+			std::cout << modisBands[i] << " ";
+		}
+		std::cout << "\n";
+		std::cout << "\n";
+	}
+
+	/*-------------------------------------------------------
+	 * MISR section
+	 */
+	if(srcInstrument == "MISR" || trgInstrument == "MISR") {
+		std::string misrResolution = inputArgs.GetMISR_Resolution();
+		std::cout << "TEST Parser>  MISR resolution: " << misrResolution << "\n";
+
+		strVec_t misrCameras = inputArgs.GetMISR_CameraAngles();
+		std::cout << "TEST Parser>  MISR cameras: ";
+		for(int i=0; i < misrCameras.size(); i++) {
+			std::cout << misrCameras[i] << " ";
+		}
+		std::cout << "\n";
+
+		strVec_t misrRadiances = inputArgs.GetMISR_Radiance();
+		std::cout << "TEST Parser>  MISR radiances: ";
+		for(int i=0; i < misrRadiances.size(); i++) {
+			std::cout << misrRadiances[i] << " ";
+		}
+		std::cout << "\n";
+		std::cout << "\n";
+	}
+
+	/*-------------------------------------------------------
+	 * ASTER section
+	 */
+	if(srcInstrument == "ASTER" || trgInstrument == "ASTER") {
+		std::string asterResolution = inputArgs.GetASTER_Resolution();
+		std::cout << "TEST Parser>  ASTER resolution: " << asterResolution << "\n";
+
+		strVec_t asterBands = inputArgs.GetASTER_Bands();
+		std::cout << "TEST Parser>  ASTER bands: ";
+		for(int i=0; i < asterBands.size(); i++) {
+			std::cout << asterBands[i] << " ";
+		}
+		std::cout << "\n";
+		std::cout << "\n";
+	}
+
+	/*-------------------------------------------------------
+	 * USER_DEFINE section
+	 */
+	if(srcInstrument == "USER_DEFINE" || trgInstrument == "USER_DEFINE") {
+	    std::string userEPSG = inputArgs.GetUSER_EPSG();
+	    std::cout << "TEST Parser> USER EPSG: " << userEPSG << std::endl;
+	    std::string userXmin = inputArgs.GetUSER_xMin();
+	    std::cout << "TEST Parser> USER X min: " << userXmin << std::endl;
+	    std::string userXmax = inputArgs.GetUSER_xMax();
+	    std::cout << "TEST Parser> USER X max: " << userXmax << std::endl;
+	    std::string userYmin = inputArgs.GetUSER_yMin();
+	    std::cout << "TEST Parser> USER Y min: " << userYmin << std::endl;
+	    std::string userYmax = inputArgs.GetUSER_yMax();
+	    std::cout << "TEST Parser> USER Y max: " << userYmax << std::endl;
+	    std::string userRsolution = inputArgs.GetUSER_Resolution();
+	    std::cout << "TEST Parser> USER Rsolution: " << userRsolution << std::endl;
+		std::cout << "\n";
+	}
+}
 
 
 /*===========================================
@@ -1611,6 +1720,11 @@ int main(int argc, char *argv[])
 		Usage(argc, argv);
 		return FAILED;
 	}
+
+	#if 0 // TEST : parser, remove later
+	Test_Parser(argv[1]);
+	exit(1);
+	#endif
 
 	//----------------------------------
 	// parse input parameter from file 
@@ -1632,7 +1746,7 @@ int main(int argc, char *argv[])
 	std::cout << "DBG_TOOL main> target instrument: " << trgInstrument << std::endl;
 	#endif
 	
-#if 0 // TEST : multi-value variable map , remove later
+	#if 0 // TEST : multi-value variable map , remove later
 	//---------------------------------------------------
 	// build target instrument multi-value variable map
 	std::map<std::string, strVec_t> trgInputMultiVarsMapTEST;
@@ -1645,7 +1759,7 @@ int main(int argc, char *argv[])
 	inputArgs.BuildMultiValueVariableMap(srcInstrument, srcInputMultiVarsMapTEST);
 	inputArgs.DBG_displayinputListMap(srcInstrument, srcInputMultiVarsMapTEST, "COMBINATION");
 	exit(1);
-#endif
+	#endif
 
 
 	/* ===================================================
