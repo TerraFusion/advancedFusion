@@ -8,7 +8,7 @@
  * DEVELOPERS:
  *  - Yat Long Lo (yllo2@illinois.edu) - Author
  *  - Jonathan Kim (jkm@illinois.edu)
- *
+ *  - Yizhao Gao(yizhaotsccsj@gmail.com)
  */
 
 
@@ -1635,42 +1635,63 @@ double* get_ast_rad(hid_t file, char* subsystem, char* d_name, int*size)
 	for(i = 0; i < num_groups; i++){
 		char* name = (char*)malloc(50*sizeof(char));
 		H5Gget_objname_by_idx(group, (hsize_t)i, name, 50);
-		strcpy(names[i], name);
+		char* rad_group_name;
+		const char* d_arr[] = {name, subsystem, d_name};
+		concat_by_sep(&rad_group_name, d_arr, "/", strlen(name) + strlen(subsystem) + strlen(d_name), 3);
+		memmove(&rad_group_name[0], &rad_group_name[1], strlen(rad_group_name));
+		htri_t status = H5Lexists(group, rad_group_name, H5P_DEFAULT);
+		if(status <= 0){
+			printf("Warning: Dataset '%s' does not exist.\n", rad_group_name);
+			strcpy(names[i], "");
+		}
+		else {
+			strcpy(names[i], name);
+		}
 		free(name);
 	}
 	
 	//Get total data size
 	printf("Get total data size\n");
-	int k;
 	int total_size = 0;
-	int store_count = 0;
-	for(k = 0; k < num_groups; k++){
-		char* name = names[k];
+	for(i = 0; i < num_groups; i++){
+		char* name = names[i];
+		if(strcmp(name, "") == 0) {
+			continue;
+		}
 		const char* d_arr[] = {instrument, name, subsystem, d_name};
 		char* dataset_name;
 		concat_by_sep(&dataset_name, d_arr, "/", strlen(instrument) + strlen(name) + strlen(subsystem) + strlen(d_name), 4);
+//		htri_t status = H5Lexists(group, dataset_name, H5P_DEFAULT);
+//		if(status <= 0){
+//			printf("Warning: Dataset '%s' does not exist.\n", dataset_name);
+//			continue;
+//		}
 		hsize_t* curr_dim = af_read_size(file, dataset_name);
 		if(curr_dim == NULL){
 			continue;
 		}
-		store_count += 1;
 		total_size += curr_dim[0]*curr_dim[1];
 		free(curr_dim);
 	}
 	
+	printf("Reading values\n");
 	double* result_data = (double*)calloc(total_size, sizeof(double));
 	
-	int h;
 	int curr_size = 0;
-	for(h = 0; h < store_count; h++){
+	for(i = 0; i < num_groups; i++){
 		//Path formation
-		char* name = names[h];
+		char* name = names[i];
+		if(strcmp(name, "") == 0) {
+			continue;
+		}
 		const char* d_arr[] = {instrument, name, subsystem, d_name};
 		char* dataset_name;
 		concat_by_sep(&dataset_name, d_arr, "/", strlen(instrument) + strlen(name) + strlen(subsystem) + strlen(d_name) + 5, 4);
-		#if DEBUG_IO
-		printf("DBG_IO %s:%d> radiance dataset name: %d\n", __FUNCTION__, __LINE__, dataset_name);
-		#endif
+//		htri_t status = H5Lexists(group, dataset_name, H5P_DEFAULT);
+//		if(status <= 0){
+//			printf("Warning: Dataset '%s' does not exist.\n", dataset_name);
+//			continue;
+//		}
 		double* data = af_read(file, dataset_name);
 		if(data == NULL){
 				continue;
@@ -1726,10 +1747,10 @@ double* get_ast_lat(hid_t file, char* subsystem, char* d_name, int*size)
 	herr_t err = H5Gget_num_objs(group, &num_groups);
 	char names[(int)num_groups][50];
 	int i;
-//This function is problematic
+
 	for(i = 0; i < num_groups; i++){
 		char* name = (char*)malloc(50*sizeof(char));
-		H5Gget_objname_by_idx(group, (hsize_t)i, name, 50); //Highly likely to be this line
+		H5Gget_objname_by_idx(group, (hsize_t)i, name, 50);
 		char* rad_group_name;
 		const char* d_arr[] = {name, subsystem, d_name};
 		concat_by_sep(&rad_group_name, d_arr, "/", strlen(name) + strlen(subsystem) + strlen(d_name), 3);
@@ -1737,48 +1758,60 @@ double* get_ast_lat(hid_t file, char* subsystem, char* d_name, int*size)
 		htri_t status = H5Lexists(group, rad_group_name, H5P_DEFAULT);
 		if(status <= 0){
 			printf("Warning: Dataset '%s' does not exist.\n", rad_group_name);
-			continue;
+			strcpy(names[i], "");
 		}
-		strcpy(names[i], name);
+		else {
+			strcpy(names[i], name);
+		}
 		free(name);
 	}
 
 //This part may also be problematic	
 	//Get total data size
 	printf("Get total data size\n");
-	int k;
 	int total_size = 0;
-	int store_count = 0;
-	for(k = 0; k < num_groups; k++){
-		char* name = names[k];
+	for(i = 0; i < num_groups; i++){
+		char* name = names[i];
+		if(strcmp(name, "") == 0) {
+			continue;
+		}
 		const char* d_arr[] = {instrument, name, subsystem, location, lat};
 		char* dataset_name;
 		concat_by_sep(&dataset_name, d_arr, "/", strlen(instrument) + strlen(name) + strlen(subsystem) + strlen(location) + strlen(lat), 5);
+//		htri_t status = H5Lexists(group, dataset_name, H5P_DEFAULT);
+//		if(status <= 0){
+//			printf("Warning: Dataset '%s' does not exist.\n", dataset_name);
+//			continue;
+//		}
 		hsize_t* curr_dim = af_read_size(file, dataset_name);
 		if(curr_dim == NULL){
 			continue;
 		}
-		store_count += 1;
 		total_size += curr_dim[0]*curr_dim[1];
 		free(curr_dim);
 	}
 	
-	int h;
+	printf("Reading values\n");
 	double* lat_data = (double*)calloc(total_size, sizeof(double));
 	int curr_lat_size = 0;
 	int read_first = -1;
-	for(h = 0; h < store_count; h++){
+	for(i = 0; i < num_groups; i++){
 		//Path formation
-		char* name = names[h];
+		char* name = names[i];
+		if(strcmp(name, "") == 0) {
+			continue;
+		}
 		const char* lat_arr[] = {instrument, name, subsystem, location, lat};
 		char* lat_dataset_name;
 		concat_by_sep(&lat_dataset_name, lat_arr, "/", strlen(instrument) + strlen(name) + strlen(subsystem) + strlen(location) + strlen(lat) + 5, 5);
-		#if DEBUG_IO
-		printf("DBG_IO %s:%d> latitude dataset name: %d\n", __FUNCTION__, __LINE__, lat_dataset_name);
-		#endif
+//		htri_t status = H5Lexists(group, lat_dataset_name, H5P_DEFAULT);
+//		if(status <= 0){
+//			printf("Warning: Dataset '%s' does not exist.\n", lat_dataset_name);
+//			continue;
+//		}
 		double* data = af_read(file, lat_dataset_name);
 		if(data == NULL){
-				continue;
+			continue;
 		}
 		hsize_t* curr_dim = af_read_size(file, lat_dataset_name);
 		int gran_size = curr_dim[0] * curr_dim[1];
@@ -1842,43 +1875,56 @@ double* get_ast_long(hid_t file, char* subsystem, char* d_name, int* size)
 		htri_t status = H5Lexists(group, rad_group_name, H5P_DEFAULT);
 		if(status <= 0){
 			printf("Warning: Dataset '%s' does not exist.\n", rad_group_name);
-			continue;
+			strcpy(names[i], "");
 		}
-		strcpy(names[i], name);
+		else {
+			strcpy(names[i], name);
+		}
 		free(name);
 	}
 	
 	//Get total data size
 	printf("Get total data size\n");
-	int k;
 	int total_size = 0;
 	int store_count = 0;
-	for(k = 0; k < num_groups; k++){
-		char* name = names[k];
+	for(i = 0; i < num_groups; i++){
+		char* name = names[i];
+		if(strcmp(name, "") == 0) {
+			continue;
+		}
 		const char* d_arr[] = {instrument, name, subsystem, location, longitude};
 		char* dataset_name;
 		concat_by_sep(&dataset_name, d_arr, "/", strlen(instrument) + strlen(name) + strlen(subsystem) + strlen(location) + strlen(longitude), 5);
+//		htri_t status = H5Lexists(group, dataset_name, H5P_DEFAULT);
+//		if(status <= 0){
+//			printf("Warning: Dataset '%s' does not exist.\n", dataset_name);
+//			continue;
+//		}
 		hsize_t* curr_dim = af_read_size(file, dataset_name);
 		if(curr_dim == NULL){
 			continue;
 		}
-		store_count += 1;
 		total_size += curr_dim[0]*curr_dim[1];
 		free(curr_dim);
 	}
 	
-	int h;
+	printf("Reading values\n");
 	double* long_data = (double*)calloc(total_size, sizeof(double));
 	int curr_long_size = 0;
-	for(h = 0; h < store_count; h++){
+	for(i = 0; i < num_groups; i++){
 		//Path formation
-		char* name = names[h];
+		char* name = names[i];
+		if(strcmp(name, "") == 0) {
+			continue;
+		}
 		const char* long_arr[] = {instrument, name, subsystem, location, longitude};
 		char* long_dataset_name;
 		concat_by_sep(&long_dataset_name, long_arr, "/", strlen(instrument) + strlen(name) + strlen(subsystem) + strlen(location) + strlen(longitude) + 5, 5);
-		#if DEBUG_IO
-		printf("DBG_IO %s:%d> longitude dataset name: %d\n", __FUNCTION__, __LINE__, long_dataset_name);
-		#endif
+//		htri_t status = H5Lexists(group, long_dataset_name, H5P_DEFAULT);
+//		if(status <= 0){
+//			printf("Warning: Dataset '%s' does not exist.\n", long_dataset_name);
+//			continue;
+//		}
 		double* data = af_read(file, long_dataset_name);
 		if(data == NULL){
 				continue;
