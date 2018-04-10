@@ -5,6 +5,7 @@
 #include "gdalio.h"
 #include "reproject.h"
 #include "io.h"
+#include <math.h>
 
 int main(int argc, char ** argv) {
 
@@ -99,6 +100,28 @@ int main(int argc, char ** argv) {
 	printf("writing data fields\n");
 	
 	writeGeoTiff(outfileName, src_rad_out, outputEPSG, xMin, yMin, xMax, yMax, cellSize);
+
+    //Writing Modis source
+    printf("writing source data fields\n");
+    hid_t output_file = H5Fcreate("./test_userdefinedgrids_modis2user.h5", H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
+    hid_t group_id = H5Gcreate2(output_file, "/Data_Fields", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+	int crossTrack = ceil((xMax - xMin) / cellSize);
+    hsize_t modis_dim[3];
+    modis_dim[0] = bands.size();
+    modis_dim[1] = (nPoints)/bands.size()/crossTrack;
+    modis_dim[2] = crossTrack;
+    hid_t modis_dataspace = H5Screate_simple(3, modis_dim, NULL);
+    hid_t   modis_datatype = H5Tcopy(H5T_NATIVE_DOUBLE);
+    herr_t  modis_status = H5Tset_order(modis_datatype, H5T_ORDER_LE);
+    hid_t modis_dataset = H5Dcreate2(output_file, "/Data_Fields/modis_rad", modis_datatype, modis_dataspace,H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+    modis_status = H5Dwrite(modis_dataset, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, src_rad);
+    H5Sclose(modis_dataspace);
+    H5Tclose(modis_datatype);
+    H5Dclose(modis_dataset);
+    if(modis_status < 0){
+        printf("MODIS write error\n");
+        return -1;
+    }
 	
 
 	free(src_rad);
