@@ -42,6 +42,7 @@ int main(int argc, char ** argv) {
 	gdalIORegister();
 
 	int nPoints = getCellCenterLatLon(outputEPSG, xMin, yMin, xMax, yMax, cellSize, &targetX, &targetY);
+	int crossTrack = ceil((xMax - xMin) / cellSize);
 
 	printf("%d output cells in total.\n", nPoints);
 /*
@@ -49,6 +50,17 @@ int main(int argc, char ** argv) {
 		printf("%lf,\t%lf\n", targetX[i], targetY[i]);
 	}
 */
+    hid_t output_file = H5Fcreate("./test_userdefinedgrids_modis2user.h5", H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
+
+    printf("writing dest geo\n");
+	// calculate width from user define input value
+    int lat_status =  af_write_mm_geo(output_file, 0, targetY, nPoints, crossTrack);
+    int long_status = af_write_mm_geo(output_file, 1, targetX, nPoints, crossTrack);
+    if(lat_status < 0 || long_status < 0){
+        printf("Writing dest geolocation - error\n");
+        return -1;
+    }
+	
 
 	char* file_path = "/projects/sciteam/jq0/TerraFusion/yizhao/TERRA_BF_L1B_O69626_20130119123228_F000_V001.h5";
 	char* outfileName = "test32723.tif";
@@ -65,7 +77,7 @@ int main(int argc, char ** argv) {
 
 	src_lat = get_modis_lat(src_file, "_1KM", &nCellsrc);
 	src_long = get_modis_long(src_file, "_1KM", &nCellsrc);
-	
+
 
 	double** p_src_lat = &src_lat;
 	double** p_src_lon = &src_long;
@@ -90,7 +102,6 @@ int main(int argc, char ** argv) {
 	double* src_rad;
 	std::vector<std::string> bands = {"8"};
 	src_rad = get_modis_rad(src_file, "_1KM", bands, bands.size(), &nCellsrc);
-	herr_t ret = af_close(src_file);
 
 	double* src_rad_out = (double *)malloc(sizeof(double) * nPoints);
 	printf("interpolating\n");
@@ -103,9 +114,7 @@ int main(int argc, char ** argv) {
 
     //Writing Modis source
     printf("writing source data fields\n");
-    hid_t output_file = H5Fcreate("./test_userdefinedgrids_modis2user.h5", H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
     hid_t group_id = H5Gcreate2(output_file, "/Data_Fields", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-	int crossTrack = ceil((xMax - xMin) / cellSize);
     hsize_t modis_dim[3];
     modis_dim[0] = bands.size();
     modis_dim[1] = (nPoints)/bands.size()/crossTrack;
@@ -118,6 +127,7 @@ int main(int argc, char ** argv) {
     H5Sclose(modis_dataspace);
     H5Tclose(modis_datatype);
     H5Dclose(modis_dataset);
+	H5Gclose(group_id);
     if(modis_status < 0){
         printf("MODIS write error\n");
         return -1;
@@ -127,6 +137,11 @@ int main(int argc, char ** argv) {
 	free(src_rad);
 	free(src_rad_out);
 	free(tarNNSouID);
+
+    printf("Writing done\n");
+    //Closing file
+    herr_t ret = af_close(src_file);
+    ret = af_close(output_file);
 
 	return 0;
 }
