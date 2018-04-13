@@ -1639,7 +1639,18 @@ double* get_ast_rad(hid_t file, char* subsystem, char* d_name, int*size)
 		const char* d_arr[] = {name, subsystem, d_name};
 		concat_by_sep(&rad_group_name, d_arr, "/", strlen(name) + strlen(subsystem) + strlen(d_name), 3);
 		memmove(&rad_group_name[0], &rad_group_name[1], strlen(rad_group_name));
+
+    	H5E_auto2_t old_func;
+    	void *old_client_data;
+		// Save HDF5 internal error stack
+		H5Eget_auto(H5E_DEFAULT, &old_func, &old_client_data);
+		// We only need to check return value of H5Lexists.
+		// Turn off HDF5 internal error stack output from H5Lexists, 
+		// if two or more objects in a given path don't exist.
+		H5Eset_auto(H5E_DEFAULT, NULL, NULL);
 		htri_t status = H5Lexists(group, rad_group_name, H5P_DEFAULT);
+		// Restore HDF5 internal error stack output
+		H5Eset_auto(H5E_DEFAULT, old_func, old_client_data);
 		if(status <= 0){
 			printf("Warning: Dataset '%s' does not exist.\n", rad_group_name);
 			strcpy(names[i], "");
@@ -1661,11 +1672,6 @@ double* get_ast_rad(hid_t file, char* subsystem, char* d_name, int*size)
 		const char* d_arr[] = {instrument, name, subsystem, d_name};
 		char* dataset_name;
 		concat_by_sep(&dataset_name, d_arr, "/", strlen(instrument) + strlen(name) + strlen(subsystem) + strlen(d_name), 4);
-//		htri_t status = H5Lexists(group, dataset_name, H5P_DEFAULT);
-//		if(status <= 0){
-//			printf("Warning: Dataset '%s' does not exist.\n", dataset_name);
-//			continue;
-//		}
 		hsize_t* curr_dim = af_read_size(file, dataset_name);
 		if(curr_dim == NULL){
 			continue;
@@ -1687,11 +1693,6 @@ double* get_ast_rad(hid_t file, char* subsystem, char* d_name, int*size)
 		const char* d_arr[] = {instrument, name, subsystem, d_name};
 		char* dataset_name;
 		concat_by_sep(&dataset_name, d_arr, "/", strlen(instrument) + strlen(name) + strlen(subsystem) + strlen(d_name) + 5, 4);
-//		htri_t status = H5Lexists(group, dataset_name, H5P_DEFAULT);
-//		if(status <= 0){
-//			printf("Warning: Dataset '%s' does not exist.\n", dataset_name);
-//			continue;
-//		}
 		double* data = af_read(file, dataset_name);
 		if(data == NULL){
 				continue;
@@ -1755,7 +1756,18 @@ double* get_ast_lat(hid_t file, char* subsystem, char* d_name, int*size)
 		const char* d_arr[] = {name, subsystem, d_name};
 		concat_by_sep(&rad_group_name, d_arr, "/", strlen(name) + strlen(subsystem) + strlen(d_name), 3);
 		memmove(&rad_group_name[0], &rad_group_name[1], strlen(rad_group_name));
+
+    	H5E_auto2_t old_func;
+    	void *old_client_data;
+		// Save HDF5 internal error stack
+		H5Eget_auto(H5E_DEFAULT, &old_func, &old_client_data);
+		// We only need to check return value of H5Lexists.
+		// Turn off HDF5 internal error stack output from H5Lexists, 
+		// if two or more objects in a given path don't exist.
+		H5Eset_auto(H5E_DEFAULT, NULL, NULL);
 		htri_t status = H5Lexists(group, rad_group_name, H5P_DEFAULT);
+		// Restore HDF5 internal error stack output
+		H5Eset_auto(H5E_DEFAULT, old_func, old_client_data);
 		if(status <= 0){
 			printf("Warning: Dataset '%s' does not exist.\n", rad_group_name);
 			strcpy(names[i], "");
@@ -1766,7 +1778,6 @@ double* get_ast_lat(hid_t file, char* subsystem, char* d_name, int*size)
 		free(name);
 	}
 
-//This part may also be problematic	
 	//Get total data size
 	printf("Get total data size\n");
 	int total_size = 0;
@@ -1778,11 +1789,6 @@ double* get_ast_lat(hid_t file, char* subsystem, char* d_name, int*size)
 		const char* d_arr[] = {instrument, name, subsystem, location, lat};
 		char* dataset_name;
 		concat_by_sep(&dataset_name, d_arr, "/", strlen(instrument) + strlen(name) + strlen(subsystem) + strlen(location) + strlen(lat), 5);
-//		htri_t status = H5Lexists(group, dataset_name, H5P_DEFAULT);
-//		if(status <= 0){
-//			printf("Warning: Dataset '%s' does not exist.\n", dataset_name);
-//			continue;
-//		}
 		hsize_t* curr_dim = af_read_size(file, dataset_name);
 		if(curr_dim == NULL){
 			continue;
@@ -1804,11 +1810,6 @@ double* get_ast_lat(hid_t file, char* subsystem, char* d_name, int*size)
 		const char* lat_arr[] = {instrument, name, subsystem, location, lat};
 		char* lat_dataset_name;
 		concat_by_sep(&lat_dataset_name, lat_arr, "/", strlen(instrument) + strlen(name) + strlen(subsystem) + strlen(location) + strlen(lat) + 5, 5);
-//		htri_t status = H5Lexists(group, lat_dataset_name, H5P_DEFAULT);
-//		if(status <= 0){
-//			printf("Warning: Dataset '%s' does not exist.\n", lat_dataset_name);
-//			continue;
-//		}
 		double* data = af_read(file, lat_dataset_name);
 		if(data == NULL){
 			continue;
@@ -1872,7 +1873,18 @@ double* get_ast_long(hid_t file, char* subsystem, char* d_name, int* size)
 		const char* d_arr[] = {name, subsystem, d_name};
 		concat_by_sep(&rad_group_name, d_arr, "/", strlen(name) + strlen(subsystem) + strlen(d_name), 3);
 		memmove(&rad_group_name[0], &rad_group_name[1], strlen(rad_group_name));
+
+    	H5E_auto2_t old_func;
+    	void *old_client_data;
+		// Save HDF5 internal error stack
+		H5Eget_auto(H5E_DEFAULT, &old_func, &old_client_data);
+		// We only need to check return value of H5Lexists.
+		// Turn off HDF5 internal error stack output from H5Lexists, 
+		// if two or more objects in a given path don't exist
+		H5Eset_auto(H5E_DEFAULT, NULL, NULL);
 		htri_t status = H5Lexists(group, rad_group_name, H5P_DEFAULT);
+		// Restore HDF5 internal error stack output
+		H5Eset_auto(H5E_DEFAULT, old_func, old_client_data);
 		if(status <= 0){
 			printf("Warning: Dataset '%s' does not exist.\n", rad_group_name);
 			strcpy(names[i], "");
@@ -1895,11 +1907,6 @@ double* get_ast_long(hid_t file, char* subsystem, char* d_name, int* size)
 		const char* d_arr[] = {instrument, name, subsystem, location, longitude};
 		char* dataset_name;
 		concat_by_sep(&dataset_name, d_arr, "/", strlen(instrument) + strlen(name) + strlen(subsystem) + strlen(location) + strlen(longitude), 5);
-//		htri_t status = H5Lexists(group, dataset_name, H5P_DEFAULT);
-//		if(status <= 0){
-//			printf("Warning: Dataset '%s' does not exist.\n", dataset_name);
-//			continue;
-//		}
 		hsize_t* curr_dim = af_read_size(file, dataset_name);
 		if(curr_dim == NULL){
 			continue;
@@ -1920,11 +1927,6 @@ double* get_ast_long(hid_t file, char* subsystem, char* d_name, int* size)
 		const char* long_arr[] = {instrument, name, subsystem, location, longitude};
 		char* long_dataset_name;
 		concat_by_sep(&long_dataset_name, long_arr, "/", strlen(instrument) + strlen(name) + strlen(subsystem) + strlen(location) + strlen(longitude) + 5, 5);
-//		htri_t status = H5Lexists(group, long_dataset_name, H5P_DEFAULT);
-//		if(status <= 0){
-//			printf("Warning: Dataset '%s' does not exist.\n", long_dataset_name);
-//			continue;
-//		}
 		double* data = af_read(file, long_dataset_name);
 		if(data == NULL){
 				continue;
