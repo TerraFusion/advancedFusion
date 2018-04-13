@@ -28,6 +28,10 @@
 #include "AF_InputParmeterFile.h"
 #include "AF_debug.h"
 #include "misrutil.h"
+#if 1 // JK_USER
+#include "gdalio.h"
+#include <sstream>
+#endif
 
 #define SUCCEED 0
 #define FAILED -1
@@ -130,13 +134,37 @@ int AF_GetGeolocationDataFromInstrument(std::string instrument, AF_InputParmeter
 			return FAILED;
 		}
 	}
+#if 1 // JK_USER
+	/*======================================================
+	 * USER_DEFINE section
+	 */
+	else if (instrument == "USER_DEFINE") {
+		// targetX == lon , targetY == lat, nPoints == cellNum according to test_userdefinedgrids.cpp
+	    int userOuputEPSG = inputArgs.GetUSER_EPSG();
+	    double userXmin = inputArgs.GetUSER_xMin();
+	    double userXmax = inputArgs.GetUSER_xMax();
+	    double userYmin = inputArgs.GetUSER_yMin();
+	    double userYmax = inputArgs.GetUSER_yMax();
+	    double userRsolution = inputArgs.GetUSER_Resolution();
+		#if 0 // JKDBG
+	    std::cout << "JKDBG> USER EPSG: " << userOuputEPSG << std::endl;
+	    std::cout << "JKDBG> USER X min: " << userXmin << std::endl;
+	    std::cout << "JKDBG> USER X max: " << userXmax << std::endl;
+	    std::cout << "JKDBG> USER Y min: " << userYmin << std::endl;
+	    std::cout << "JKDBG> USER Y max: " << userYmax << std::endl;
+	    std::cout << "JKDBG> USER Rsolution: " << userRsolution << std::endl;
+		#endif
+		cellNum = getCellCenterLatLon(userOuputEPSG, userXmin, userYmin, userXmax, userYmax, userRsolution, longitude, latitude);
+	}
+#endif
 	else {
 		std::cerr << __FUNCTION__ << "> Error: invalid instrument - " << instrument << "\n";
 		return FAILED;
 	}
 
+
 	#if DEBUG_TOOL
-	std::cout << "DBG_TOOL " << __FUNCTION__ << "> Instrument: " << instrument << "cellNum: " << cellNum << "\n";
+	std::cout << "DBG_TOOL " << __FUNCTION__ << "> Instrument: " << instrument << " cellNum: " << cellNum << "\n";
 	std::cout << "DBG_TOOL " << __FUNCTION__ << "> END \n";
 	#endif
 	
@@ -171,6 +199,9 @@ int af_GetWidthAndHeightForOutputDataSize(std::string instrument, AF_InputParmet
 		std::string resolution = inputArgs.GetMISR_Resolution();
 		getMISRFinalImageSize(&alongTrackHeight, &crossTrackWidth, (resolution=="L") ? 0 : 1);
 	}
+	/*-------------------------------------------------------
+	 * MODIS section
+	 */
 	else if (instrument == "MODIS") {
 		std::string resolution = inputArgs.GetMODIS_Resolution();
 		if (resolution == "_1KM") {
@@ -183,6 +214,9 @@ int af_GetWidthAndHeightForOutputDataSize(std::string instrument, AF_InputParmet
 			crossTrackWidth = 5416;  // 1354 * 4
 		}
 	}
+	/*-------------------------------------------------------
+	 * MISR section
+	 */
 	else if (instrument == "MISR") {
 		std::string resolution = inputArgs.GetMISR_Resolution();
 		if (resolution == "L") {  // 1.1KM
@@ -192,6 +226,17 @@ int af_GetWidthAndHeightForOutputDataSize(std::string instrument, AF_InputParmet
 			crossTrackWidth = 2048;
 		}
 	}
+	#if 1 // JK_USER
+	/*-------------------------------------------------------
+	 * USER_DEFINE section
+	 */
+	else if (instrument == "USER_DEFINE") {
+		double xMin = inputArgs.GetUSER_xMin();
+		double xMax = inputArgs.GetUSER_xMax();
+		double cellSize = inputArgs.GetUSER_Resolution();
+		crossTrackWidth = ceil((xMax - xMin) / cellSize);
+	}
+	#endif
 	else {
 		return -1;  // fail
 	}
@@ -228,6 +273,14 @@ int   AF_GenerateTargetRadiancesOutput(AF_InputParmeterFile &inputArgs, hid_t ou
 
 	int ret;
 
+	std::string instrument = inputArgs.GetTargetInstrument();
+	#if 1 // JK_USER
+	// there is no radiance for this case. just skip.
+	if (instrument == "USER_DEFINE") {
+		return SUCCEED;
+	}
+	#endif
+
 	//----------------------------------
 	// prepare group of dataset
 	printf("Creating target group...\n");
@@ -253,7 +306,6 @@ int   AF_GenerateTargetRadiancesOutput(AF_InputParmeterFile &inputArgs, hid_t ou
 	}
 
 	strVec_t multiVarNames;
-	std::string instrument = inputArgs.GetTargetInstrument();
 	// std::string mixType = "COMBINATION"; // Default
 	//--------------------------------------------------------
 	// Use this for Single multi-value Variable case. MODIS
@@ -789,7 +841,7 @@ int   AF_GenerateSourceRadiancesOutput(AF_InputParmeterFile &inputArgs, hid_t ou
 
 		ret = af_GenerateOutputCumulative_ModisAsSrc(inputArgs, outputFile, targetNNsrcID,  trgCellNum, srcFile, srcCellNum, srcInputMultiVarsMap);
 		if (ret == FAILED) {
-			std::cout << __FUNCTION__ << ":" << __LINE__ <<  "> failed generating output for MISR.\n";
+			std::cout << __FUNCTION__ << ":" << __LINE__ <<  "> failed generating output for MODIS.\n";
 			ret = FAILED;
 			goto done;
 		}
@@ -1691,17 +1743,17 @@ void Test_Parser(std::string headerFile)
 	 * USER_DEFINE section
 	 */
 	if(srcInstrument == "USER_DEFINE" || trgInstrument == "USER_DEFINE") {
-	    std::string userEPSG = inputArgs.GetUSER_EPSG();
+	    int userEPSG = inputArgs.GetUSER_EPSG();
 	    std::cout << "TEST Parser> USER EPSG: " << userEPSG << std::endl;
-	    std::string userXmin = inputArgs.GetUSER_xMin();
+	    double userXmin = inputArgs.GetUSER_xMin();
 	    std::cout << "TEST Parser> USER X min: " << userXmin << std::endl;
-	    std::string userXmax = inputArgs.GetUSER_xMax();
+	    double userXmax = inputArgs.GetUSER_xMax();
 	    std::cout << "TEST Parser> USER X max: " << userXmax << std::endl;
-	    std::string userYmin = inputArgs.GetUSER_yMin();
+	    double userYmin = inputArgs.GetUSER_yMin();
 	    std::cout << "TEST Parser> USER Y min: " << userYmin << std::endl;
-	    std::string userYmax = inputArgs.GetUSER_yMax();
+	    double userYmax = inputArgs.GetUSER_yMax();
 	    std::cout << "TEST Parser> USER Y max: " << userYmax << std::endl;
-	    std::string userRsolution = inputArgs.GetUSER_Resolution();
+	    int userRsolution = inputArgs.GetUSER_Resolution();
 	    std::cout << "TEST Parser> USER Rsolution: " << userRsolution << std::endl;
 		std::cout << "\n";
 	}
@@ -1721,7 +1773,7 @@ int main(int argc, char *argv[])
 		return FAILED;
 	}
 
-	#if 0 // TEST : parser, remove later
+	#if 0 // TEST : parser
 	Test_Parser(argv[1]);
 	exit(1);
 	#endif
@@ -1816,13 +1868,13 @@ int main(int argc, char *argv[])
 	 * Get Target instrument latitude and longitude
 	 */
 	std::cout << "\nGetting target instrument latitude & longitude data...\n";
-	int trgCellNum;
+	int trgCellNumNoShift;
 	double* targetLatitude = NULL;
 	double* targetLongitude = NULL;
 	#if DEBUG_ELAPSE_TIME
 	StartElapseTime();
 	#endif
-	ret = AF_GetGeolocationDataFromInstrument(trgInstrument, inputArgs, inputFile, &targetLatitude /*OUT*/, &targetLongitude /*OUT*/, trgCellNum /*OUT*/);
+	ret = AF_GetGeolocationDataFromInstrument(trgInstrument, inputArgs, inputFile, &targetLatitude /*OUT*/, &targetLongitude /*OUT*/, trgCellNumNoShift /*OUT*/);
 	if (ret == FAILED) {
 		std::cerr << __FUNCTION__ << "> Error: getting geolocation data from target instrument - " << trgInstrument << ".\n";
 		return FAILED;
@@ -1831,7 +1883,7 @@ int main(int argc, char *argv[])
 	StopElapseTimeAndShow("DBG_TIME> get target lat/long DONE.");
 	#endif
 	#if DEBUG_TOOL
-	std::cout << "DBG_TOOL main> trgCellNum: " <<  trgCellNum << "\n";
+	std::cout << "DBG_TOOL main> trgCellNumNoShift: " <<  trgCellNumNoShift << "\n";
 	#endif
 	
 
@@ -1846,9 +1898,12 @@ int main(int argc, char *argv[])
 	int heightShifted;
 	double * targetLatitudeShifted = NULL;
 
+	/*
+	 * Figure out trgOutputWidth and new trgCellNum by MISR target shift case
+	 */
 	ret = af_GetWidthAndHeightForOutputDataSize(inputArgs.GetTargetInstrument() /* target base output */, inputArgs, widthShifted, heightShifted);
 	trgOutputWidth = widthShifted;
-	// misr-target base shift
+	// MISR-target & shift case update
 	if(inputArgs.GetMISR_Shift() == "ON" && inputArgs.GetTargetInstrument() == "MISR") {
 		std::cout << "Target latitude MISR-base block unstacking...\n";
 		#if DEBUG_ELAPSE_TIME
@@ -1866,7 +1921,7 @@ int main(int argc, char *argv[])
 	}
 	else { // no misr shift
 		targetLatitudePtr = targetLatitude;
-		trgCellNumNew = trgCellNum;
+		trgCellNumNew = trgCellNumNoShift;
 	}
 	
 
@@ -1894,6 +1949,7 @@ int main(int argc, char *argv[])
 	double * targetLongitudePtr = NULL;
 	double * targetLongitudeShifted = NULL;
 
+	// MISR-target & shift case update
 	if(inputArgs.GetMISR_Shift() == "ON" && inputArgs.GetTargetInstrument() == "MISR") {
 		std::cout << "Target longitude MISR-base block unstacking...\n";
 		#if DEBUG_ELAPSE_TIME
@@ -1931,6 +1987,7 @@ int main(int argc, char *argv[])
 
 	/* ===========================================================
 	 * Calculate nearest neighbor source over target geolocation
+	 * Note: use not shifted trgCellNum for this
 	 */
 	int * targetNNsrcID = NULL;
 	
@@ -1941,14 +1998,14 @@ int main(int argc, char *argv[])
 	std::string resampleMethod =  inputArgs.GetResampleMethod();
 	// source is low and target is similar or high resolution case (ex: MISRtoMODIS and vice versa)
 	if (inputArgs.CompareStrCaseInsensitive(resampleMethod, "nnInterpolate")) {
-		targetNNsrcID = new int [trgCellNum];
-		nearestNeighborBlockIndex(&srcLatitude, &srcLongitude, srcCellNum, targetLatitude, targetLongitude, targetNNsrcID, NULL, trgCellNum, 1000);
+		targetNNsrcID = new int [trgCellNumNoShift];
+		nearestNeighborBlockIndex(&srcLatitude, &srcLongitude, srcCellNum, targetLatitude, targetLongitude, targetNNsrcID, NULL, trgCellNumNoShift, 1000);
 	} 
 	// source is high and target is low resolution case (ex: ASTERtoMODIS)
 	else if (inputArgs.CompareStrCaseInsensitive(resampleMethod, "summaryInterpolate")) {
 		targetNNsrcID = new int [srcCellNum];
 		// this need to swap source and target for high resolution to low resolution case like ASTER to MODIS
-		nearestNeighborBlockIndex(&targetLatitude, &targetLongitude, trgCellNum, srcLatitude, srcLongitude, targetNNsrcID, NULL, srcCellNum, 1000);
+		nearestNeighborBlockIndex(&targetLatitude, &targetLongitude, trgCellNumNoShift, srcLatitude, srcLongitude, targetNNsrcID, NULL, srcCellNum, 1000);
 	}
 	#if DEBUG_ELAPSE_TIME
 	StopElapseTimeAndShow("DBG_TIME> nearestNeighborBlockIndex DONE.");
@@ -1977,7 +2034,8 @@ int main(int argc, char *argv[])
 		return FAILED;
 	}
 	// write target instrument radiances to output file
-	ret = AF_GenerateTargetRadiancesOutput(inputArgs, output_file, trgCellNum, inputFile, trgInputMultiVarsMap);
+	// Note: pass not-shifted-trgCellNum as it will internally replace if condition met
+	ret = AF_GenerateTargetRadiancesOutput(inputArgs, output_file, trgCellNumNoShift, inputFile, trgInputMultiVarsMap);
 	if (ret < 0) {
 		std::cerr << "Error: generate target radiance output.\n";
 		return FAILED;
@@ -1998,7 +2056,8 @@ int main(int argc, char *argv[])
 		return FAILED;
 	}
 	// write source instrument radiances to output file
-	ret = AF_GenerateSourceRadiancesOutput(inputArgs, output_file, targetNNsrcID, trgCellNum, inputFile, srcCellNum, srcInputMultiVarsMap);
+	// Note: pass not-shifted-trgCellNum as it will internally replace if condition met
+	ret = AF_GenerateSourceRadiancesOutput(inputArgs, output_file, targetNNsrcID, trgCellNumNoShift, inputFile, srcCellNum, srcInputMultiVarsMap);
 	if (ret < 0) {
 		std::cerr << "Error: generate source radiance output.\n";
 		return FAILED;

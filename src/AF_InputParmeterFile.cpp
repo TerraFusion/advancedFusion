@@ -938,29 +938,58 @@ std::vector<std::string>  AF_InputParmeterFile::GetASTER_Bands()
 /*---------------------
  * USER section
  */
-std::string AF_InputParmeterFile::GetUSER_EPSG()
+int AF_InputParmeterFile::GetUSER_EPSG()
 {
-	return user_EPSG;
+	// convert string to int
+	int retValue;
+	std::stringstream ss(user_EPSG);
+    ss >> retValue;
+	return retValue;
 }
-std::string AF_InputParmeterFile::GetUSER_xMin()
+
+double AF_InputParmeterFile::GetUSER_xMin()
 {
-	return user_xMin;
+	// convert string to double
+	double retValue;
+	std::stringstream ss(user_xMin);
+    ss >> retValue;
+	return retValue;
 }
-std::string AF_InputParmeterFile::GetUSER_xMax()
+
+double AF_InputParmeterFile::GetUSER_xMax()
 {
-	return user_xMax;
+	// convert string to double
+	double retValue;
+	std::stringstream ss(user_xMax);
+    ss >> retValue;
+	return retValue;
 }
-std::string AF_InputParmeterFile::GetUSER_yMin()
+
+double AF_InputParmeterFile::GetUSER_yMin()
 {
-	return user_yMin;
+	// convert string to double
+	double retValue;
+	std::stringstream ss(user_yMin);
+    ss >> retValue;
+	return retValue;
 }
-std::string AF_InputParmeterFile::GetUSER_yMax()
+
+double AF_InputParmeterFile::GetUSER_yMax()
 {
-	return user_yMax;
+	// convert string to double
+	double retValue;
+	std::stringstream ss(user_yMax);
+    ss >> retValue;
+	return retValue;
 }
-std::string AF_InputParmeterFile::GetUSER_Resolution()
+
+double AF_InputParmeterFile::GetUSER_Resolution()
 {
-	return user_Resolution;
+	// convert string to int
+	double retValue;
+	std::stringstream ss(user_Resolution);
+    ss >> retValue;
+	return retValue;
 }
 
 

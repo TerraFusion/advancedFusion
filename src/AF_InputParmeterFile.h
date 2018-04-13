@@ -72,12 +72,12 @@ class AF_InputParmeterFile
 	std::vector<std::string>  GetASTER_Bands();
 	#endif
 	// USER_DEFINE section ---------
-	std::string GetUSER_EPSG();
-	std::string GetUSER_xMin();
-	std::string GetUSER_xMax();
-	std::string GetUSER_yMin();
-	std::string GetUSER_yMax();
-	std::string GetUSER_Resolution();
+	int GetUSER_EPSG();
+	double GetUSER_xMin();
+	double GetUSER_xMax();
+	double GetUSER_yMin();
+	double GetUSER_yMax();
+	double GetUSER_Resolution();
 
 
 	/*===========================================
