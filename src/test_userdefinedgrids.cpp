@@ -123,7 +123,7 @@ int main(int argc, char ** argv) {
     hid_t   modis_datatype = H5Tcopy(H5T_NATIVE_DOUBLE);
     herr_t  modis_status = H5Tset_order(modis_datatype, H5T_ORDER_LE);
     hid_t modis_dataset = H5Dcreate2(output_file, "/Data_Fields/modis_rad", modis_datatype, modis_dataspace,H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-    modis_status = H5Dwrite(modis_dataset, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, src_rad);
+    modis_status = H5Dwrite(modis_dataset, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, src_rad_out);
     H5Sclose(modis_dataspace);
     H5Tclose(modis_datatype);
     H5Dclose(modis_dataset);
