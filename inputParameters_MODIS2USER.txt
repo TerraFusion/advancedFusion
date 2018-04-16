@@ -1,0 +1,43 @@
+#=============================================================
+# Example of resampling of MODIS to USER_DEFINE
+#
+# Refer to below specification.
+#
+# INPUT_FILE_PATH: <specify a full path to BF HDF5 data file>
+# OUTPUT_FILE_PATH: <specify a path to result AF HDF5 file>
+# RESAMPLE_METHOD: one of < nnInterpolate or summaryInterpolate >
+#
+# SOURCE_INSTRUMENT: MODIS
+# TARGET_INSTRUMENT: USER_DEFINE 
+
+# MODIS_RESOLUTION: one of < 1KM 500M or 250M >
+# MODIS_BANDS: any of < 1~12 13L 13H 14L 14H 15~36 > or ALL
+#
+# USER_OUTPUT_EPSG: <EPSG code of output spatial reference system>
+# USER_X_MIN: <west boundary of output area> 
+# USER_X_MAX: <east boundary of output area>
+# USER_Y_MIN: <south boundary of output area>
+# USER_Y_MAX: <north boundary of output area> 
+# USER_RESOLUTION: <output raste cell size> 
+#=============================================================
+
+# This BF input generates -999 values
+#INPUT_FILE_PATH: /projects/sciteam/jq0/TerraFusion/testFiles/TERRA_BF_L1B_O69400_20130104000439_F000_V000.h5
+
+INPUT_FILE_PATH: /projects/sciteam/jq0/TerraFusion/yizhao/TERRA_BF_L1B_O69626_20130119123228_F000_V001.h5
+OUTPUT_FILE_PATH: modis2user_Src1Km8_Trg.h5
+
+RESAMPLE_METHOD: nnInterpolate
+
+SOURCE_INSTRUMENT: MODIS
+TARGET_INSTRUMENT: USER_DEFINE
+
+MODIS_RESOLUTION: 1KM
+MODIS_BANDS: 8 
+
+USER_OUTPUT_EPSG: 32723
+USER_X_MIN: 100000
+USER_X_MAX: 900000
+USER_Y_MIN: 7000000
+USER_Y_MAX: 10000000
+USER_RESOLUTION: 2000

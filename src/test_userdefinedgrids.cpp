@@ -117,7 +117,7 @@ int main(int argc, char ** argv) {
     hid_t group_id = H5Gcreate2(output_file, "/Data_Fields", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
     hsize_t modis_dim[3];
     modis_dim[0] = bands.size();
-    modis_dim[1] = (nPoints)/crossTrack;
+    modis_dim[1] = (nPoints)/bands.size()/crossTrack;
     modis_dim[2] = crossTrack;
     hid_t modis_dataspace = H5Screate_simple(3, modis_dim, NULL);
     hid_t   modis_datatype = H5Tcopy(H5T_NATIVE_DOUBLE);
