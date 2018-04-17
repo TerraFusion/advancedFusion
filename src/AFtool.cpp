@@ -28,10 +28,8 @@
 #include "AF_InputParmeterFile.h"
 #include "AF_debug.h"
 #include "misrutil.h"
-#if 1 // JK_USER
 #include "gdalio.h"
 #include <sstream>
-#endif
 
 #define SUCCEED 0
 #define FAILED -1
@@ -134,7 +132,6 @@ int AF_GetGeolocationDataFromInstrument(std::string instrument, AF_InputParmeter
 			return FAILED;
 		}
 	}
-#if 1 // JK_USER
 	/*======================================================
 	 * USER_DEFINE section
 	 */
@@ -146,17 +143,16 @@ int AF_GetGeolocationDataFromInstrument(std::string instrument, AF_InputParmeter
 	    double userYmin = inputArgs.GetUSER_yMin();
 	    double userYmax = inputArgs.GetUSER_yMax();
 	    double userRsolution = inputArgs.GetUSER_Resolution();
-		#if 0 // JKDBG
-	    std::cout << "JKDBG> USER EPSG: " << userOuputEPSG << std::endl;
-	    std::cout << "JKDBG> USER X min: " << userXmin << std::endl;
-	    std::cout << "JKDBG> USER X max: " << userXmax << std::endl;
-	    std::cout << "JKDBG> USER Y min: " << userYmin << std::endl;
-	    std::cout << "JKDBG> USER Y max: " << userYmax << std::endl;
-	    std::cout << "JKDBG> USER Rsolution: " << userRsolution << std::endl;
-		#endif
 		cellNum = getCellCenterLatLon(userOuputEPSG, userXmin, userYmin, userXmax, userYmax, userRsolution, longitude, latitude);
+
+		#if DEBUG_TOOL
+		double *lonPtr = (double*)*longitude;
+		double *latPtr = (double*)*latitude;
+		for(int i = 0; i < 10; i++) {
+			printf("JKDBG> i:%d, X:%lf,\t Y:%lf\n", i, lonPtr[i], latPtr[i]);
+		}
+		#endif
 	}
-#endif
 	else {
 		std::cerr << __FUNCTION__ << "> Error: invalid instrument - " << instrument << "\n";
 		return FAILED;
@@ -226,7 +222,6 @@ int af_GetWidthAndHeightForOutputDataSize(std::string instrument, AF_InputParmet
 			crossTrackWidth = 2048;
 		}
 	}
-	#if 1 // JK_USER
 	/*-------------------------------------------------------
 	 * USER_DEFINE section
 	 */
@@ -236,7 +231,6 @@ int af_GetWidthAndHeightForOutputDataSize(std::string instrument, AF_InputParmet
 		double cellSize = inputArgs.GetUSER_Resolution();
 		crossTrackWidth = ceil((xMax - xMin) / cellSize);
 	}
-	#endif
 	else {
 		return -1;  // fail
 	}
@@ -274,12 +268,11 @@ int   AF_GenerateTargetRadiancesOutput(AF_InputParmeterFile &inputArgs, hid_t ou
 	int ret;
 
 	std::string instrument = inputArgs.GetTargetInstrument();
-	#if 1 // JK_USER
+
 	// there is no radiance for this case. just skip.
 	if (instrument == "USER_DEFINE") {
 		return SUCCEED;
 	}
-	#endif
 
 	//----------------------------------
 	// prepare group of dataset
@@ -313,10 +306,13 @@ int   AF_GenerateTargetRadiancesOutput(AF_InputParmeterFile &inputArgs, hid_t ou
 	#if DEBUG_TOOL
 	std::cout << "DBG_TOOL " << __FUNCTION__ << "> trgInputMultiVarsMap.size(): " << trgInputMultiVarsMap.size() << "\n";
 	#endif
-	// display strBuf with array index
+	/*======================================================
+ 	 * MODIS section
+ 	 */
 	if (instrument == "MODIS") {
 		multiVarNames = inputArgs.GetMultiVariableNames("MODIS"); // modis_MultiVars;
 
+		// for one multi-value Variable case.
 		if (trgInputMultiVarsMap.size() != 1) {
 			std::cout << __FUNCTION__ << ":" << __LINE__ <<  "> Error building target input list with MODIS. There must be only one multi-value variable.\n";
 			return FAILED;
@@ -337,10 +333,12 @@ int   AF_GenerateTargetRadiancesOutput(AF_InputParmeterFile &inputArgs, hid_t ou
 		std::cout << std::endl;
 		#endif
 	}
-	//--------------------------------------------------------
-	// Use these for two multi-value Variable case. MISR and ASTER
+	/*======================================================
+ 	 * MISR section
+ 	 */
 	else if (instrument == "MISR") {
 
+		// for two multi-value Variable case.
 		if (trgInputMultiVarsMap.size() != 2) {
 			std::cout << __FUNCTION__ << ":" << __LINE__ <<  "> Error building target input list with MISR. There must be only two multi-value variables.\n";
 			return FAILED;
@@ -835,7 +833,7 @@ int   AF_GenerateSourceRadiancesOutput(AF_InputParmeterFile &inputArgs, hid_t ou
 	if (instrument == "MODIS") {
 		// for one multi-value Variable case.
 		if (srcInputMultiVarsMap.size() != 1) {
-			std::cout << __FUNCTION__ << ":" << __LINE__ <<  "> Error building target input list with MODIS. There must be only one multi-value variable.\n";
+			std::cout << __FUNCTION__ << ":" << __LINE__ <<  "> Error building source input list with MODIS. There must be only one multi-value variable.\n";
 			return FAILED;
 		}
 
@@ -852,7 +850,7 @@ int   AF_GenerateSourceRadiancesOutput(AF_InputParmeterFile &inputArgs, hid_t ou
 	else if (instrument == "MISR") {
 		// for two multi-value Variable case.
 		if (srcInputMultiVarsMap.size() != 2) {
-			std::cout << __FUNCTION__ << ":" << __LINE__ <<  "> Error building target input list with MISR. There must be only two multi-value variables.\n";
+			std::cout << __FUNCTION__ << ":" << __LINE__ <<  "> Error building source input list with MISR. There must be only two multi-value variables.\n";
 			ret = FAILED;
 			goto done;
 		}
@@ -870,7 +868,7 @@ int   AF_GenerateSourceRadiancesOutput(AF_InputParmeterFile &inputArgs, hid_t ou
 	else if (instrument == "ASTER") {
 		// for one multi-value Variable case.
 		if (srcInputMultiVarsMap.size() != 1) {
-			std::cout << __FUNCTION__ << ":" << __LINE__ <<  "> Error building target input list with ASTER. There must be only one multi-value variable.\n";
+			std::cout << __FUNCTION__ << ":" << __LINE__ <<  "> Error building source input list with ASTER. There must be only one multi-value variable.\n";
 			return FAILED;
 		}
 
@@ -1065,7 +1063,7 @@ int af_GenerateOutputCumulative_ModisAsSrc(AF_InputParmeterFile &inputArgs, hid_
 		//-------------------------------------------------
 		// handle resample method
 		srcProcessedData = new double [trgCellNumNoShift];
-		int new_src_size = trgCellNumNoShift;
+		// Note: resample should be done with trgCellNumNoShift
 		//Interpolating
 		std::string resampleMethod =  inputArgs.GetResampleMethod();
 		std::cout << "Interpolating with '" << resampleMethod << "' method on " << inputArgs.GetSourceInstrument() << " by " << bands[i] << ".\n";
@@ -1330,7 +1328,6 @@ int af_GenerateOutputCumulative_MisrAsSrc(AF_InputParmeterFile &inputArgs, hid_t
 			//-------------------------------------------------
 			// handle resample method
 			srcProcessedData = new double [trgCellNum];
-			int new_src_size = trgCellNum;
 			//Interpolating
 			std::string resampleMethod =  inputArgs.GetResampleMethod();
 			std::cout << "Interpolating with '" << resampleMethod << "' method on " << inputArgs.GetSourceInstrument() << " by " << cameras[j] << " : " << radiances[i] << ".\n";
@@ -1562,8 +1559,8 @@ int af_GenerateOutputCumulative_AsterAsSrc(AF_InputParmeterFile &inputArgs, hid_
 
 		//-------------------------------------------------
 		// handle resample method
+		// Note: resample should be done with trgCellNumNoShift
 		srcProcessedData = new double [trgCellNumNoShift];
-		int new_src_size = trgCellNumNoShift;
 		//Interpolating
 		std::string resampleMethod =  inputArgs.GetResampleMethod();
 		std::cout << "Interpolating with '" << resampleMethod << "' method on " << inputArgs.GetSourceInstrument() << " by " << bands[i] << ".\n";
@@ -2070,7 +2067,7 @@ int main(int argc, char *argv[])
 
 
 	//==========================================
-	// Closing data files
+	// Closing data file
 	#if DEBUG_ELAPSE_TIME
 	StartElapseTime();
 	#endif
