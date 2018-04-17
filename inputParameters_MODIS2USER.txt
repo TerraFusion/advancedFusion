@@ -21,9 +21,6 @@
 # USER_RESOLUTION: <output raste cell size> 
 #=============================================================
 
-# This BF input generates -999 values
-#INPUT_FILE_PATH: /projects/sciteam/jq0/TerraFusion/testFiles/TERRA_BF_L1B_O69400_20130104000439_F000_V000.h5
-
 INPUT_FILE_PATH: /projects/sciteam/jq0/TerraFusion/yizhao/TERRA_BF_L1B_O69626_20130119123228_F000_V001.h5
 OUTPUT_FILE_PATH: modis2user_Src1Km8_Trg.h5
 
@@ -41,3 +38,14 @@ USER_X_MAX: 900000
 USER_Y_MIN: 7000000
 USER_Y_MAX: 10000000
 USER_RESOLUTION: 2000
+
+#------
+# These can be another set of test instead of the above entries.
+# Output can be -999 values, if USER input values doesn't match with input BF file. (ask Yizhao)
+#INPUT_FILE_PATH: /projects/sciteam/jq0/TerraFusion/testFiles/TERRA_BF_L1B_O69400_20130104000439_F000_V000.h5
+#USER_OUTPUT_EPSG: 4326
+#USER_X_MIN: -180
+#USER_X_MAX: 180
+#USER_Y_MIN: -90
+#USER_Y_MAX: 90
+#USER_RESOLUTION: 1
