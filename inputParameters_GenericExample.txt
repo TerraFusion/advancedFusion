@@ -47,7 +47,8 @@
 #
 # This is an example of MODIS as source and MISR as target instrument case.
 #
-# Note: for MISR as source to MODIS as target case, just switch MODIS and MISR.
+# Note: for MISR as source to MODIS as target case, just switch MODIS and MISR of <SOURCE|TARGET>_INSTRUMENT
+# Note: use space to specify multiple values
 #
 INPUT_FILE_PATH: /projects/sciteam/jq0/TerraFusion/testFiles/TERRA_BF_L1B_O69400_20130104000439_F000_V000.h5
 OUTPUT_FILE_PATH: misr_on_modis_SrcLowAnAfBlueGreen_Trg1Km89.h5
