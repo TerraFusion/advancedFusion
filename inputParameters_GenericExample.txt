@@ -4,6 +4,7 @@
 #  - MISR to MODIS
 #  - MODIS to MISR
 #  - ASTER to MODIS
+#  - ASTER to MISR
 #  - <an instrument> to USER_DEFINE
 #  - (more will be added)
 #
