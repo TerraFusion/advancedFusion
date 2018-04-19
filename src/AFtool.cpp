@@ -18,32 +18,20 @@
 #include <algorithm>
 #include <stdlib.h>
 #include <stdio.h>
-#include <math.h>
 #include <sys/time.h>
 #include <vector>
+#include <sstream>
 
-#include <hdf5.h>
+#include <hdf5.h> // JK_RE may rm
 #include "io.h"
-#include "reproject.h"
+#include "reproject.h" // JK_RE may rm
 #include "AF_InputParmeterFile.h"
 #include "AF_debug.h"
 #include "misrutil.h"
 #include "gdalio.h"
-#include <sstream>
-
-#define SUCCEED 0
-#define FAILED -1
-
-
-/*------------------------
- * hdf5 related names
- */
-const std::string SRC_DATA_GROUP = "/Source/Data_Fields";
-const std::string TRG_DATA_GROUP = "/Target/Data_Fields";
-const std::string MODIS_RADIANCE_DSET = "MODIS_Radiance";
-const std::string MISR_RADIANCE_DSET = "MISR_Radiance";
-const std::string ASTER_RADIANCE_DSET = "ASTER_Radiance";
-
+#include "AF_common.h" // JK_RE may rm
+#include "AF_output_util.h" // JK_RE may rm
+#include "AF_output_MODIS.h"
 
 
 void DisplayTimeval (struct timeval *tv)
@@ -169,79 +157,6 @@ int AF_GetGeolocationDataFromInstrument(std::string instrument, AF_InputParmeter
 
 
 
-/*=====================================
- * Get output width of an instrument
- *
- * RETURN:
- *  0 : SUCCEED
- * -1 : FAILED
- *
- * OUT parameters:
- * - crossTrackWidth : return width value.
- * - alongTrackHeight : return height value.
- *						This is only valid for Misr target shift case.
- *						If 0, caller should not use this.
- */
-int af_GetWidthAndHeightForOutputDataSize(std::string instrument, AF_InputParmeterFile &inputArgs, int &crossTrackWidth /*OUT*/, int &alongTrackHeight /*OUT*/)
-{
-	int ret = 0;
-	crossTrackWidth = 0;
-	alongTrackHeight = 0;
-	std::string misrShift = inputArgs.GetMISR_Shift();
-	std::string trgInstrument = inputArgs.GetTargetInstrument();
-
-	// MISR shift case. Shift always if misr is target and Shift is On for all source instrument and target geolocation data
-	if(misrShift == "ON" && trgInstrument == "MISR") {
-		std::string resolution = inputArgs.GetMISR_Resolution();
-		getMISRFinalImageSize(&alongTrackHeight, &crossTrackWidth, (resolution=="L") ? 0 : 1);
-	}
-	/*-------------------------------------------------------
-	 * MODIS section
-	 */
-	else if (instrument == "MODIS") {
-		std::string resolution = inputArgs.GetMODIS_Resolution();
-		if (resolution == "_1KM") {
-			crossTrackWidth = 1354;
-		}
-		else if (resolution == "_500m") {
-			crossTrackWidth = 2708;  // 1354 * 2
-		}
-		else if (resolution == "_250m") {
-			crossTrackWidth = 5416;  // 1354 * 4
-		}
-	}
-	/*-------------------------------------------------------
-	 * MISR section
-	 */
-	else if (instrument == "MISR") {
-		std::string resolution = inputArgs.GetMISR_Resolution();
-		if (resolution == "L") {  // 1.1KM
-			crossTrackWidth = 512;
-		}
-		else if (resolution == "H") {  // 275M
-			crossTrackWidth = 2048;
-		}
-	}
-	/*-------------------------------------------------------
-	 * USER_DEFINE section
-	 */
-	else if (instrument == "USER_DEFINE") {
-		double xMin = inputArgs.GetUSER_xMin();
-		double xMax = inputArgs.GetUSER_xMax();
-		double cellSize = inputArgs.GetUSER_Resolution();
-		crossTrackWidth = ceil((xMax - xMin) / cellSize);
-	}
-	else {
-		return -1;  // fail
-	}
-
-	#if DEBUG_TOOL
-	std::cout << "DBG_TOOL " << __FUNCTION__ << "> misrShift: " << misrShift << ", instrument: " << instrument << ", crossTrackWidth: " << crossTrackWidth << ", alongTrackHeight: " << alongTrackHeight << "\n";
-	#endif
-
-	return 0;
-}
-
 /*##############################################################
  *
  * Generate Target instrument radiance to output file
@@ -251,7 +166,6 @@ int af_GetWidthAndHeightForOutputDataSize(std::string instrument, AF_InputParmet
 /* 
  * function prototype for AF_GenerateTargetRadiancesOutput()
  */
-int af_GenerateOutputCumulative_ModisAsTrg(AF_InputParmeterFile &inputArgs, hid_t outputFile,hid_t srcFile, int trgCellNum, std::map<std::string, strVec_t> &inputMultiVarsMap);
 int af_GenerateOutputCumulative_MisrAsTrg(AF_InputParmeterFile &inputArgs, hid_t outputFile,hid_t srcFile, int trgCellNumOri, std::map<std::string, strVec_t> &inputMultiVarsMap);
 
 
@@ -354,191 +268,6 @@ int   AF_GenerateTargetRadiancesOutput(AF_InputParmeterFile &inputArgs, hid_t ou
 	#if DEBUG_TOOL
 	std::cout << "DBG_TOOL " << __FUNCTION__ << "> END \n";
 	#endif
-	return SUCCEED;
-}
-
-
-
-/*============================================================
- * MODIS section as Target. functions for the output.
- */
-static int af_WriteSingleRadiance_ModisAsTrg(hid_t outputFile, hid_t modisDatatype, hid_t modisFilespace, double* modisData, int modisDataSize, int outputWidth, int bandIdx)
-{
-	#if DEBUG_TOOL
-	std::cout << "DBG_TOOL " << __FUNCTION__ << "> BEGIN \n";
-	#endif
-
-	int ret = SUCCEED;
-
-	herr_t status;
-	hid_t modis_dataset;
-	std::string dsetPath = TRG_DATA_GROUP + "/" + MODIS_RADIANCE_DSET;
-
-	if(bandIdx==0) { // means new
-		modis_dataset = H5Dcreate2(outputFile, dsetPath.c_str(), modisDatatype, modisFilespace,H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-		if(modis_dataset < 0) {
-			std::cerr << __FUNCTION__ << ":" << __LINE__ <<  "> Error: H5Dcreate2 target data in output file.\n";
-			return FAILED;
-		}
-	}
-	else {
-		modis_dataset = H5Dopen2(outputFile, dsetPath.c_str(), H5P_DEFAULT);
-		if(modis_dataset < 0) {
-			std::cerr <<  __FUNCTION__ << ":" << __LINE__ <<  "> Error: H5Dopen2 target data in output file.\n";
-			return FAILED;
-		}
-	}
-
-
-	//------------------------------
-	// select memspace
-	const int ranksMem=2;
-	hsize_t dim2dMem[ranksMem];
-	hsize_t start2dMem[ranksMem];
-	hsize_t count2dMem[ranksMem];
-	dim2dMem[0] = modisDataSize/outputWidth; // y
-	dim2dMem[1] = outputWidth; // x
-	hid_t memspace = H5Screate_simple(ranksMem, dim2dMem, NULL);
-
-	start2dMem[0] = 0; // y
-	start2dMem[1] = 0; // x
-	count2dMem[0] = modisDataSize/outputWidth; // y
-	count2dMem[1] = outputWidth; // x
-
-	status = H5Sselect_hyperslab(memspace, H5S_SELECT_SET, start2dMem, NULL, count2dMem, NULL);
-
-	//------------------------------
-	// select filespace
-	const int ranksFile=3; // [bands][y][x]
-	hsize_t star3dFile[ranksFile];
-	hsize_t count3dFile[ranksFile];
-	star3dFile[0] = bandIdx;
-	star3dFile[1] = 0; // y
-	star3dFile[2] = 0; // x
-	count3dFile[0] = 1;
-	count3dFile[1] = modisDataSize/outputWidth; // y
-	count3dFile[2] = outputWidth;  // x
-
-	status = H5Sselect_hyperslab(modisFilespace, H5S_SELECT_SET, star3dFile, NULL, count3dFile, NULL);
-	if(status < 0) {
-		std::cerr << __FUNCTION__ << ":" << __LINE__ <<  "> Error: H5Sselect_hyperslab for Modis target .\n";
-		ret = -1;
-		goto done;
-	}
-
-	status = H5Dwrite(modis_dataset, H5T_NATIVE_DOUBLE, memspace, modisFilespace, H5P_DEFAULT, modisData);
-	if(status < 0) {
-		std::cerr << __FUNCTION__ << ":" << __LINE__ <<  "> Error: H5Dwrite for Modis target .\n";
-		ret = -1;
-		goto done;
-	}
-
-done:
-	H5Dclose(modis_dataset);
-
-	#if DEBUG_TOOL
-	std::cout << "DBG_TOOL " << __FUNCTION__ << "> END \n";
-	#endif
-	return ret;
-}
-
-
-int af_GenerateOutputCumulative_ModisAsTrg(AF_InputParmeterFile &inputArgs, hid_t outputFile,hid_t srcFile, int trgCellNum, std::map<std::string, strVec_t> &inputMultiVarsMap)
-{
-	#if DEBUG_TOOL
-	std::cout << "DBG_TOOL " << __FUNCTION__ << "> BEGIN \n";
-	#endif
-
-	std::string modisResolution = inputArgs.GetMODIS_Resolution();
-	// get multi-value variable for modis
-	strVec_t bands = inputMultiVarsMap[MODIS_BANDS];
-
-	// data type
-	hid_t modisDatatype = H5Tcopy(H5T_NATIVE_DOUBLE);
-	herr_t	status = H5Tset_order(modisDatatype, H5T_ORDER_LE);
-	if(status < 0) {
-		std::cerr << __FUNCTION__ <<  "> Error: MODIS write error in H5Tset_order.\n";
-		return FAILED;
-	}
-
-
-	/*----------------------------
-	 * create data space
-	 */
-	/* handle different data width and height. no need to care for misr-trg shift case
-	 */
-	int ret;
-	int widthShifted = 0;
-	int heightShifted = 0;
-	ret = af_GetWidthAndHeightForOutputDataSize(inputArgs.GetTargetInstrument() /*target base output*/, inputArgs, widthShifted, heightShifted);
-	if( (ret < 0) || (heightShifted > 0) ) {
-		std::cerr << __FUNCTION__ << ":" << __LINE__ <<  "> Error in af_GetWidthAndHeightForOutputDataSize() \n";
-		return FAILED;
-	}
-    int targetOutputWidth = widthShifted;
-	const int rankSpace=3;  // [bands][y][x]
-	hsize_t modis_dim[rankSpace];
-	modis_dim[0] = bands.size();
-	modis_dim[1] = trgCellNum/targetOutputWidth; // NY;
-	modis_dim[2] = targetOutputWidth; // NX;
-	hid_t modisDataspace = H5Screate_simple(rankSpace, modis_dim, NULL);
-
-	int numCells;
-	double *modisSingleData;
-	std::vector<std::string> singleBandVec;
-	for (int i=0; i< bands.size(); i++) {
-		std::cout << "Processing MODIS band: " << bands[i] << "\n";
-		#if DEBUG_TOOL
-		std::cout << "DBG_TOOL " << __FUNCTION__ << "> bands[" << i << "]: " << bands[i] << "\n";
-		#endif
-		// insert to only begin
-		singleBandVec.insert(singleBandVec.begin(), bands[i]);
-		#if DEBUG_TOOL
-		std::cout << "DBG_TOOL " << __FUNCTION__ << "> singleBandVec[0]: " << singleBandVec[0] << "\n";
-		#endif
-		#if 0 // TOOL_TEST remove later
-		//Read multi bands (instead Generate single band data for test)
-		//GenerateDataDouble2D(singleData, singleDataDims2D, atoi(bands[i].c_str()));
-		//DisplayDataDouble2D(singleData, singleDataDims2D);
-		#endif
-		//---------------------------------
-		// read trg radiance from BF file
-		#if DEBUG_ELAPSE_TIME
-		StartElapseTime();
-		#endif
-		modisSingleData = get_modis_rad(srcFile, (char*)modisResolution.c_str(), singleBandVec, 1, &numCells);
-		if (modisSingleData == NULL) {
-			std::cerr << __FUNCTION__ <<  "> Error: failed to get MODIS radiance.\n";
-			return FAILED;
-		}
-		#if DEBUG_TOOL
-		std::cout << "DBG_TOOL " << __FUNCTION__ << "> numCells: " << numCells << "\n";
-		#endif
-		#if DEBUG_ELAPSE_TIME
-		StopElapseTimeAndShow("DBG_TIME> Read target MODIS single band data  DONE.");
-		#endif
-
-		//---------------------------------
-		// write trg radiance to AF file
-		#if DEBUG_ELAPSE_TIME
-		StartElapseTime();
-		#endif
-		af_WriteSingleRadiance_ModisAsTrg(outputFile, modisDatatype, modisDataspace,  modisSingleData, numCells, targetOutputWidth, i);
-		#if DEBUG_ELAPSE_TIME
-		StopElapseTimeAndShow("DBG_TIME> Write target MODIS single band data  DONE.");
-		#endif
-		//
-		// TODO: buffer is not reused. make memory allocation out of get_modis_rad() to improve performance
-		free(modisSingleData);
-	}
-
-	H5Tclose(modisDatatype);
-	H5Sclose(modisDataspace);
-
-	#if DEBUG_TOOL
-	std::cout << "DBG_TOOL " << __FUNCTION__ << "> END \n";
-	#endif
-
 	return SUCCEED;
 }
 

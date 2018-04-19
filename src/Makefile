@@ -76,7 +76,7 @@ misrutil.o: misrutil.cpp
 # testReproHDF5: testReproHDF5.o reproject.o io.o
 #	$(H5CXX) -o ../$@ $+ -lm
 
-AFtool: AFtool.o AF_InputParmeterFile.o AF_debug.o reproject.o io.o  misrutil.o gdalio.o
+AFtool: AFtool.o reproject.o io.o  misrutil.o gdalio.o AF_InputParmeterFile.o AF_debug.o AF_output_util.o AF_output_MODIS.o
 	$(H5CXX) -o ../$@ $+ -lm -L$(GDALDIR)/lib -lgdal
 
 test_read_area: test_read_area.o reproject.o io.o

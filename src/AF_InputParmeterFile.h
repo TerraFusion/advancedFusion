@@ -1,4 +1,7 @@
 
+#ifndef _AF_INPUT_PARAMETER_FILE_H_
+#define _AF_INPUT_PARAMETER_FILE_H_
+
 #include <vector>
 #include <map>
 #include <string>
@@ -151,3 +154,5 @@ class AF_InputParmeterFile
 	std::vector<std::string> aster_MultiVars;
 	#endif
 };
+
+#endif // _AF_INPUT_PARAMETER_FILE_H_
