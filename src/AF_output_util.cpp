@@ -1,4 +1,13 @@
 
+/*********************************************************************
+ * DESCRIPTION:
+ *   Add functions to be used from data-output component
+ *
+ *
+ * DEVELOPERS:
+ *  - Jonathan Kim (jkm@illinois.edu)
+ */
+
 #include "AF_output_util.h"
 
 #include <math.h>

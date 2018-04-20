@@ -1,5 +1,13 @@
 #ifndef _AF_OUTPUT_UTIL_H_
 #define _AF_OUTPUT_UTIL_H_
+/*********************************************************************
+ * DESCRIPTION:
+ *   Add functions to be used from data-output component
+ *
+ *
+ * DEVELOPERS:
+ *  - Jonathan Kim (jkm@illinois.edu)
+ */
 
 #include "AF_InputParmeterFile.h"
 

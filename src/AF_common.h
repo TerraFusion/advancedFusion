@@ -1,5 +1,13 @@
 #ifndef _AF_COMMON_H_
 #define _AF_COMMON_H_
+/*********************************************************************
+ * DESCRIPTION:
+ *  Add here things common to share among all components
+ *
+ * DEVELOPER:
+ *  - Jonathan Kim (jkm@illinois.edu)
+ *
+ */
 
 #include <iostream>
 
