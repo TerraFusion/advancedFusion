@@ -9,22 +9,22 @@
 
 int main(int argc, char ** argv) {
 
-/* Test input for wgs 84
+/* Test input for wgs 84 */
 	int outputEPSG = 4326;
 	double xMin = -180;
 	double xMax = 180;
 	double yMin = -90;
 	double yMax = 90;
-	double cellSize = 1;
-*/
-/* Test input for wgs 84 / utm zone 23s */
+	double cellSize = 0.1;
+
+/* Test input for wgs 84 / utm zone 23s 
 	int outputEPSG = 32723;
 	double xMin = 100000;
 	double xMax = 900000;
 	double yMin = 7000000;
 	double yMax = 10000000;
 	double cellSize = 2000;
-
+*/
 
 /* Test input for wgs 84 / utm zone 24s
 	int outputEPSG = 32724;
@@ -63,7 +63,7 @@ int main(int argc, char ** argv) {
 	
 
 	char* file_path = "/projects/sciteam/jq0/TerraFusion/yizhao/TERRA_BF_L1B_O69626_20130119123228_F000_V001.h5";
-	char* outfileName = "test32723.tif";
+	char* outfileName = "test4326.tif";
 	
 	hid_t src_file;
 	if(0 > (src_file = af_open(file_path))) {
@@ -87,7 +87,7 @@ int main(int argc, char ** argv) {
 
 	printf("nearest neighbor\n");
 
-	nearestNeighborBlockIndex(p_src_lat, p_src_lon, nCellsrc, targetY, targetX, tarNNSouID, NULL, nPoints, 1000);
+	nearestNeighborBlockIndex(p_src_lat, p_src_lon, nCellsrc, targetY, targetX, tarNNSouID, NULL, nPoints, 5000);
 	
 	src_lat = *p_src_lat;
 	src_long = *p_src_lon;
