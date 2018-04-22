@@ -284,7 +284,7 @@ void nearestNeighborBlockIndex(double ** psouLat, double ** psouLon, int nSou, d
 	double maxradian = maxR / earthRadius;
 
 	double blockSizeRadian = maxradian;
-	if(maxR > 1000) {
+	if(maxR < 1000) {
 		blockSizeRadian = 1000 / earthRadius;
 	}
 
