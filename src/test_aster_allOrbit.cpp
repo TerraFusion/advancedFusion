@@ -81,16 +81,20 @@ int main(int argc, char ** argv)
 	
 	int nCelldest_rad;
 	double* dest_rad;
-    std::vector<std::string> bands = {"8"};
-    dest_rad = get_modis_rad(src_file, "_1KM", bands, bands.size(), &nCelldest_rad);
+	std::vector<std::string> bands = {"8"};
+	dest_rad = get_modis_rad(src_file, "_1KM", bands, bands.size(), &nCelldest_rad);
 	
 	double* src_rad_out = (double *)malloc(sizeof(double) * nCelldest);
 	int new_ast_size = nCelldest;
 	//Interpolating
-	int * nsrcPixels;
-	printf("interpolating\n");
+	int * nsrcPixels; //Number of contributing ASTER pixel to each new MODIS pixel
+	double * sd; //The standard deviation of all contributing ASTER cell's value 
 	nsrcPixels = (int *) malloc(sizeof(int) * nCelldest);
-	summaryInterpolate(src_rad, tarNNSouID, nCellsrc, src_rad_out, nsrcPixels, nCelldest);
+	sd = (double *) malloc(sizeof(int) * nCelldest);
+	printf("interpolating\n");
+	
+	//Also collects the SD
+	summaryInterpolate(src_rad, tarNNSouID, nCellsrc, src_rad_out, sd, nsrcPixels, nCelldest);
 
 	printf("No nodata values: \n");
 //	for(int i = 0; i < nCelldest; i++) {
@@ -105,31 +109,60 @@ int main(int argc, char ** argv)
 	hid_t group_id = H5Gcreate2(output_file, "/Data_Fields", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
 	//Write MODIS first
 	hsize_t modis_dim[3];
-    modis_dim[0] = bands.size();
+	modis_dim[0] = bands.size();
 	modis_dim[1] = (nCelldest_rad)/bands.size()/1354;
-    modis_dim[2] = 1354;
+	modis_dim[2] = 1354;
 	hid_t modis_dataspace = H5Screate_simple(3, modis_dim, NULL);
 	hid_t	modis_datatype = H5Tcopy(H5T_NATIVE_DOUBLE);
-    herr_t  modis_status = H5Tset_order(modis_datatype, H5T_ORDER_LE);  
-    hid_t modis_dataset = H5Dcreate2(output_file, "/Data_Fields/modis_rad", modis_datatype, modis_dataspace,H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-    modis_status = H5Dwrite(modis_dataset, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, dest_rad);
-    H5Sclose(modis_dataspace);
+	herr_t  modis_status = H5Tset_order(modis_datatype, H5T_ORDER_LE);  
+	hid_t modis_dataset = H5Dcreate2(output_file, "/Data_Fields/modis_rad", modis_datatype, modis_dataspace,H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+	modis_status = H5Dwrite(modis_dataset, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, dest_rad);
+	H5Sclose(modis_dataspace);
 	H5Tclose(modis_datatype);
 	H5Dclose(modis_dataset);
-    if(modis_status < 0){
-    	printf("MODIS write error\n");
-    	return -1;
+	if(modis_status < 0){
+		printf("MODIS write error\n");
+    		return -1;
 	}
 	//Write ASTER next
 	hsize_t ast_dim[2];
 	ast_dim[0] = (new_ast_size) / 1354;
 	ast_dim[1] = 1354;
+	//Write ASTER Radiance
 	hid_t ast_dataspace = H5Screate_simple(2, ast_dim, NULL);
 	hid_t ast_datatype = H5Tcopy(H5T_NATIVE_DOUBLE);
-    herr_t ast_status = H5Tset_order(ast_datatype, H5T_ORDER_LE);  
-    hid_t ast_dataset = H5Dcreate2(output_file, "/Data_Fields/aster_out", ast_datatype, ast_dataspace,H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-    ast_status = H5Dwrite(ast_dataset, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, src_rad_out);
-    H5Sclose(ast_dataspace);
+	herr_t ast_status = H5Tset_order(ast_datatype, H5T_ORDER_LE);  
+	hid_t ast_dataset = H5Dcreate2(output_file, "/Data_Fields/aster_average", ast_datatype, ast_dataspace,H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+	ast_status = H5Dwrite(ast_dataset, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, src_rad_out);
+	H5Sclose(ast_dataspace);
+	H5Tclose(ast_datatype);
+	H5Dclose(ast_dataset);
+	if(ast_status < 0){
+		printf("ast write error\n");
+		return -1;
+	}
+
+	//Write ASTER SD
+	ast_dataspace = H5Screate_simple(2, ast_dim, NULL);
+	ast_datatype = H5Tcopy(H5T_NATIVE_DOUBLE);
+	ast_status = H5Tset_order(ast_datatype, H5T_ORDER_LE);  
+	ast_dataset = H5Dcreate2(output_file, "/Data_Fields/aster_sd", ast_datatype, ast_dataspace,H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+	ast_status = H5Dwrite(ast_dataset, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, src_rad_out);
+	H5Sclose(ast_dataspace);
+	H5Tclose(ast_datatype);
+	H5Dclose(ast_dataset);
+	if(ast_status < 0){
+		printf("ast write error\n");
+		return -1;
+	}
+
+	//Write ASTER SD
+	ast_dataspace = H5Screate_simple(2, ast_dim, NULL);
+	ast_datatype = H5Tcopy(H5T_NATIVE_INT);
+	ast_status = H5Tset_order(ast_datatype, H5T_ORDER_LE);  
+	ast_dataset = H5Dcreate2(output_file, "/Data_Fields/aster_count", ast_datatype, ast_dataspace,H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+	ast_status = H5Dwrite(ast_dataset, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, src_rad_out);
+	H5Sclose(ast_dataspace);
 	H5Tclose(ast_datatype);
 	H5Dclose(ast_dataset);
 	if(ast_status < 0){
@@ -137,6 +170,8 @@ int main(int argc, char ** argv)
 		return -1;
 	}
 	
+	free(nsrcPixels);
+	free(sd);
 	
 	free(src_rad);
 	free(src_rad_out);
