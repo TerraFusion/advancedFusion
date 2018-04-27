@@ -90,7 +90,7 @@ int main(int argc, char ** argv)
 	int * nsrcPixels; //Number of contributing ASTER pixel to each new MODIS pixel
 	double * sd; //The standard deviation of all contributing ASTER cell's value 
 	nsrcPixels = (int *) malloc(sizeof(int) * nCelldest);
-	sd = (double *) malloc(sizeof(int) * nCelldest);
+	sd = (double *) malloc(sizeof(double) * nCelldest);
 	printf("interpolating\n");
 	
 	//Also collects the SD
