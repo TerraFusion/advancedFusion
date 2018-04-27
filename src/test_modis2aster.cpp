@@ -1,15 +1,10 @@
-/*
-
-
-    AUTHOR:
-        Yat Long Lo; Yizhao Gao
-
-    EMAIL:
-        yllo2@illinois.edu; ygao29@illinois.edu
-
-	PROGRAM DESCRIPTION:
-		This is a program that makes use of the IO module and reprojection module to produce reprojected data of ASTER onto MODIS
-*/
+/**
+ * test_modis2aster.cpp
+ * Authors: Yizhao Gao <yizhaotsccsj@gmail.com>
+ * Date: {04/26/2018}
+ * Description: test code using summary interpolation to resample from MODIS to ASTER, using nearest neighbor approach. 
+ * Things to Do: now the raster pixels are output as a long 1D array. However, it makes more sense to organize aster images again into granules based on the input.
+ */
 #include <string>
 #include <vector>
 
@@ -46,7 +41,9 @@ int main(int argc, char ** argv)
 	
 	printf("writing dest geo\n");
 	printf("Number of total ASTER pixels: %d\n", nCelldest);
-	
+
+	//The af_write_mm_geo function is not good here. It is used temporarily since it is the best we have at this stage. 
+	// There is no way that ASTER pixels can be written as a 2D block since the size of each granule is different. 	
 	int lat_status =  af_write_mm_geo(output_file, 0, dest_lat, nCelldest, nCelldest);
 	int long_status = af_write_mm_geo(output_file, 1, dest_long, nCelldest, nCelldest);
 	if(lat_status < 0 || long_status < 0){
@@ -103,10 +100,9 @@ int main(int argc, char ** argv)
 	printf("writing data fields\n");
 	hid_t group_id = H5Gcreate2(output_file, "/Data_Fields", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
 
-	//Write ASTER first
+	//Write ASTER first (as a large 1D array)
 	hsize_t ast_dim[1];
 	ast_dim[0] = nCelldest;
-	//Write ASTER Radiance
 	hid_t ast_dataspace = H5Screate_simple(1, ast_dim, NULL);
 	hid_t ast_datatype = H5Tcopy(H5T_NATIVE_DOUBLE);
 	herr_t ast_status = H5Tset_order(ast_datatype, H5T_ORDER_LE);  
@@ -120,7 +116,7 @@ int main(int argc, char ** argv)
 		return -1;
 	}
 
-	//Write MODIS next
+	//Write MODIS next (also as a large 1D array)
 	hsize_t modis_dim[1];
 	modis_dim[0] = nCelldest;
 	hid_t modis_dataspace = H5Screate_simple(1, modis_dim, NULL);

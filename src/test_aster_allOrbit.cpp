@@ -1,15 +1,10 @@
-/*
+/**
+ * test_aster_allOrbit.cpp
+ * Authors: Yizhao Gao <yizhaotsccsj@gmail.com>
+ * Date: {04/26/2018}
+ * Description: test code using summary interpolation to resample from ASTER to MODIS. Report the average, standard deviation and count of contributing pixels.  
+ */
 
-
-    AUTHOR:
-        Yat Long Lo; Yizhao Gao
-
-    EMAIL:
-        yllo2@illinois.edu; ygao29@illinois.edu
-
-	PROGRAM DESCRIPTION:
-		This is a program that makes use of the IO module and reprojection module to produce reprojected data of ASTER onto MODIS
-*/
 #include <string>
 #include <vector>
 
@@ -93,7 +88,7 @@ int main(int argc, char ** argv)
 	sd = (double *) malloc(sizeof(double) * nCelldest);
 	printf("interpolating\n");
 	
-	//Also collects the SD
+	//Collects the average, SD and count
 	summaryInterpolate(src_rad, tarNNSouID, nCellsrc, src_rad_out, sd, nsrcPixels, nCelldest);
 
 	printf("No nodata values: \n");
@@ -156,7 +151,7 @@ int main(int argc, char ** argv)
 		return -1;
 	}
 
-	//Write ASTER SD
+	//Write ASTER pixel counts
 	ast_dataspace = H5Screate_simple(2, ast_dim, NULL);
 	ast_datatype = H5Tcopy(H5T_NATIVE_INT);
 	ast_status = H5Tset_order(ast_datatype, H5T_ORDER_LE);  
