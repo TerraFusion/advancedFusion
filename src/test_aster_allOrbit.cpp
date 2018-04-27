@@ -142,7 +142,7 @@ int main(int argc, char ** argv)
 	ast_datatype = H5Tcopy(H5T_NATIVE_DOUBLE);
 	ast_status = H5Tset_order(ast_datatype, H5T_ORDER_LE);  
 	ast_dataset = H5Dcreate2(output_file, "/Data_Fields/aster_sd", ast_datatype, ast_dataspace,H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-	ast_status = H5Dwrite(ast_dataset, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, src_rad_out);
+	ast_status = H5Dwrite(ast_dataset, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, sd);
 	H5Sclose(ast_dataspace);
 	H5Tclose(ast_datatype);
 	H5Dclose(ast_dataset);
@@ -156,7 +156,7 @@ int main(int argc, char ** argv)
 	ast_datatype = H5Tcopy(H5T_NATIVE_INT);
 	ast_status = H5Tset_order(ast_datatype, H5T_ORDER_LE);  
 	ast_dataset = H5Dcreate2(output_file, "/Data_Fields/aster_count", ast_datatype, ast_dataspace,H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-	ast_status = H5Dwrite(ast_dataset, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, src_rad_out);
+	ast_status = H5Dwrite(ast_dataset, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, nsrcPixels);
 	H5Sclose(ast_dataspace);
 	H5Tclose(ast_datatype);
 	H5Dclose(ast_dataset);
