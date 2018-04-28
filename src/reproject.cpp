@@ -701,7 +701,12 @@ void summaryInterpolate(double * souVal, int * souNNTarID, int nSou, double * ta
 		if(nSouPixels[i] > 0) {
 			tarVal[i] = tarVal[i] / nSouPixels[i];
 			if (tarSD != NULL) {
-				tarSD[i] = tarVal[i] / nSouPixels[i] - tarVal[i] * tarVal[i];
+				if(tarSD[i] / nSouPixels[i] - tarVal[i] * tarVal[i] < 0) {
+					tarSD[i] = 0;
+				}
+				else {
+					tarSD[i] = sqrt(tarSD[i] / nSouPixels[i] - tarVal[i] * tarVal[i]);
+				}
 			}
 			
 		}
