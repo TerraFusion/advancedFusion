@@ -24,7 +24,9 @@
  *
  *===============================================================================*/
 
-static int af_WriteSingleRadiance_AsterAsSrc(hid_t outputFile, hid_t asterDatatype, hid_t asterFilespace, double* processedData, int trgCellNum, int outputWidth, int bandIdx)
+// T: type of data type of output data
+template <typename T>
+static int af_WriteSingleRadiance_AsterAsSrc(hid_t outputFile, std::string outputDsetName, hid_t dataTypeH5, hid_t fileSpaceH5, T* processedData, int trgCellNum, int outputWidth, int bandIdx)
 {
 	#if DEBUG_TOOL
 	std::cout << "DBG_TOOL " << __FUNCTION__ << "> BEGIN \n";
@@ -33,10 +35,10 @@ static int af_WriteSingleRadiance_AsterAsSrc(hid_t outputFile, hid_t asterDataty
 	int ret = SUCCEED;
 	herr_t status;
 	hid_t aster_dataset;
-	std::string dsetPath = SRC_DATA_GROUP + "/" + ASTER_RADIANCE_DSET;
+	std::string dsetPath = SRC_DATA_GROUP + "/" + outputDsetName;
 
 	if(bandIdx==0) { // means new
-		aster_dataset = H5Dcreate2(outputFile, dsetPath.c_str(), asterDatatype, asterFilespace,H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+		aster_dataset = H5Dcreate2(outputFile, dsetPath.c_str(), dataTypeH5, fileSpaceH5,H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
 		if(aster_dataset < 0) {
 			std::cerr << __FUNCTION__ << ":" << __LINE__ <<  "> Error: H5Dcreate2 target data in output file.\n";
 			return FAILED;
@@ -52,21 +54,21 @@ static int af_WriteSingleRadiance_AsterAsSrc(hid_t outputFile, hid_t asterDataty
 
 
 	//------------------------------
-	// select memspace
+	// select memory space
 	int ranksMem=2;
 	hsize_t dim2dMem[ranksMem];
 	hsize_t start2dMem[ranksMem];
 	hsize_t count2dMem[ranksMem];
 	dim2dMem[0] = trgCellNum/outputWidth; // y
 	dim2dMem[1] = outputWidth; // x
-	hid_t memspace = H5Screate_simple(ranksMem, dim2dMem, NULL);
+	hid_t memSpaceH5 = H5Screate_simple(ranksMem, dim2dMem, NULL);
 
 	start2dMem[0] = 0; // y
 	start2dMem[1] = 0; // x
 	count2dMem[0] = trgCellNum/outputWidth; // y
 	count2dMem[1] = outputWidth; // x
 
-	status = H5Sselect_hyperslab(memspace, H5S_SELECT_SET, start2dMem, NULL, count2dMem, NULL);
+	status = H5Sselect_hyperslab(memSpaceH5, H5S_SELECT_SET, start2dMem, NULL, count2dMem, NULL);
 
 	//------------------------------
 	// select filespace for aster
@@ -80,14 +82,14 @@ static int af_WriteSingleRadiance_AsterAsSrc(hid_t outputFile, hid_t asterDataty
 	countFile[1] = trgCellNum/outputWidth; // y
 	countFile[2] = outputWidth;  // x
 
-	status = H5Sselect_hyperslab(asterFilespace, H5S_SELECT_SET, startFile, NULL, countFile, NULL);
+	status = H5Sselect_hyperslab(fileSpaceH5, H5S_SELECT_SET, startFile, NULL, countFile, NULL);
 	if(status < 0) {
 		std::cerr << __FUNCTION__ << ":" << __LINE__ <<  "> Error: H5Sselect_hyperslab for Aster target .\n";
 		ret = -1;
 		goto done;
 	}
 
-	status = H5Dwrite(aster_dataset, H5T_NATIVE_DOUBLE, memspace, asterFilespace, H5P_DEFAULT, processedData);
+	status = H5Dwrite(aster_dataset, dataTypeH5, memSpaceH5, fileSpaceH5, H5P_DEFAULT, processedData);
 	if(status < 0) {
 		std::cerr << __FUNCTION__ << ":" << __LINE__ <<  "> Error: H5Dwrite for Aster target .\n";
 		ret = -1;
@@ -118,9 +120,17 @@ int af_GenerateOutputCumulative_AsterAsSrc(AF_InputParmeterFile &inputArgs, hid_
 	// two multi-value variables are expected as this point
 	strVec_t bands = inputMultiVarsMap[ASTER_BANDS];
 
-	// data type
-	hid_t asterDatatype = H5Tcopy(H5T_NATIVE_DOUBLE);
-	herr_t	status = H5Tset_order(asterDatatype, H5T_ORDER_LE);
+	//-----------------------------------
+	// define data types for hdf5 data
+	hid_t dataTypeDoubleH5 = H5Tcopy(H5T_NATIVE_DOUBLE);
+	herr_t	status = H5Tset_order(dataTypeDoubleH5, H5T_ORDER_LE);
+	if(status < 0) {
+		printf("Error: ASTER write error in H5Tset_order\n");
+		return FAILED;
+	}
+
+	hid_t dataTypeIntH5 = H5Tcopy(H5T_NATIVE_INT);
+	status = H5Tset_order(dataTypeIntH5, H5T_ORDER_LE);
 	if(status < 0) {
 		printf("Error: ASTER write error in H5Tset_order\n");
 		return FAILED;
@@ -162,10 +172,11 @@ int af_GenerateOutputCumulative_AsterAsSrc(AF_InputParmeterFile &inputArgs, hid_
 
 	//-----------------------------------------------------------------
 	// TODO: improve by preparing these memory allocation out of loop
-	// srcProcessedData , nsrcPixels
+	// srcProcessedData, SD, nsrcPixels
 	// asterSingleData
-	double * srcProcessedData = NULL;
-	int * nsrcPixels = NULL;
+	double * srcProcessedData = NULL; // radiance
+	double * SD = NULL;  // Standard Deviation
+	int * nsrcPixels = NULL; // count
 	// Note: This is Combination case only
 	for (int i=0; i< bands.size(); i++) {
 		#if DEBUG_TOOL
@@ -203,8 +214,9 @@ int af_GenerateOutputCumulative_AsterAsSrc(AF_InputParmeterFile &inputArgs, hid_
 			nnInterpolate(asterSingleData, srcProcessedData, targetNNsrcID, trgCellNumNoShift);
 		}
 		else if (inputArgs.CompareStrCaseInsensitive(resampleMethod, "summaryInterpolate")) {
+			SD = new double [trgCellNumNoShift];
 			nsrcPixels = new int [trgCellNumNoShift];
-			summaryInterpolate(asterSingleData, targetNNsrcID, srcCellNum, srcProcessedData, nsrcPixels, trgCellNumNoShift);
+			summaryInterpolate(asterSingleData, targetNNsrcID, srcCellNum, srcProcessedData, SD, nsrcPixels, trgCellNumNoShift);
 			#if 0 // DEBUG_TOOL
 			std::cout << "DBG_TOOL> No nodata values: \n";
 			for(int i = 0; i < trgCellNumNoShift; i++) {
@@ -236,6 +248,11 @@ int af_GenerateOutputCumulative_AsterAsSrc(AF_InputParmeterFile &inputArgs, hid_
 
 			srcProcessedDataPtr = srcProcessedDataShifted;
 			numCells = widthShifted * heightShifted;
+			// use srcProcessedDataShifted instead of srcProcessedData, and free memory
+			if(srcProcessedData) {
+				delete [] srcProcessedData;
+				srcProcessedData = NULL;
+			}
 		}
 		else { // no misr-trg shift
 			srcProcessedDataPtr = srcProcessedData;
@@ -247,14 +264,28 @@ int af_GenerateOutputCumulative_AsterAsSrc(AF_InputParmeterFile &inputArgs, hid_
 		#if DEBUG_ELAPSE_TIME
 		StartElapseTime();
 		#endif
-		ret = af_WriteSingleRadiance_AsterAsSrc(outputFile, asterDatatype, asterDataspace,  srcProcessedDataPtr, numCells /*processed size*/, srcOutputWidth, i /*bandIdx*/);
+		// output radiance dset
+		ret = af_WriteSingleRadiance_AsterAsSrc<double>(outputFile, ASTER_RADIANCE_DSET, dataTypeDoubleH5, asterDataspace,  srcProcessedDataPtr, numCells /*processed size*/, srcOutputWidth, i /*bandIdx*/);
+		if (ret == FAILED) {
+			std::cerr << __FUNCTION__ << "> Error: returned fail.\n";
+		}
+
+		// output standard deviation dset
+		ret = af_WriteSingleRadiance_AsterAsSrc<double>(outputFile, ASTER_SD_DSET, dataTypeDoubleH5, asterDataspace,  SD, numCells /*processed size*/, srcOutputWidth, i /*bandIdx*/);
+		if (ret == FAILED) {
+			std::cerr << __FUNCTION__ << "> Error: returned fail.\n";
+		}
+
+		// output pixels count dset
+		ret = af_WriteSingleRadiance_AsterAsSrc<int>(outputFile, ASTER_COUNT_DSET, dataTypeIntH5, asterDataspace,  nsrcPixels, numCells /*processed size*/, srcOutputWidth, i /*bandIdx*/);
 		if (ret == FAILED) {
 			std::cerr << __FUNCTION__ << "> Error: returned fail.\n";
 		}
 		#if DEBUG_ELAPSE_TIME
-		StopElapseTimeAndShow("DBG_TIME> Write source ASTER single band data  DONE.");
+		StopElapseTimeAndShow("DBG_TIME> Write source ASTER data (randiance, SD, count) of single band DONE.");
 		#endif
-		//
+
+
 		// TODO: buffer is not reused. make memory allocation out of get_aster_rad() to improve performance
 
 		// free memory
@@ -262,13 +293,15 @@ int af_GenerateOutputCumulative_AsterAsSrc(AF_InputParmeterFile &inputArgs, hid_
 			free(asterSingleData);
 		if(srcProcessedData)
 			delete [] srcProcessedData;
+		if(SD)
+			delete [] SD;
 		if (nsrcPixels)
 			delete [] nsrcPixels;
 		if(srcProcessedDataShifted)
 			delete [] srcProcessedDataShifted;
 	} // i loop
 
-	H5Tclose(asterDatatype);
+	H5Tclose(dataTypeDoubleH5);
 	H5Sclose(asterDataspace);
 
 	#if DEBUG_TOOL
