@@ -25,8 +25,16 @@
  *===============================================================================*/
 
 // T: type of data type of output data
+#if 1 // JK_FLOAT
+// TODO: once radiance data becomes all float internally, use float directly without converting via HDF5 
+// T_IN : input data type
+// T_OUT : output data type
+template <typename T_IN, typename T_OUT>
+static int af_WriteSingleRadiance_AsterAsSrc(hid_t outputFile, std::string outputDsetName, hid_t dataTypeH5, hid_t fileSpaceH5, T_IN* processedData, int trgCellNum, int outputWidth, int bandIdx)
+#else
 template <typename T>
 static int af_WriteSingleRadiance_AsterAsSrc(hid_t outputFile, std::string outputDsetName, hid_t dataTypeH5, hid_t fileSpaceH5, T* processedData, int trgCellNum, int outputWidth, int bandIdx)
+#endif
 {
 	#if DEBUG_TOOL
 	std::cout << "DBG_TOOL " << __FUNCTION__ << "> BEGIN \n";
@@ -37,8 +45,36 @@ static int af_WriteSingleRadiance_AsterAsSrc(hid_t outputFile, std::string outpu
 	hid_t aster_dataset;
 	std::string dsetPath = SRC_DATA_GROUP + "/" + outputDsetName;
 
+	#if 1 // JK_FLOAT
+	/*-------------------------------------
+     * set output data type
+     */
+	hid_t dataTypeOutH5;
+    if (std::is_same<T_OUT, float>::value) {
+		dataTypeOutH5 = H5T_IEEE_F32LE;
+	}
+    else if (std::is_same<T_OUT, double>::value) {
+		dataTypeOutH5 = H5T_IEEE_F64LE;
+	}
+	else if (std::is_same<T_OUT, int>::value) {
+		dataTypeOutH5 = H5T_NATIVE_INT;
+	}
+	else {
+		std::cerr << __FUNCTION__ << ":" << __LINE__ <<  "> Error: invlid output data type T_OUT specified." << std::endl;
+		return FAILED;
+	}
+	#endif
+
+	/*-------------------------------------
+     * if first time, create dataset
+     * otherwise, open existing one
+     */
 	if(bandIdx==0) { // means new
+		#if 1 // JK_FLOAT
+		aster_dataset = H5Dcreate2(outputFile, dsetPath.c_str(), dataTypeOutH5, fileSpaceH5,H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+		#else
 		aster_dataset = H5Dcreate2(outputFile, dsetPath.c_str(), dataTypeH5, fileSpaceH5,H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+		#endif
 		if(aster_dataset < 0) {
 			std::cerr << __FUNCTION__ << ":" << __LINE__ <<  "> Error: H5Dcreate2 target data in output file.\n";
 			return FAILED;
@@ -265,19 +301,19 @@ int af_GenerateOutputCumulative_AsterAsSrc(AF_InputParmeterFile &inputArgs, hid_
 		StartElapseTime();
 		#endif
 		// output radiance dset
-		ret = af_WriteSingleRadiance_AsterAsSrc<double>(outputFile, ASTER_RADIANCE_DSET, dataTypeDoubleH5, asterDataspace,  srcProcessedDataPtr, numCells /*processed size*/, srcOutputWidth, i /*bandIdx*/);
+		ret = af_WriteSingleRadiance_AsterAsSrc<double, float>(outputFile, ASTER_RADIANCE_DSET, dataTypeDoubleH5, asterDataspace,  srcProcessedDataPtr, numCells /*processed size*/, srcOutputWidth, i /*bandIdx*/);
 		if (ret == FAILED) {
 			std::cerr << __FUNCTION__ << "> Error: returned fail.\n";
 		}
 
 		// output standard deviation dset
-		ret = af_WriteSingleRadiance_AsterAsSrc<double>(outputFile, ASTER_SD_DSET, dataTypeDoubleH5, asterDataspace,  SD, numCells /*processed size*/, srcOutputWidth, i /*bandIdx*/);
+		ret = af_WriteSingleRadiance_AsterAsSrc<double, float>(outputFile, ASTER_SD_DSET, dataTypeDoubleH5, asterDataspace,  SD, numCells /*processed size*/, srcOutputWidth, i /*bandIdx*/);
 		if (ret == FAILED) {
 			std::cerr << __FUNCTION__ << "> Error: returned fail.\n";
 		}
 
 		// output pixels count dset
-		ret = af_WriteSingleRadiance_AsterAsSrc<int>(outputFile, ASTER_COUNT_DSET, dataTypeIntH5, asterDataspace,  nsrcPixels, numCells /*processed size*/, srcOutputWidth, i /*bandIdx*/);
+		ret = af_WriteSingleRadiance_AsterAsSrc<int, int>(outputFile, ASTER_COUNT_DSET, dataTypeIntH5, asterDataspace,  nsrcPixels, numCells /*processed size*/, srcOutputWidth, i /*bandIdx*/);
 		if (ret == FAILED) {
 			std::cerr << __FUNCTION__ << "> Error: returned fail.\n";
 		}

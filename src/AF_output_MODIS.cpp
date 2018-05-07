@@ -22,7 +22,15 @@
  * MODIS as Target instrument, functions to generate radiance data
  *
  *===============================================================================*/
+#if 1 // JK_FLOAT
+// TODO: once radiance data becomes all float internally, use float directly without converting via HDF5
+// T_IN : input data type
+// T_OUT : output data type
+template <typename T_IN, typename T_OUT>
+static int af_WriteSingleRadiance_ModisAsTrg(hid_t outputFile, hid_t modisDatatype, hid_t modisFilespace, T_IN* modisData, int modisDataSize, int outputWidth, int bandIdx)
+#else
 static int af_WriteSingleRadiance_ModisAsTrg(hid_t outputFile, hid_t modisDatatype, hid_t modisFilespace, double* modisData, int modisDataSize, int outputWidth, int bandIdx)
+#endif
 {
 	#if DEBUG_TOOL
 	std::cout << "DBG_TOOL " << __FUNCTION__ << "> BEGIN \n";
@@ -34,8 +42,37 @@ static int af_WriteSingleRadiance_ModisAsTrg(hid_t outputFile, hid_t modisDataty
 	hid_t modis_dataset;
 	std::string dsetPath = TRG_DATA_GROUP + "/" + MODIS_RADIANCE_DSET;
 
+	#if 1 // JK_FLOAT
+	/*-------------------------------------
+	 * set output data type
+	 */
+	hid_t dataTypeOutH5;
+    if (std::is_same<T_OUT, float>::value) {
+		dataTypeOutH5 = H5T_IEEE_F32LE;
+	}
+    else if (std::is_same<T_OUT, double>::value) {
+		dataTypeOutH5 = H5T_IEEE_F64LE;
+	}
+	else if (std::is_same<T_OUT, int>::value) {
+		dataTypeOutH5 = H5T_NATIVE_INT;
+	}
+	else {
+		std::cerr << __FUNCTION__ << ":" << __LINE__ <<  "> Error: invlid output data type T_OUT specified." << std::endl;
+		return FAILED;
+	}
+	#endif
+
+
+	/*-------------------------------------
+     * if first time, create dataset
+     * otherwise, open existing one
+     */
 	if(bandIdx==0) { // means new
+		#if 1 // JK_FLOAT
+		modis_dataset = H5Dcreate2(outputFile, dsetPath.c_str(), dataTypeOutH5, modisFilespace,H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+		#else
 		modis_dataset = H5Dcreate2(outputFile, dsetPath.c_str(), modisDatatype, modisFilespace,H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+		#endif
 		if(modis_dataset < 0) {
 			std::cerr << __FUNCTION__ << ":" << __LINE__ <<  "> Error: H5Dcreate2 target data in output file.\n";
 			return FAILED;
@@ -86,7 +123,11 @@ static int af_WriteSingleRadiance_ModisAsTrg(hid_t outputFile, hid_t modisDataty
 		goto done;
 	}
 
+	#if 1 // JK_FLOAT
+	status = H5Dwrite(modis_dataset, modisDatatype, memspace, modisFilespace, H5P_DEFAULT, modisData);
+	#else
 	status = H5Dwrite(modis_dataset, H5T_NATIVE_DOUBLE, memspace, modisFilespace, H5P_DEFAULT, modisData);
+	#endif
 	if(status < 0) {
 		std::cerr << __FUNCTION__ << ":" << __LINE__ <<  "> Error: H5Dwrite for Modis target .\n";
 		ret = -1;
@@ -183,7 +224,11 @@ int af_GenerateOutputCumulative_ModisAsTrg(AF_InputParmeterFile &inputArgs, hid_
 		#if DEBUG_ELAPSE_TIME
 		StartElapseTime();
 		#endif
+		#if 1 // JK_FLOAT
+		af_WriteSingleRadiance_ModisAsTrg<double,float>(outputFile, modisDatatype, modisDataspace,  modisSingleData, numCells, targetOutputWidth, i);
+		#else
 		af_WriteSingleRadiance_ModisAsTrg(outputFile, modisDatatype, modisDataspace,  modisSingleData, numCells, targetOutputWidth, i);
+		#endif
 		#if DEBUG_ELAPSE_TIME
 		StopElapseTimeAndShow("DBG_TIME> Write target MODIS single band data  DONE.");
 		#endif
@@ -209,7 +254,14 @@ int af_GenerateOutputCumulative_ModisAsTrg(AF_InputParmeterFile &inputArgs, hid_
  * MODIS as Source instrument, functions to generate radiance data
  *
  *===============================================================================*/
+#if 1 // JK_FLOAT
+// T_IN : input data type
+// T_OUT : output data type
+template <typename T_IN, typename T_OUT>
+static int af_WriteSingleRadiance_ModisAsSrc(hid_t outputFile, hid_t modisDatatype, hid_t modisFilespace, T_IN* processedData, int trgCellNum, int outputWidth, int bandIdx)
+#else
 static int af_WriteSingleRadiance_ModisAsSrc(hid_t outputFile, hid_t modisDatatype, hid_t modisFilespace, double* processedData, int trgCellNum, int outputWidth, int bandIdx)
+#endif
 {
 	#if DEBUG_TOOL
 	std::cout << "DBG_TOOL " << __FUNCTION__ << "> BEGIN \n";
@@ -220,8 +272,37 @@ static int af_WriteSingleRadiance_ModisAsSrc(hid_t outputFile, hid_t modisDataty
 	hid_t modis_dataset;
 	std::string dsetPath = SRC_DATA_GROUP + "/" + MODIS_RADIANCE_DSET;
 
+	#if 1 // JK_FLOAT
+	/*-------------------------------------
+	 * set output data type
+	 */
+	hid_t dataTypeOutH5;
+    if (std::is_same<T_OUT, float>::value) {
+		dataTypeOutH5 = H5T_IEEE_F32LE;
+	}
+    else if (std::is_same<T_OUT, double>::value) {
+		dataTypeOutH5 = H5T_IEEE_F64LE;
+	}
+	else if (std::is_same<T_OUT, int>::value) {
+		dataTypeOutH5 = H5T_NATIVE_INT;
+	}
+	else {
+		std::cerr << __FUNCTION__ << ":" << __LINE__ <<  "> Error: invlid output data type T_OUT specified." << std::endl;
+		return FAILED;
+	}
+	#endif
+
+
+    /*-------------------------------------
+     * if first time, create dataset
+     * otherwise, open existing one
+     */
 	if(bandIdx==0) { // means new
+		#if 1 // JK_FLOAT
+		modis_dataset = H5Dcreate2(outputFile, dsetPath.c_str(), dataTypeOutH5, modisFilespace,H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+		#else
 		modis_dataset = H5Dcreate2(outputFile, dsetPath.c_str(), modisDatatype, modisFilespace,H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+		#endif
 		if(modis_dataset < 0) {
 			std::cerr << __FUNCTION__ << ":" << __LINE__ <<  "> Error: H5Dcreate2 target data in output file.\n";
 			return FAILED;
@@ -272,7 +353,11 @@ static int af_WriteSingleRadiance_ModisAsSrc(hid_t outputFile, hid_t modisDataty
 		goto done;
 	}
 
+	#if 1 // JK_FLOAT
+	status = H5Dwrite(modis_dataset, modisDatatype, memspace, modisFilespace, H5P_DEFAULT, processedData);
+	#else	
 	status = H5Dwrite(modis_dataset, H5T_NATIVE_DOUBLE, memspace, modisFilespace, H5P_DEFAULT, processedData);
+	#endif
 	if(status < 0) {
 		std::cerr << __FUNCTION__ << ":" << __LINE__ <<  "> Error: H5Dwrite for Modis target .\n";
 		ret = -1;
@@ -436,7 +521,7 @@ int af_GenerateOutputCumulative_ModisAsSrc(AF_InputParmeterFile &inputArgs, hid_
 		#if DEBUG_ELAPSE_TIME
 		StartElapseTime();
 		#endif
-		ret = af_WriteSingleRadiance_ModisAsSrc(outputFile, modisDatatype, modisDataspace,  srcProcessedDataPtr, numCells /*processed size*/, srcOutputWidth, i /*bandIdx*/);
+		ret = af_WriteSingleRadiance_ModisAsSrc<double, float>(outputFile, modisDatatype, modisDataspace,  srcProcessedDataPtr, numCells /*processed size*/, srcOutputWidth, i /*bandIdx*/);
 		if (ret == FAILED) {
 			std::cerr << __FUNCTION__ << "> Error: returned fail.\n";
 		}
