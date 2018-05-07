@@ -24,17 +24,13 @@
  *
  *===============================================================================*/
 
-// T: type of data type of output data
-#if 1 // JK_FLOAT
 // TODO: once radiance data becomes all float internally, use float directly without converting via HDF5 
-// T_IN : input data type
-// T_OUT : output data type
+/* T: type of data type of output data
+ * T_IN : input data type
+ * T_OUT : output data type
+ */
 template <typename T_IN, typename T_OUT>
 static int af_WriteSingleRadiance_AsterAsSrc(hid_t outputFile, std::string outputDsetName, hid_t dataTypeH5, hid_t fileSpaceH5, T_IN* processedData, int trgCellNum, int outputWidth, int bandIdx)
-#else
-template <typename T>
-static int af_WriteSingleRadiance_AsterAsSrc(hid_t outputFile, std::string outputDsetName, hid_t dataTypeH5, hid_t fileSpaceH5, T* processedData, int trgCellNum, int outputWidth, int bandIdx)
-#endif
 {
 	#if DEBUG_TOOL
 	std::cout << "DBG_TOOL " << __FUNCTION__ << "> BEGIN \n";
@@ -45,7 +41,6 @@ static int af_WriteSingleRadiance_AsterAsSrc(hid_t outputFile, std::string outpu
 	hid_t aster_dataset;
 	std::string dsetPath = SRC_DATA_GROUP + "/" + outputDsetName;
 
-	#if 1 // JK_FLOAT
 	/*-------------------------------------
      * set output data type
      */
@@ -63,18 +58,13 @@ static int af_WriteSingleRadiance_AsterAsSrc(hid_t outputFile, std::string outpu
 		std::cerr << __FUNCTION__ << ":" << __LINE__ <<  "> Error: invlid output data type T_OUT specified." << std::endl;
 		return FAILED;
 	}
-	#endif
 
 	/*-------------------------------------
      * if first time, create dataset
      * otherwise, open existing one
      */
 	if(bandIdx==0) { // means new
-		#if 1 // JK_FLOAT
 		aster_dataset = H5Dcreate2(outputFile, dsetPath.c_str(), dataTypeOutH5, fileSpaceH5,H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-		#else
-		aster_dataset = H5Dcreate2(outputFile, dsetPath.c_str(), dataTypeH5, fileSpaceH5,H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-		#endif
 		if(aster_dataset < 0) {
 			std::cerr << __FUNCTION__ << ":" << __LINE__ <<  "> Error: H5Dcreate2 target data in output file.\n";
 			return FAILED;
