@@ -1657,6 +1657,9 @@ double* get_ast_rad(hid_t file, char* subsystem, char* d_name, int*size)
 		}
 		else {
 			strcpy(names[i], name);
+			#if 1 // DEBUG_IO
+			printf("DBG_IO %s:%d> Exist name: %s\n", __FUNCTION__, __LINE__, name);
+			#endif
 		}
 		free(name);
 	}
@@ -1674,11 +1677,17 @@ double* get_ast_rad(hid_t file, char* subsystem, char* d_name, int*size)
 		concat_by_sep(&dataset_name, d_arr, "/", strlen(instrument) + strlen(name) + strlen(subsystem) + strlen(d_name), 4);
 		hsize_t* curr_dim = af_read_size(file, dataset_name);
 		if(curr_dim == NULL){
+			#if 1 // DEBUG_IO
+			printf("DBG_IO %s:%d> Warn: dim is NULL of dataset_name: %s\n", __FUNCTION__, __LINE__, dataset_name);
+			#endif
 			continue;
 		}
 		total_size += curr_dim[0]*curr_dim[1];
 		free(curr_dim);
 	}
+	#if 1 // DEBUG_IO
+	printf("DBG_IO %s:%d> Get total_size: %d\n", __FUNCTION__, __LINE__, total_size);
+	#endif
 	
 	printf("Reading values\n");
 	double* result_data = (double*)calloc(total_size, sizeof(double));
@@ -1693,11 +1702,23 @@ double* get_ast_rad(hid_t file, char* subsystem, char* d_name, int*size)
 		const char* d_arr[] = {instrument, name, subsystem, d_name};
 		char* dataset_name;
 		concat_by_sep(&dataset_name, d_arr, "/", strlen(instrument) + strlen(name) + strlen(subsystem) + strlen(d_name) + 5, 4);
+		#if 1 // DEBUG_IO
+		printf("DBG_IO %s:%d> Read in dataset_name: %s\n", __FUNCTION__, __LINE__, dataset_name);
+		#endif
 		double* data = af_read(file, dataset_name);
 		if(data == NULL){
+			#if 1 // DEBUG_IO
+			printf("DBG_IO %s:%d> Warn: data is NULL of dataset_name: %s\n", __FUNCTION__, __LINE__, dataset_name);
+			#endif
 				continue;
 		}
 		hsize_t* curr_dim = af_read_size(file, dataset_name);
+		#if 1 // DEBUG_IO
+		if(curr_dim == NULL){
+			printf("DBG_IO %s:%d> Warn: dim is NULL of dataset_name: %s\n", __FUNCTION__, __LINE__, dataset_name);
+			//continue;
+		}
+		#endif
 		int gran_size = curr_dim[0] * curr_dim[1];
 		memcpy(&result_data[curr_size], data, sizeof(double) * gran_size);
 		curr_size += gran_size;
@@ -1774,6 +1795,9 @@ double* get_ast_lat(hid_t file, char* subsystem, char* d_name, int*size)
 		}
 		else {
 			strcpy(names[i], name);
+			#if 1 // DEBUG_IO
+			printf("DBG_IO %s:%d> Exist name: %s\n", __FUNCTION__, __LINE__, name);
+			#endif
 		}
 		free(name);
 	}
@@ -1791,11 +1815,17 @@ double* get_ast_lat(hid_t file, char* subsystem, char* d_name, int*size)
 		concat_by_sep(&dataset_name, d_arr, "/", strlen(instrument) + strlen(name) + strlen(subsystem) + strlen(location) + strlen(lat), 5);
 		hsize_t* curr_dim = af_read_size(file, dataset_name);
 		if(curr_dim == NULL){
+			#if 1 // DEBUG_IO
+			printf("DBG_IO %s:%d> Warn: dim is NULL of dataset_name: %s\n", __FUNCTION__, __LINE__, dataset_name);
+			#endif
 			continue;
 		}
 		total_size += curr_dim[0]*curr_dim[1];
 		free(curr_dim);
 	}
+	#if 1 // DEBUG_IO
+	printf("DBG_IO %s:%d> Get total_size: %d\n", __FUNCTION__, __LINE__, total_size);
+	#endif
 	
 	printf("Reading values\n");
 	double* lat_data = (double*)calloc(total_size, sizeof(double));
@@ -1810,11 +1840,23 @@ double* get_ast_lat(hid_t file, char* subsystem, char* d_name, int*size)
 		const char* lat_arr[] = {instrument, name, subsystem, location, lat};
 		char* lat_dataset_name;
 		concat_by_sep(&lat_dataset_name, lat_arr, "/", strlen(instrument) + strlen(name) + strlen(subsystem) + strlen(location) + strlen(lat) + 5, 5);
+		#if 1 // DEBUG_IO
+		printf("DBG_IO %s:%d> Read in lat_dataset_name: %s\n", __FUNCTION__, __LINE__, lat_dataset_name);
+		#endif
 		double* data = af_read(file, lat_dataset_name);
 		if(data == NULL){
+			#if 1 // DEBUG_IO
+			printf("DBG_IO %s:%d> Warn: data is NULL of lat_dataset_name: %s\n", __FUNCTION__, __LINE__, lat_dataset_name);
+			#endif
 			continue;
 		}
 		hsize_t* curr_dim = af_read_size(file, lat_dataset_name);
+		#if 1 // DEBUG_IO
+		if(curr_dim == NULL){
+			printf("DBG_IO %s:%d> Warn: dim is NULL of lat_dataset_name: %s\n", __FUNCTION__, __LINE__, lat_dataset_name);
+			//continue;
+		}
+		#endif
 		int gran_size = curr_dim[0] * curr_dim[1];
 		memcpy(&lat_data[curr_lat_size], data, sizeof(double) * gran_size);
 		curr_lat_size += gran_size;
@@ -1891,6 +1933,9 @@ double* get_ast_long(hid_t file, char* subsystem, char* d_name, int* size)
 		}
 		else {
 			strcpy(names[i], name);
+			#if 1 // DEBUG_IO
+			printf("DBG_IO %s:%d> Exist name: %s\n", __FUNCTION__, __LINE__, name);
+			#endif
 		}
 		free(name);
 	}
@@ -1909,11 +1954,17 @@ double* get_ast_long(hid_t file, char* subsystem, char* d_name, int* size)
 		concat_by_sep(&dataset_name, d_arr, "/", strlen(instrument) + strlen(name) + strlen(subsystem) + strlen(location) + strlen(longitude), 5);
 		hsize_t* curr_dim = af_read_size(file, dataset_name);
 		if(curr_dim == NULL){
+			#if 1 // DEBUG_IO
+			printf("DBG_IO %s:%d> Warn: dim is NULL of dataset_name: %s\n", __FUNCTION__, __LINE__, dataset_name);
+			#endif
 			continue;
 		}
 		total_size += curr_dim[0]*curr_dim[1];
 		free(curr_dim);
 	}
+	#if 1 // DEBUG_IO
+	printf("DBG_IO %s:%d> Get total_size: %d\n", __FUNCTION__, __LINE__, total_size);
+	#endif
 	
 	printf("Reading values\n");
 	double* long_data = (double*)calloc(total_size, sizeof(double));
@@ -1927,11 +1978,23 @@ double* get_ast_long(hid_t file, char* subsystem, char* d_name, int* size)
 		const char* long_arr[] = {instrument, name, subsystem, location, longitude};
 		char* long_dataset_name;
 		concat_by_sep(&long_dataset_name, long_arr, "/", strlen(instrument) + strlen(name) + strlen(subsystem) + strlen(location) + strlen(longitude) + 5, 5);
+		#if 1 // DEBUG_IO
+		printf("DBG_IO %s:%d> Read in long_dataset_name: %s\n", __FUNCTION__, __LINE__, long_dataset_name);
+		#endif
 		double* data = af_read(file, long_dataset_name);
 		if(data == NULL){
+			#if 1 // DEBUG_IO
+			printf("DBG_IO %s:%d> Warn: data is NULL of long_dataset_name: %s\n", __FUNCTION__, __LINE__, long_dataset_name);
+			#endif
 				continue;
 		}
 		hsize_t* curr_dim = af_read_size(file, long_dataset_name);
+		#if 1 // DEBUG_IO
+		if(curr_dim == NULL){
+			printf("DBG_IO %s:%d> Warn: dim is NULL of long_dataset_name: %s\n", __FUNCTION__, __LINE__, long_dataset_name);
+			//continue;
+		}
+		#endif
 		int gran_size = curr_dim[0] * curr_dim[1];
 		memcpy(&long_data[curr_long_size], data, sizeof(double) * gran_size);
 		curr_long_size += gran_size;
