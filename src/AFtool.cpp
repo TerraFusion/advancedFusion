@@ -624,7 +624,7 @@ int main(int argc, char *argv[])
 		#endif
 		targetLatitudeShifted = (double *) malloc(sizeof(double) * widthShifted * heightShifted);
 		std::string misrResolution = inputArgs.GetMISR_Resolution();
-		MISRBlockOffset(targetLatitude, targetLatitudeShifted, (misrResolution == "L") ? 0 : 1);
+		MISRBlockOffset<double>(targetLatitude, targetLatitudeShifted, (misrResolution == "L") ? 0 : 1);
 		#if DEBUG_ELAPSE_TIME
 		StopElapseTimeAndShow("DBG_TIME> Target latitude MISR-base block unstacking DONE.");
 		#endif
@@ -670,7 +670,7 @@ int main(int argc, char *argv[])
 		#endif
 		targetLongitudeShifted = (double *) malloc(sizeof(double) * widthShifted * heightShifted);
 		std::string misrResolution = inputArgs.GetMISR_Resolution();
-		MISRBlockOffset(targetLongitude, targetLongitudeShifted, (misrResolution == "L") ? 0 : 1);
+		MISRBlockOffset<double>(targetLongitude, targetLongitudeShifted, (misrResolution == "L") ? 0 : 1);
 		#if DEBUG_ELAPSE_TIME
 		StopElapseTimeAndShow("DBG_TIME> Target longitude MISR-base block unstacking DONE.");
 		#endif

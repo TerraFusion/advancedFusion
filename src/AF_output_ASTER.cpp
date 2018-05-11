@@ -24,7 +24,7 @@
  *
  *===============================================================================*/
 
-// TODO: once radiance data becomes all float internally, use float directly without converting via HDF5 
+// TODO: if radiance data becomes all float internally, use float directly without converting via HDF5 
 /* T: type of data type of output data
  * T_IN : input data type
  * T_OUT : output data type
@@ -198,11 +198,11 @@ int af_GenerateOutputCumulative_AsterAsSrc(AF_InputParmeterFile &inputArgs, hid_
 
 	//-----------------------------------------------------------------
 	// TODO: improve by preparing these memory allocation out of loop
-	// srcProcessedData, SD, nsrcPixels
+	// srcProcessedData, SD, srcPixelCount
 	// asterSingleData
 	double * srcProcessedData = NULL; // radiance
 	double * SD = NULL;  // Standard Deviation
-	int * nsrcPixels = NULL; // count
+	int * srcPixelCount = NULL; // count
 	// Note: This is Combination case only
 	for (int i=0; i< bands.size(); i++) {
 		#if DEBUG_TOOL
@@ -241,13 +241,13 @@ int af_GenerateOutputCumulative_AsterAsSrc(AF_InputParmeterFile &inputArgs, hid_
 		}
 		else if (inputArgs.CompareStrCaseInsensitive(resampleMethod, "summaryInterpolate")) {
 			SD = new double [trgCellNumNoShift];
-			nsrcPixels = new int [trgCellNumNoShift];
-			summaryInterpolate(asterSingleData, targetNNsrcID, srcCellNum, srcProcessedData, SD, nsrcPixels, trgCellNumNoShift);
+			srcPixelCount = new int [trgCellNumNoShift];
+			summaryInterpolate(asterSingleData, targetNNsrcID, srcCellNum, srcProcessedData, SD, srcPixelCount, trgCellNumNoShift);
 			#if 0 // DEBUG_TOOL
 			std::cout << "DBG_TOOL> No nodata values: \n";
 			for(int i = 0; i < trgCellNumNoShift; i++) {
-				if(nsrcPixels[i] > 0) {
-					printf("%d,\t%lf\n", nsrcPixels[i], srcProcessedData[i]);
+				if(srcPixelCount[i] > 0) {
+					printf("%d,\t%lf\n", srcPixelCount[i], srcProcessedData[i]);
 				}
 			}
 			#endif
@@ -259,29 +259,67 @@ int af_GenerateOutputCumulative_AsterAsSrc(AF_InputParmeterFile &inputArgs, hid_
 
 		//-----------------------------------------------------------------------
 		// check if need to shift by MISR (shift==ON & target) case before writing
-		double * srcProcessedDataShifted = NULL;
-		double * srcProcessedDataPtr = NULL;
+		// radiance data
+		double * srcRadianceDataShifted = NULL;
+		double * srcRadianceDataPtr = NULL;
+		// standard deviation data
+		double * srcSDDataShifted = NULL;
+		double * srcSDDataPtr = NULL;
+		// pixel count data
+		int * srcPixelCountDataShifted = NULL;
+		int * srcPixelCountDataPtr = NULL;
+
+		// if MISR is target and Shift is On
 		if(inputArgs.GetMISR_Shift() == "ON" && inputArgs.GetTargetInstrument() == "MISR") {
 			std::cout << "\nSource ASTER radiance MISR-base shifting...\n";
 			#if DEBUG_ELAPSE_TIME
 			StartElapseTime();
 			#endif
-			srcProcessedDataShifted = new double [widthShifted * heightShifted];
-			MISRBlockOffset(srcProcessedData, srcProcessedDataShifted, (inputArgs.GetMISR_Resolution() == "L") ? 0 : 1);
-			#if DEBUG_ELAPSE_TIME
-			StopElapseTimeAndShow("DBG_TIME> source ASTER radiance MISR-base shift DONE.");
-			#endif
-
-			srcProcessedDataPtr = srcProcessedDataShifted;
-			numCells = widthShifted * heightShifted;
-			// use srcProcessedDataShifted instead of srcProcessedData, and free memory
+			/*-------------------- 
+			 * shift radiance data
+			 */
+			srcRadianceDataShifted = new double [widthShifted * heightShifted];
+			MISRBlockOffset<double>(srcProcessedData, srcRadianceDataShifted, (inputArgs.GetMISR_Resolution() == "L") ? 0 : 1);
+			// use srcRadianceDataShifted instead of srcProcessedData, and free memory
 			if(srcProcessedData) {
 				delete [] srcProcessedData;
 				srcProcessedData = NULL;
 			}
+
+			/*-------------------- 
+			 * shift SD data
+			 */
+			srcSDDataShifted = new double [widthShifted * heightShifted];
+			MISRBlockOffset<double>(SD, srcSDDataShifted, (inputArgs.GetMISR_Resolution() == "L") ? 0 : 1);
+			// use srcSDDataShifted instead of SD, and free memory
+			if(SD) {
+				delete [] SD;
+				SD = NULL;
+			}
+
+			/*-------------------- 
+			 * shift PixelCount data
+			 */
+			srcPixelCountDataShifted = new int [widthShifted * heightShifted];
+			MISRBlockOffset<int>(srcPixelCount, srcPixelCountDataShifted, (inputArgs.GetMISR_Resolution() == "L") ? 0 : 1);
+			// use srcPixelCountDataShifted instead of PixelCount, and free memory
+			if(srcPixelCount) {
+				delete [] srcPixelCount;
+				srcPixelCount = NULL;
+			}
+			#if DEBUG_ELAPSE_TIME
+			StopElapseTimeAndShow("DBG_TIME> source ASTER radiance MISR-base shift DONE.");
+			#endif
+
+			srcRadianceDataPtr = srcRadianceDataShifted;
+			srcSDDataPtr = srcSDDataShifted;
+			srcPixelCountDataPtr = srcPixelCountDataShifted;
+			numCells = widthShifted * heightShifted;
 		}
-		else { // no misr-trg shift
-			srcProcessedDataPtr = srcProcessedData;
+		else { // dats with no misr-trg shift
+			srcRadianceDataPtr = srcProcessedData;
+			srcSDDataPtr = SD;
+			srcPixelCountDataPtr = srcPixelCount;	
 			numCells = trgCellNum;
 		}
 
@@ -291,19 +329,19 @@ int af_GenerateOutputCumulative_AsterAsSrc(AF_InputParmeterFile &inputArgs, hid_
 		StartElapseTime();
 		#endif
 		// output radiance dset
-		ret = af_WriteSingleRadiance_AsterAsSrc<double, float>(outputFile, ASTER_RADIANCE_DSET, dataTypeDoubleH5, asterDataspace,  srcProcessedDataPtr, numCells /*processed size*/, srcOutputWidth, i /*bandIdx*/);
+		ret = af_WriteSingleRadiance_AsterAsSrc<double, float>(outputFile, ASTER_RADIANCE_DSET, dataTypeDoubleH5, asterDataspace,  srcRadianceDataPtr, numCells /*processed size*/, srcOutputWidth, i /*bandIdx*/);
 		if (ret == FAILED) {
 			std::cerr << __FUNCTION__ << "> Error: returned fail.\n";
 		}
 
 		// output standard deviation dset
-		ret = af_WriteSingleRadiance_AsterAsSrc<double, float>(outputFile, ASTER_SD_DSET, dataTypeDoubleH5, asterDataspace,  SD, numCells /*processed size*/, srcOutputWidth, i /*bandIdx*/);
+		ret = af_WriteSingleRadiance_AsterAsSrc<double, float>(outputFile, ASTER_SD_DSET, dataTypeDoubleH5, asterDataspace,  srcSDDataPtr, numCells /*processed size*/, srcOutputWidth, i /*bandIdx*/);
 		if (ret == FAILED) {
 			std::cerr << __FUNCTION__ << "> Error: returned fail.\n";
 		}
 
 		// output pixels count dset
-		ret = af_WriteSingleRadiance_AsterAsSrc<int, int>(outputFile, ASTER_COUNT_DSET, dataTypeIntH5, asterDataspace,  nsrcPixels, numCells /*processed size*/, srcOutputWidth, i /*bandIdx*/);
+		ret = af_WriteSingleRadiance_AsterAsSrc<int, int>(outputFile, ASTER_COUNT_DSET, dataTypeIntH5, asterDataspace,  srcPixelCountDataPtr, numCells /*processed size*/, srcOutputWidth, i /*bandIdx*/);
 		if (ret == FAILED) {
 			std::cerr << __FUNCTION__ << "> Error: returned fail.\n";
 		}
@@ -321,10 +359,10 @@ int af_GenerateOutputCumulative_AsterAsSrc(AF_InputParmeterFile &inputArgs, hid_
 			delete [] srcProcessedData;
 		if(SD)
 			delete [] SD;
-		if (nsrcPixels)
-			delete [] nsrcPixels;
-		if(srcProcessedDataShifted)
-			delete [] srcProcessedDataShifted;
+		if (srcPixelCount)
+			delete [] srcPixelCount;
+		if(srcRadianceDataShifted)
+			delete [] srcRadianceDataShifted;
 	} // i loop
 
 	H5Tclose(dataTypeDoubleH5);

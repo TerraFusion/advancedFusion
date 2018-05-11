@@ -230,7 +230,7 @@ int af_GenerateOutputCumulative_MisrAsTrg(AF_InputParmeterFile &inputArgs, hid_t
 				StartElapseTime();
 				#endif
 				misrSingleDataShifted = (double *) malloc(sizeof(double) * widthShifted * heightShifted);
-				MISRBlockOffset(misrSingleData, misrSingleDataShifted, (misrResolution == "L") ? 0 : 1);
+				MISRBlockOffset<double>(misrSingleData, misrSingleDataShifted, (misrResolution == "L") ? 0 : 1);
 				#if DEBUG_ELAPSE_TIME
 				StopElapseTimeAndShow("DBG_TIME> target MISR radiance block unstack DONE.");
 				#endif

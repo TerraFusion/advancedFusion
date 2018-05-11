@@ -478,7 +478,7 @@ int af_GenerateOutputCumulative_ModisAsSrc(AF_InputParmeterFile &inputArgs, hid_
 			StartElapseTime();
 			#endif
 			srcProcessedDataShifted = new double [widthShifted * heightShifted];
-			MISRBlockOffset(srcProcessedData, srcProcessedDataShifted, (inputArgs.GetMISR_Resolution() == "L") ? 0 : 1);
+			MISRBlockOffset<double>(srcProcessedData, srcProcessedDataShifted, (inputArgs.GetMISR_Resolution() == "L") ? 0 : 1);
 			#if DEBUG_ELAPSE_TIME
 			StopElapseTimeAndShow("DBG_TIME> source MODIS radiance MISR-base shift DONE.");
 			#endif
