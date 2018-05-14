@@ -122,6 +122,16 @@ static int af_WriteSingleRadiance_ModisAsTrg(hid_t outputFile, hid_t modisDataty
 		ret = -1;
 		goto done;
 	}
+        else {
+            if(bandIdx==0) {            
+                char* a_value = "/Geolocation/Longitude /Geolocation/Latitude";
+                if(af_write_attr_str(modis_dataset, "units", a_value) < 0) {
+                    printf("Error af_write_attr_str: writing units=%s\n",
+                           a_value);
+                }                
+                
+            }            
+        }
 
 done:
 	H5Dclose(modis_dataset);
