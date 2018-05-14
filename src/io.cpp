@@ -2360,6 +2360,10 @@ int af_write_misr_on_modis(hid_t output_file, double* misr_out, double* modis, i
 		
 	EFFECT:
 		The geolocation data would be written to the output_file.
+
+  \author Hyo-Kyung (Joe) Lee (hyoklee@hdfgroup.org)
+  \date May 14, 2018
+  \note added CF units attributes for lat/lon.
 		
 	RETURN:
 		Returns 1 upon successful writing
@@ -2385,21 +2389,29 @@ int af_write_mm_geo(hid_t output_file, int geo_flag, double* geo_data, int geo_s
         }
 	}
 	char* d_name;
+	char* a_name;        
 	if(geo_flag == 0){
 		d_name = "/Geolocation/Latitude";
+		a_name = "degrees_north";                
 	}
 	else if(geo_flag == 1){
 		d_name = "/Geolocation/Longitude";
+		a_name = "degrees_east";                                
 	}
 	hsize_t     geo_dim[2];
 	geo_dim[0] = (geo_size) / outputWidth;
 	geo_dim[1] = outputWidth;
 	hid_t geo_dataspace = H5Screate_simple(2, geo_dim, NULL);
 	hid_t geo_datatype = H5Tcopy(H5T_NATIVE_DOUBLE);
-    herr_t geo_status = H5Tset_order(geo_datatype, H5T_ORDER_LE);  
-    hid_t geo_dataset = H5Dcreate2(output_file, d_name, geo_datatype, geo_dataspace,H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-    status = H5Dwrite(geo_dataset, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, geo_data);
-    H5Sclose(geo_dataspace);
+        herr_t geo_status = H5Tset_order(geo_datatype, H5T_ORDER_LE);  
+        hid_t geo_dataset = H5Dcreate2(output_file, d_name, geo_datatype, geo_dataspace,H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+        status = H5Dwrite(geo_dataset, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, geo_data);
+        
+        if(af_write_attr_str(geo_dataset, "units", a_name) < 0) {
+            printf("Error af_write_attr_str: writing units=%s\n", a_name);
+        }
+        
+        H5Sclose(geo_dataspace);
 	H5Tclose(geo_datatype);
 	H5Dclose(geo_dataset);
 	
@@ -2408,6 +2420,40 @@ int af_write_mm_geo(hid_t output_file, int geo_flag, double* geo_data, int geo_s
 		return -1;
 	}
 	return 1;
+}
+
+/*!
+  \fn af_write_attr_str(hid_t dset, char* name, char* val)
+  \brief Write \a name attribute that has \a val value on \a dset dataset.
+  \param dset HDF5 dataset id
+  \param name attribute name
+  \param val  attribute value
+  
+  \author Hyo-Kyung (Joe) Lee (hyoklee@hdfgroup.org)
+  \date May 14, 2018
+  \note This new function is added.
+
+  \return 1, if writing attribute is successful.
+  \return -1, otherwise 
+ */
+int af_write_attr_str(hid_t dset, char* name, char* val)
+{
+    hid_t stringType = H5Tcopy(H5T_C_S1);
+    hid_t stringSpace = H5Screate(H5S_SCALAR);        
+    herr_t status = H5Tset_size(stringType, (hsize_t) strlen(val));
+    hid_t attr= H5Acreate(dset, name, stringType, stringSpace, 
+                          H5P_DEFAULT, H5P_DEFAULT);
+    status = H5Awrite(attr, stringType, val);
+    if(status < 0){
+        printf("Writing %s attribute with value %s failed.\n", name, val);
+        return -1;
+    }
+    status = H5Aclose(attr);
+    if(status < 0){
+        printf("Closing %s attribute with value %s failed.\n", name, val);
+        return -1;
+    }    
+    return 1;
 }
 
 /*
