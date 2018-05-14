@@ -125,8 +125,9 @@ static int af_WriteSingleRadiance_ModisAsTrg(hid_t outputFile, hid_t modisDataty
         else {
             if(bandIdx==0) {            
                 char* a_value = "/Geolocation/Longitude /Geolocation/Latitude";
-                if(af_write_attr_str(modis_dataset, "units", a_value) < 0) {
-                    printf("Error af_write_attr_str: writing units=%s\n",
+                if(af_write_attr_str(modis_dataset, "coordinates",
+                                     a_value) < 0) {
+                    printf("Error af_write_attr_str: writing coordinates=%s\n",
                            a_value);
                 }                
                 
