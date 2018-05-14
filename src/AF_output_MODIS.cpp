@@ -26,6 +26,12 @@
 /* T: type of data type of output data
  * T_IN : input data type
  * T_OUT : output data type
+
+  
+  \author Hyo-Kyung (Joe) Lee (hyoklee@hdfgroup.org)
+  \date May 14, 2018
+  \note added coordinates and _FillValue attributes.
+
  */
 template <typename T_IN, typename T_OUT>
 static int af_WriteSingleRadiance_ModisAsTrg(hid_t outputFile, hid_t modisDatatype, hid_t modisFilespace, T_IN* modisData, int modisDataSize, int outputWidth, int bandIdx)
@@ -129,7 +135,13 @@ static int af_WriteSingleRadiance_ModisAsTrg(hid_t outputFile, hid_t modisDataty
                                      a_value) < 0) {
                     printf("Error af_write_attr_str: writing coordinates=%s\n",
                            a_value);
-                }                
+                }
+                float f_value = -999.0;
+                if(af_write_attr_float(modis_dataset, "_FillValue",
+                                       f_value) < 0) {
+                    printf("Error af_write_attr_float:");
+                    printf("writing coordinates=%f\n", f_value);
+                }                                
                 
             }            
         }

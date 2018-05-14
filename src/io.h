@@ -28,6 +28,7 @@ double* af_read_hyperslab(hid_t file, char*dataset_name, int x_offset, int y_off
 hsize_t* af_read_size(hid_t file, char* dataset_name);
 int af_write_misr_on_modis(hid_t output_file, double* misr_out, double* modis, int modis_size, int modis_band_size, int misr_size);
 int af_write_mm_geo(hid_t output_file, int geo_flag, double* geo_data, int geo_size, int outputWidth);
+int af_write_attr_float(hid_t dset, char* name, float val);
 int af_write_attr_str(hid_t dset, char* name, char* val);
 
 //Instrument data retrieval functions

@@ -2423,6 +2423,41 @@ int af_write_mm_geo(hid_t output_file, int geo_flag, double* geo_data, int geo_s
 }
 
 /*!
+  \fn af_write_attr_float(hid_t dset, char* name, float val)
+  \brief Write \a name attribute that has \a val value on \a dset dataset.
+  \param dset HDF5 dataset id
+  \param name attribute name
+  \param val  attribute value
+  
+  \author Hyo-Kyung (Joe) Lee (hyoklee@hdfgroup.org)
+  \date May 14, 2018
+  \note This new function is added.
+
+  \return 1, if writing attribute is successful.
+  \return -1, otherwise 
+ */
+int af_write_attr_float(hid_t dset, char* name, float val)
+{
+    hid_t floatType = H5Tcopy(H5T_NATIVE_FLOAT);
+    hid_t floatSpace= H5Screate(H5S_SCALAR);
+    hid_t attr= H5Acreate(dset, name, floatType, floatSpace, 
+            H5P_DEFAULT, H5P_DEFAULT);
+    herr_t status= H5Awrite(attr, floatType, &val);
+    if(status < 0){
+        printf("Writing %s attribute with value %f failed.\n", name, val);
+        return -1;
+    }
+    H5Sclose(floatSpace);    
+    status = H5Aclose(attr);
+    if(status < 0){
+        printf("Closing %s attribute with value %f failed.\n", name, val);
+        return -1;
+    }    
+    return 1;
+}
+
+
+/*!
   \fn af_write_attr_str(hid_t dset, char* name, char* val)
   \brief Write \a name attribute that has \a val value on \a dset dataset.
   \param dset HDF5 dataset id
