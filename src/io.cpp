@@ -2389,14 +2389,14 @@ int af_write_mm_geo(hid_t output_file, int geo_flag, double* geo_data, int geo_s
         }
 	}
 	char* d_name;
-	char* a_name;        
+	char* a_value;        
 	if(geo_flag == 0){
 		d_name = "/Geolocation/Latitude";
-		a_name = "degrees_north";                
+		a_value = "degrees_north";                
 	}
 	else if(geo_flag == 1){
 		d_name = "/Geolocation/Longitude";
-		a_name = "degrees_east";                                
+		a_value = "degrees_east";                                
 	}
 	hsize_t     geo_dim[2];
 	geo_dim[0] = (geo_size) / outputWidth;
@@ -2407,8 +2407,8 @@ int af_write_mm_geo(hid_t output_file, int geo_flag, double* geo_data, int geo_s
         hid_t geo_dataset = H5Dcreate2(output_file, d_name, geo_datatype, geo_dataspace,H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
         status = H5Dwrite(geo_dataset, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, geo_data);
         
-        if(af_write_attr_str(geo_dataset, "units", a_name) < 0) {
-            printf("Error af_write_attr_str: writing units=%s\n", a_name);
+        if(af_write_attr_str(geo_dataset, "units", a_value) < 0) {
+            printf("Error af_write_attr_str: writing units=%s\n", a_value);
         }
         
         H5Sclose(geo_dataspace);
