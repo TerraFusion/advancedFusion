@@ -2517,13 +2517,23 @@ int af_write_attr_str(hid_t dset, char* name, char* val)
 int af_write_cf_attributes(hid_t dset, float valid_min)
 {
     int result = 0;
-    char* a_value = "/Geolocation/Longitude /Geolocation/Latitude";
+    char* coordinates = "/Geolocation/Longitude /Geolocation/Latitude";
+    char* units = "Watts/m^2/micrometer/steradian";
+    
     if(af_write_attr_str(dset, "coordinates",
-                         a_value) < 0) {
+                         coordinates) < 0) {
         printf("Error af_write_attr_str: writing coordinates=%s\n",
-               a_value);
+               coordinates);
         result = -1;
     }
+
+    if(af_write_attr_str(dset, "units",
+                         units) < 0) {
+        printf("Error af_write_attr_str: writing units=%s\n",
+               units);
+        result = -1;
+    }
+    
     float f_value = -999.0;
     if(af_write_attr_float(dset, "_FillValue",
                            f_value) < 0) {
