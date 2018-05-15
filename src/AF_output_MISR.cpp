@@ -271,6 +271,41 @@ int af_GenerateOutputCumulative_MisrAsTrg(AF_InputParmeterFile &inputArgs, hid_t
 	return SUCCEED;
 }
 
+/*!
+  \fn af_WriteCFAttributes_MisrAsSrc(hid_t dset)
+  \brief Write CF attributes on \a dset dataset.
+  \param dset HDF5 dataset id
+  
+  \author Hyo-Kyung (Joe) Lee (hyoklee@hdfgroup.org)
+  \date May 15, 2018
+  \note This new function is added.
+
+  \return 1, if writing attribute is successful.
+  \return -1, otherwise 
+
+  \todo Refactor this function for both MODIS and MISR.
+        Put it into AF_output_util.cpp.
+        Refactoring may depend on dimension scale handling.
+ */
+int af_WriteCFAttributes_MisrAsSrc(hid_t dset)
+{
+    int result = 1;
+    char* a_value = "/Geolocation/Longitude /Geolocation/Latitude";
+    if(af_write_attr_str(dset, "coordinates",
+                         a_value) < 0) {
+        printf("Error af_write_attr_str: writing coordinates=%s\n",
+               a_value);
+        result = -1;
+    }
+    float f_value = -999.0;
+    if(af_write_attr_float(dset, "_FillValue",
+                           f_value) < 0) {
+        printf("Error af_write_attr_float:");
+        printf("writing coordinates=%f\n", f_value);
+        result = -1;
+    }
+    return result;
+}
 
 
 /*===============================================================================
@@ -325,6 +360,14 @@ static int af_WriteSingleRadiance_MisrAsSrc(hid_t outputFile, hid_t misrDatatype
 			std::cerr << __FUNCTION__ << ":" << __LINE__ <<  "> Error: H5Dcreate2 target data in output file.\n";
 			return FAILED;
 		}
+                else {
+                    if(af_WriteCFAttributes_MisrAsSrc(misr_dataset) < 0) {
+			std::cerr << __FUNCTION__ << ":" << __LINE__
+                                  << "> Error:af_WriteCFAttributes_MisrAsSrc()"
+                                  << " failed.\n";
+			return FAILED;                        
+                    }
+                }
 	}
 	else {
 		misr_dataset = H5Dopen2(outputFile, dsetPath.c_str(), H5P_DEFAULT);
@@ -379,6 +422,7 @@ static int af_WriteSingleRadiance_MisrAsSrc(hid_t outputFile, hid_t misrDatatype
 		ret = -1;
 		goto done;
 	}
+        
 
 done:
 	H5Dclose(misr_dataset);
