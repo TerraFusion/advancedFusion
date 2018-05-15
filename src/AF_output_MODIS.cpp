@@ -1,4 +1,3 @@
-
 /*********************************************************************
  * DESCRIPTION:
  *  Generate radiance data output to HDF5 for MODIS
@@ -29,6 +28,8 @@
 
   
   \author Hyo-Kyung (Joe) Lee (hyoklee@hdfgroup.org)
+  \date May 15, 2018
+  \note added valid_min attribute.
   \date May 14, 2018
   \note added coordinates and _FillValue attributes.
 
@@ -51,10 +52,10 @@ static int af_WriteSingleRadiance_ModisAsTrg(hid_t outputFile, hid_t modisDataty
 	 * set output data type
 	 */
 	hid_t dataTypeOutH5;
-    if (std::is_same<T_OUT, float>::value) {
+        if (std::is_same<T_OUT, float>::value) {
 		dataTypeOutH5 = H5T_IEEE_F32LE;
 	}
-    else if (std::is_same<T_OUT, double>::value) {
+        else if (std::is_same<T_OUT, double>::value) {
 		dataTypeOutH5 = H5T_IEEE_F64LE;
 	}
 	else if (std::is_same<T_OUT, int>::value) {
@@ -66,16 +67,25 @@ static int af_WriteSingleRadiance_ModisAsTrg(hid_t outputFile, hid_t modisDataty
 	}
 
 
-	/*-------------------------------------
-     * if first time, create dataset
-     * otherwise, open existing one
-     */
+        /*-------------------------------------
+         * if first time, create dataset
+         * otherwise, open existing one
+         */
 	if(bandIdx==0) { // means new
 		modis_dataset = H5Dcreate2(outputFile, dsetPath.c_str(), dataTypeOutH5, modisFilespace,H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
 		if(modis_dataset < 0) {
 			std::cerr << __FUNCTION__ << ":" << __LINE__ <<  "> Error: H5Dcreate2 target data in output file.\n";
 			return FAILED;
 		}
+                else {
+                    if(af_write_cf_attributes(modis_dataset, 0.0) < 0) {
+			std::cerr
+                            << __FUNCTION__ << ":" << __LINE__
+                            <<  "> Error: af_write_cf_attributes"
+                            << std::endl;
+                    }
+                    
+                }
 	}
 	else {
 		modis_dataset = H5Dopen2(outputFile, dsetPath.c_str(), H5P_DEFAULT);
@@ -128,24 +138,6 @@ static int af_WriteSingleRadiance_ModisAsTrg(hid_t outputFile, hid_t modisDataty
 		ret = -1;
 		goto done;
 	}
-        else {
-            if(bandIdx==0) {            
-                char* a_value = "/Geolocation/Longitude /Geolocation/Latitude";
-                if(af_write_attr_str(modis_dataset, "coordinates",
-                                     a_value) < 0) {
-                    printf("Error af_write_attr_str: writing coordinates=%s\n",
-                           a_value);
-                }
-                float f_value = -999.0;
-                if(af_write_attr_float(modis_dataset, "_FillValue",
-                                       f_value) < 0) {
-                    printf("Error af_write_attr_float:");
-                    printf("writing coordinates=%f\n", f_value);
-                }                                
-                
-            }            
-        }
-
 done:
 	H5Dclose(modis_dataset);
 

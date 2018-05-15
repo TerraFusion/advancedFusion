@@ -30,7 +30,8 @@ int af_write_misr_on_modis(hid_t output_file, double* misr_out, double* modis, i
 int af_write_mm_geo(hid_t output_file, int geo_flag, double* geo_data, int geo_size, int outputWidth);
 int af_write_attr_float(hid_t dset, char* name, float val);
 int af_write_attr_str(hid_t dset, char* name, char* val);
-
+int af_write_cf_attributes(hid_t dset, float valid_min);
+    
 //Instrument data retrieval functions
 double* get_misr_rad(hid_t file, char* camera_angle, char* resolution, char* radiance, int* size);
 double* get_misr_lat(hid_t file, char* resolution, int* size);

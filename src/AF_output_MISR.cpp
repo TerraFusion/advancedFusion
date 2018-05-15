@@ -271,41 +271,6 @@ int af_GenerateOutputCumulative_MisrAsTrg(AF_InputParmeterFile &inputArgs, hid_t
 	return SUCCEED;
 }
 
-/*!
-  \fn af_WriteCFAttributes_MisrAsSrc(hid_t dset)
-  \brief Write CF attributes on \a dset dataset.
-  \param dset HDF5 dataset id
-  
-  \author Hyo-Kyung (Joe) Lee (hyoklee@hdfgroup.org)
-  \date May 15, 2018
-  \note This new function is added.
-
-  \return 1, if writing attribute is successful.
-  \return -1, otherwise 
-
-  \todo Refactor this function for both MODIS and MISR.
-        Put it into AF_output_util.cpp.
-        Refactoring may depend on dimension scale handling.
- */
-int af_WriteCFAttributes_MisrAsSrc(hid_t dset)
-{
-    int result = 1;
-    char* a_value = "/Geolocation/Longitude /Geolocation/Latitude";
-    if(af_write_attr_str(dset, "coordinates",
-                         a_value) < 0) {
-        printf("Error af_write_attr_str: writing coordinates=%s\n",
-               a_value);
-        result = -1;
-    }
-    float f_value = -999.0;
-    if(af_write_attr_float(dset, "_FillValue",
-                           f_value) < 0) {
-        printf("Error af_write_attr_float:");
-        printf("writing coordinates=%f\n", f_value);
-        result = -1;
-    }
-    return result;
-}
 
 
 /*===============================================================================
@@ -317,6 +282,11 @@ int af_WriteCFAttributes_MisrAsSrc(hid_t dset)
 /* T: type of data type of output data
  * T_IN : input data type
  * T_OUT : output data type
+
+ \author Hyo-Kyung (Joe) Lee (hyoklee@hdfgroup.org)
+ \date May 15, 2018
+ \note added CF attributes.
+
  */
 template <typename T_IN, typename T_OUT>
 static int af_WriteSingleRadiance_MisrAsSrc(hid_t outputFile, hid_t misrDatatype, hid_t misrFilespace, T_IN* processedData, int trgCellNum, int outputWidth, int cameraIdx, int radIdx)
@@ -335,10 +305,10 @@ static int af_WriteSingleRadiance_MisrAsSrc(hid_t outputFile, hid_t misrDatatype
 	 * set output data type
 	 */
 	hid_t dataTypeOutH5;
-    if (std::is_same<T_OUT, float>::value) {
+        if (std::is_same<T_OUT, float>::value) {
 		dataTypeOutH5 = H5T_IEEE_F32LE;
 	}
-    else if (std::is_same<T_OUT, double>::value) {
+        else if (std::is_same<T_OUT, double>::value) {
 		dataTypeOutH5 = H5T_IEEE_F64LE;
 	}
 	else if (std::is_same<T_OUT, int>::value) {
@@ -361,10 +331,10 @@ static int af_WriteSingleRadiance_MisrAsSrc(hid_t outputFile, hid_t misrDatatype
 			return FAILED;
 		}
                 else {
-                    if(af_WriteCFAttributes_MisrAsSrc(misr_dataset) < 0) {
+                    if(af_write_cf_attributes(misr_dataset, -999.0) < 0) {
 			std::cerr << __FUNCTION__ << ":" << __LINE__
-                                  << "> Error:af_WriteCFAttributes_MisrAsSrc()"
-                                  << " failed.\n";
+                                  <<  "> Error: af_write_cf_attributes"
+                                  << std::endl;                            
 			return FAILED;                        
                     }
                 }
