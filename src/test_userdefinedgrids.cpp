@@ -62,8 +62,8 @@ int main(int argc, char ** argv) {
     }
 	
 
-	char* file_path = "/projects/sciteam/jq0/TerraFusion/yizhao/TERRA_BF_L1B_O69626_20130119123228_F000_V001.h5";
-	char* outfileName = "test4326.tif";
+	char* file_path = "/projects/sciteam/jq0/TerraFusion/yizhao/TERRA_BF_L1B_O69400_20130104000439_F000_V000.h5";
+	char* outfileName = "test4326_439_test.tif";
 	
 	hid_t src_file;
 	if(0 > (src_file = af_open(file_path))) {
@@ -76,7 +76,9 @@ int main(int argc, char ** argv) {
 	double* src_long;
 
 	src_lat = get_modis_lat(src_file, "_1KM", &nCellsrc);
+	printf("lat pixel size: %d\n", nCellsrc);
 	src_long = get_modis_long(src_file, "_1KM", &nCellsrc);
+	printf("long pixel size: %d\n", nCellsrc);
 
 
 	double** p_src_lat = &src_lat;
@@ -100,8 +102,9 @@ int main(int argc, char ** argv) {
 
 	printf("getting source rad\n");
 	double* src_rad;
-	std::vector<std::string> bands = {"8"};
+	std::vector<std::string> bands = {"25"};
 	src_rad = get_modis_rad(src_file, "_1KM", bands, bands.size(), &nCellsrc);
+	printf("rad pixel size: %d\n", nCellsrc);
 
 	double* src_rad_out = (double *)malloc(sizeof(double) * nPoints);
 	printf("interpolating\n");
