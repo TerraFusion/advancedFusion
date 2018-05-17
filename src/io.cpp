@@ -378,6 +378,7 @@ double* get_modis_rad(hid_t file, char* resolution, std::vector<std::string> &ba
 			store_count += 1;
 		}
 		free(name);
+		free(res_group_name);
 	}
 	
 	#if DEBUG_IO
@@ -390,7 +391,7 @@ double* get_modis_rad(hid_t file, char* resolution, std::vector<std::string> &ba
 	int band_indices[band_size];
 	int j;
 	for(j = 0; j < band_size; j++){
-        char* dname = get_modis_filename(resolution, (char*)(bands[j].c_str()), &band_indices[j]);
+	        char* dname = get_modis_filename(resolution, (char*)(bands[j].c_str()), &band_indices[j]);
 		if(dname == NULL){
 			printf("Band %s is not supported for %s resolution\n", bands[j].c_str(), resolution);
 			return NULL;
@@ -431,6 +432,7 @@ double* get_modis_rad(hid_t file, char* resolution, std::vector<std::string> &ba
 //				printf("%s: %d\n", dataset_name, curr_dim[1]*curr_dim[2]); 
 			}
 			free(curr_dim);
+			free(dataset_name);
 		}
 	}
 	#if DEBUG_IO
@@ -529,6 +531,7 @@ double* get_modis_rad_by_band(hid_t file, char* resolution, char* d_name, int* b
 			store_count += 1;
 		}
 		free(name);
+		free(res_group_name);
 	}
 	
 	//Get total data size
@@ -559,6 +562,7 @@ double* get_modis_rad_by_band(hid_t file, char* resolution, char* d_name, int* b
 		}
 		
 		free(curr_dim);
+		free(dataset_name);
 	}
 	#if DEBUG_IO
 	printf("DBG_IO %s:%d> Get total data size: %d\n", __FUNCTION__, __LINE__, total_size);
@@ -630,6 +634,7 @@ double* get_modis_rad_by_band(hid_t file, char* resolution, char* d_name, int* b
  
 		curr_size += band_length;
 		free(curr_dim);
+		free(dataset_name);
 	}
 	*size = curr_size;
 
@@ -710,6 +715,7 @@ double* get_modis_lat(hid_t file, char* resolution, int* size)
 			store_count += 1;
 		}
 		free(name);
+		free(res_group_name);
 	}
 	
 	#if DEBUG_IO
@@ -747,6 +753,7 @@ double* get_modis_lat(hid_t file, char* resolution, int* size)
 			
 			free(adding_lat);
 		}
+		free(lat_dataset_name);
 	}
 	*size = curr_lat_size;
 	
@@ -829,6 +836,7 @@ double* get_modis_long(hid_t file, char* resolution, int* size)
 			store_count += 1;
 		}
 		free(name);
+		free(res_group_name);
 	}
 	
 	int h;
@@ -861,6 +869,7 @@ double* get_modis_long(hid_t file, char* resolution, int* size)
 
 			free(adding_long);
 		}
+		free(long_dataset_name);
 	}
 	*size = curr_long_size;
 	
