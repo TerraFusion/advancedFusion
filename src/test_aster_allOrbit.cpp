@@ -29,8 +29,8 @@ int main(int argc, char ** argv)
 	int nCellsrc;
 	double* src_lat;
 	double* src_long;
-	src_lat = get_ast_lat(src_file, "VNIR", "ImageData3N", &nCellsrc);
-	src_long = get_ast_long(src_file, "VNIR", "ImageData3N", &nCellsrc);
+	src_lat = get_ast_lat(src_file, "TIR", "ImageData11", &nCellsrc);
+	src_long = get_ast_long(src_file, "TIR", "ImageData11", &nCellsrc);
 	
 	int nCelldest;
 	double* dest_lat;
@@ -72,7 +72,7 @@ int main(int argc, char ** argv)
 	printf("getting source rad\n");
 	double* src_rad;
 	
-	src_rad = get_ast_rad(src_file, "VNIR", "ImageData3N", &nCellsrc);
+	src_rad = get_ast_rad(src_file, "TIR", "ImageData11", &nCellsrc);
 	
 	int nCelldest_rad;
 	double* dest_rad;
@@ -164,6 +164,13 @@ int main(int argc, char ** argv)
 		printf("ast write error\n");
 		return -1;
 	}
+
+	dest_lat = get_modis_lat(src_file, "_1KM", &nCelldest);
+	dest_long = get_modis_long(src_file, "_1KM", &nCelldest);
+
+
+	free(dest_lat);
+	free(dest_long);
 	
 	free(nsrcPixels);
 	free(sd);
