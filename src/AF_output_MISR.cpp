@@ -331,7 +331,11 @@ static int af_WriteSingleRadiance_MisrAsSrc(hid_t outputFile, hid_t misrDatatype
 			return FAILED;
 		}
                 else {
-                    if(af_write_cf_attributes(misr_dataset, -999.0) < 0) {
+                    char* units = "Watts/m^2/micrometer/steradian";
+                    if(af_write_cf_attributes(misr_dataset,
+                                              units,
+                                              -999.0,
+                                              -999.0) < 0) {
 			std::cerr << __FUNCTION__ << ":" << __LINE__
                                   <<  "> Error: af_write_cf_attributes"
                                   << std::endl;                            

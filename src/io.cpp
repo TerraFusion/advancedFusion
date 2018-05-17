@@ -2499,14 +2499,19 @@ int af_write_attr_str(hid_t dset, char* name, char* val)
 
   \details 
 
-  This function writes 3 key CF attributes - coordinates, _FillValue, and
+  This function writes 4 key CF attributes - coordinates, units, _FillValue, and
   valid_min.
 
+  If \a units is NULL, units attribute will not be written.
+
   valid_min attribute is optional for MISR but required for MODIS.
-  If \a valid_min value is -999.0, valid_min attribute will not be
-  added because we assume that -999.0 is _FillValue.
+  If \a valid_min value is same as \_FillValue, valid_min attribute will not be
+  added.
   
   \author Hyo-Kyung (Joe) Lee (hyoklee@hdfgroup.org)
+  \date May 17, 2018
+  \note Units and _FillValue are added as parameters.
+
   \date May 15, 2018
   \note This new function is added.
 
@@ -2514,11 +2519,14 @@ int af_write_attr_str(hid_t dset, char* name, char* val)
   \return -1, otherwise 
 
  */
-int af_write_cf_attributes(hid_t dset, float valid_min)
+int af_write_cf_attributes(hid_t dset, char* units, float _FillValue,
+                           float valid_min)
 {
     int result = 0;
     char* coordinates = "/Geolocation/Longitude /Geolocation/Latitude";
+#if 0    
     char* units = "Watts/m^2/micrometer/steradian";
+#endif    
     
     if(af_write_attr_str(dset, "coordinates",
                          coordinates) < 0) {
@@ -2527,21 +2535,20 @@ int af_write_cf_attributes(hid_t dset, float valid_min)
         result = -1;
     }
 
-    if(af_write_attr_str(dset, "units",
-                         units) < 0) {
+    if(units != NULL &&
+       af_write_attr_str(dset, "units", units) < 0) {
         printf("Error af_write_attr_str: writing units=%s\n",
                units);
         result = -1;
     }
     
-    float f_value = -999.0;
     if(af_write_attr_float(dset, "_FillValue",
-                           f_value) < 0) {
+                           _FillValue) < 0) {
         printf("Error af_write_attr_float:");
-        printf("writing _FillValue=%f\n", f_value);
+        printf("writing _FillValue=%f\n", _FillValue);
         result = -1;
     }
-    if (valid_min != f_value) {
+    if (valid_min != _FillValue) {
         if(af_write_attr_float(dset, "valid_min",
                                valid_min) < 0) {
             printf("Error af_write_attr_float:");

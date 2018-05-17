@@ -78,7 +78,11 @@ static int af_WriteSingleRadiance_ModisAsTrg(hid_t outputFile, hid_t modisDataty
 			return FAILED;
 		}
                 else {
-                    if(af_write_cf_attributes(modis_dataset, 0.0) < 0) {
+                    char* units = "Watts/m^2/micrometer/steradian";
+                    if(af_write_cf_attributes(modis_dataset,
+                                              units,
+                                              -999.0,
+                                              0.0) < 0) {
 			std::cerr
                             << __FUNCTION__ << ":" << __LINE__
                             <<  "> Error: af_write_cf_attributes"
