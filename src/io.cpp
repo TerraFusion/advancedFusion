@@ -2546,7 +2546,8 @@ int af_write_attr_str(hid_t dset, char* name, char* val)
 }
 
 /*!
-  \fn af_write_cf_attributes(hid_t dset, float valid_min)
+  \fn af_write_cf_attributes(hid_t dset, char* units, float _FillValue, 
+                             float valid_min)
   \brief Write CF attributes on \a dset dataset.
   \param dset HDF5 dataset id
   \param valid_min Valid minimum value
@@ -2559,10 +2560,16 @@ int af_write_attr_str(hid_t dset, char* name, char* val)
   If \a units is NULL, units attribute will not be written.
 
   valid_min attribute is optional for MISR but required for MODIS.
-  If \a valid_min value is same as \_FillValue, valid_min attribute will not be
-  added.
+  If \a valid_min value is same as \a _FillValue, valid_min attribute 
+  will not be added.
+
+  If \a _FillValue is 0, _FillValue attribute will not be added.
+  This is useful for ASTER_Count dataset.
   
   \author Hyo-Kyung (Joe) Lee (hyoklee@hdfgroup.org)
+  \date May 18, 2018
+  \note _FillValue is omitted if value is 0.
+
   \date May 17, 2018
   \note Units and _FillValue are added as parameters.
 
@@ -2596,7 +2603,8 @@ int af_write_cf_attributes(hid_t dset, char* units, float _FillValue,
         result = -1;
     }
     
-    if(af_write_attr_float(dset, "_FillValue",
+    if(_FillValue != 0.0 &&
+       af_write_attr_float(dset, "_FillValue",
                            _FillValue) < 0) {
         printf("Error af_write_attr_float:");
         printf("writing _FillValue=%f\n", _FillValue);

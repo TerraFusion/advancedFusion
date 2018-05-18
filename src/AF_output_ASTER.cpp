@@ -30,6 +30,9 @@
  * T_OUT : output data type
 
   \author Hyo-Kyung (Joe) Lee (hyoklee@hdfgroup.org)
+  \date May 18, 2018
+  \note removed _FillValue attribute for ASTER_Count.
+
   \date May 17, 2018
   \note added CF attributes and cleaned up indentation.
 
@@ -76,12 +79,18 @@ static int af_WriteSingleRadiance_AsterAsSrc(hid_t outputFile, std::string outpu
         }
         else {
             // Change units based on dset name.
-            char* units = NULL; 
+            char* units = NULL;
+            float _FillValue = -999.0;
             if (outputDsetName == "ASTER_Radiance") {
                 units = "Watts/m^2/micrometer/steradian";
             }
-            
-            if(af_write_cf_attributes(aster_dataset, units, -999.0, -999.0)
+            if (outputDsetName == "ASTER_Count") {
+                _FillValue = 0;
+            }
+            // Don't add valid_min attribute by making valid_min argument
+            // same as _FillValue.
+            if(af_write_cf_attributes(aster_dataset, units, _FillValue,
+                                      _FillValue)
                < 0) {
                 std::cerr
                     << __FUNCTION__ << ":" << __LINE__
