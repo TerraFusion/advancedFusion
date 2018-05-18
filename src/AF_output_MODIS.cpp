@@ -262,109 +262,126 @@ int af_GenerateOutputCumulative_ModisAsTrg(AF_InputParmeterFile &inputArgs, hid_
 /* T: type of data type of output data
  * T_IN : input data type
  * T_OUT : output data type
+
+  \author Hyo-Kyung (Joe) Lee (hyoklee@hdfgroup.org)
+  \date May 18, 2018
+  \note added CF attributes.
+
  */
 template <typename T_IN, typename T_OUT>
 static int af_WriteSingleRadiance_ModisAsSrc(hid_t outputFile, hid_t modisDatatype, hid_t modisFilespace, T_IN* processedData, int trgCellNum, int outputWidth, int bandIdx)
 {
-	#if DEBUG_TOOL
-	std::cout << "DBG_TOOL " << __FUNCTION__ << "> BEGIN \n";
-	#endif
+#if DEBUG_TOOL
+    std::cout << "DBG_TOOL " << __FUNCTION__ << "> BEGIN \n";
+#endif
 
-	int ret = SUCCEED;
-	herr_t status;
-	hid_t modis_dataset;
-	std::string dsetPath = SRC_DATA_GROUP + "/" + MODIS_RADIANCE_DSET;
+    int ret = SUCCEED;
+    herr_t status;
+    hid_t modis_dataset;
+    std::string dsetPath = SRC_DATA_GROUP + "/" + MODIS_RADIANCE_DSET;
 
 
-	/*-------------------------------------
-	 * set output data type
-	 */
-	hid_t dataTypeOutH5;
+    /*-------------------------------------
+     * set output data type
+     */
+    hid_t dataTypeOutH5;
     if (std::is_same<T_OUT, float>::value) {
-		dataTypeOutH5 = H5T_IEEE_F32LE;
-	}
+        dataTypeOutH5 = H5T_IEEE_F32LE;
+    }
     else if (std::is_same<T_OUT, double>::value) {
-		dataTypeOutH5 = H5T_IEEE_F64LE;
-	}
-	else if (std::is_same<T_OUT, int>::value) {
-		dataTypeOutH5 = H5T_NATIVE_INT;
-	}
-	else {
-		std::cerr << __FUNCTION__ << ":" << __LINE__ <<  "> Error: invlid output data type T_OUT specified." << std::endl;
-		return FAILED;
-	}
+        dataTypeOutH5 = H5T_IEEE_F64LE;
+    }
+    else if (std::is_same<T_OUT, int>::value) {
+        dataTypeOutH5 = H5T_NATIVE_INT;
+    }
+    else {
+        std::cerr << __FUNCTION__ << ":" << __LINE__ <<  "> Error: invlid output data type T_OUT specified." << std::endl;
+        return FAILED;
+    }
 
 
     /*-------------------------------------
      * if first time, create dataset
      * otherwise, open existing one
      */
-	if(bandIdx==0) { // means new
-		modis_dataset = H5Dcreate2(outputFile, dsetPath.c_str(), dataTypeOutH5, modisFilespace,H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-		if(modis_dataset < 0) {
-			std::cerr << __FUNCTION__ << ":" << __LINE__ <<  "> Error: H5Dcreate2 target data in output file.\n";
-			return FAILED;
-		}
-	}
-	else {
-		modis_dataset = H5Dopen2(outputFile, dsetPath.c_str(), H5P_DEFAULT);
-		if(modis_dataset < 0) {
-			std::cerr <<  __FUNCTION__ << ":" << __LINE__ <<  "> Error: H5Dopen2 target data in output file.\n";
-			return FAILED;
-		}
-	}
+    if(bandIdx==0) { // means new
+        modis_dataset = H5Dcreate2(outputFile, dsetPath.c_str(), dataTypeOutH5, modisFilespace,H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+        if(modis_dataset < 0) {
+            std::cerr << __FUNCTION__ << ":" << __LINE__ <<  "> Error: H5Dcreate2 target data in output file.\n";
+            return FAILED;
+        }
+        else {
+            char* units = "Watts/m^2/micrometer/steradian";
+            if(af_write_cf_attributes(modis_dataset,
+                                      units,
+                                      -999.0,
+                                      0.0) < 0) {
+                std::cerr
+                    << __FUNCTION__ << ":" << __LINE__
+                    <<  "> Error: af_write_cf_attributes"
+                    << std::endl;
+            }
+        }
+    }
+    else {
+        modis_dataset = H5Dopen2(outputFile, dsetPath.c_str(), H5P_DEFAULT);
+        if(modis_dataset < 0) {
+            std::cerr <<  __FUNCTION__ << ":" << __LINE__ <<  "> Error: H5Dopen2 target data in output file.\n";
+            return FAILED;
+        }
+    }
 
 
-	//------------------------------
-	// select memspace
-	int ranksMem=2;
-	hsize_t dim2dMem[ranksMem];
-	hsize_t start2dMem[ranksMem];
-	hsize_t count2dMem[ranksMem];
-	dim2dMem[0] = trgCellNum/outputWidth; // y
-	dim2dMem[1] = outputWidth; // x
-	hid_t memspace = H5Screate_simple(ranksMem, dim2dMem, NULL);
+    //------------------------------
+    // select memspace
+    int ranksMem=2;
+    hsize_t dim2dMem[ranksMem];
+    hsize_t start2dMem[ranksMem];
+    hsize_t count2dMem[ranksMem];
+    dim2dMem[0] = trgCellNum/outputWidth; // y
+    dim2dMem[1] = outputWidth; // x
+    hid_t memspace = H5Screate_simple(ranksMem, dim2dMem, NULL);
 
-	start2dMem[0] = 0; // y
-	start2dMem[1] = 0; // x
-	count2dMem[0] = trgCellNum/outputWidth; // y
-	count2dMem[1] = outputWidth; // x
+    start2dMem[0] = 0; // y
+    start2dMem[1] = 0; // x
+    count2dMem[0] = trgCellNum/outputWidth; // y
+    count2dMem[1] = outputWidth; // x
 
-	status = H5Sselect_hyperslab(memspace, H5S_SELECT_SET, start2dMem, NULL, count2dMem, NULL);
+    status = H5Sselect_hyperslab(memspace, H5S_SELECT_SET, start2dMem, NULL, count2dMem, NULL);
 
-	//------------------------------
-	// select filespace for modis
-	const int ranksFile=3; // [bands][y][x]
-	hsize_t startFile[ranksFile];
-	hsize_t countFile[ranksFile];
-	startFile[0] = bandIdx;
-	startFile[1] = 0; // y
-	startFile[2] = 0; // x
-	countFile[0] = 1;
-	countFile[1] = trgCellNum/outputWidth; // y
-	countFile[2] = outputWidth;  // x
+    //------------------------------
+    // select filespace for modis
+    const int ranksFile=3; // [bands][y][x]
+    hsize_t startFile[ranksFile];
+    hsize_t countFile[ranksFile];
+    startFile[0] = bandIdx;
+    startFile[1] = 0; // y
+    startFile[2] = 0; // x
+    countFile[0] = 1;
+    countFile[1] = trgCellNum/outputWidth; // y
+    countFile[2] = outputWidth;  // x
 
-	status = H5Sselect_hyperslab(modisFilespace, H5S_SELECT_SET, startFile, NULL, countFile, NULL);
-	if(status < 0) {
-		std::cerr << __FUNCTION__ << ":" << __LINE__ <<  "> Error: H5Sselect_hyperslab for Modis target .\n";
-		ret = -1;
-		goto done;
-	}
+    status = H5Sselect_hyperslab(modisFilespace, H5S_SELECT_SET, startFile, NULL, countFile, NULL);
+    if(status < 0) {
+        std::cerr << __FUNCTION__ << ":" << __LINE__ <<  "> Error: H5Sselect_hyperslab for Modis target .\n";
+        ret = -1;
+        goto done;
+    }
 
-	status = H5Dwrite(modis_dataset, modisDatatype, memspace, modisFilespace, H5P_DEFAULT, processedData);
-	if(status < 0) {
-		std::cerr << __FUNCTION__ << ":" << __LINE__ <<  "> Error: H5Dwrite for Modis target .\n";
-		ret = -1;
-		goto done;
-	}
+    status = H5Dwrite(modis_dataset, modisDatatype, memspace, modisFilespace, H5P_DEFAULT, processedData);
+    if(status < 0) {
+        std::cerr << __FUNCTION__ << ":" << __LINE__ <<  "> Error: H5Dwrite for Modis target .\n";
+        ret = -1;
+        goto done;
+    }
 
-done:
-	H5Dclose(modis_dataset);
+ done:
+    H5Dclose(modis_dataset);
 
-	#if DEBUG_TOOL
-	std::cout << "DBG_TOOL " << __FUNCTION__ << "> END \n";
-	#endif
-	return ret;
+#if DEBUG_TOOL
+    std::cout << "DBG_TOOL " << __FUNCTION__ << "> END \n";
+#endif
+    return ret;
 }
 
 
