@@ -25,6 +25,11 @@
 /* T: type of data type of output data
  * T_IN : input data type
  * T_OUT : output data type
+
+ \author Hyo-Kyung (Joe) Lee (hyoklee@hdfgroup.org)
+ \date May 18, 2018
+ \note added CF attributes.
+
  */
 template <typename T_IN, typename T_OUT>
 static int af_WriteSingleRadiance_MisrAsTrg(hid_t outputFile, hid_t misrDatatype, hid_t misrFilespace, T_IN* misrData, int misrDataSize, int outputWidth, int cameraIdx, int radianceIdx)
@@ -70,6 +75,18 @@ static int af_WriteSingleRadiance_MisrAsTrg(hid_t outputFile, hid_t misrDatatype
 			std::cerr << __FUNCTION__ << ":" << __LINE__ <<  "> Error: H5Dcreate2 target data in output file.\n";
 			return FAILED;
 		}
+                else {
+                    char* units = "Watts/m^2/micrometer/steradian";
+                    if(af_write_cf_attributes(misr_dataset,
+                                              units,
+                                              -999.0,
+                                              -999.0) < 0) {
+			std::cerr << __FUNCTION__ << ":" << __LINE__
+                                  <<  "> Error: af_write_cf_attributes"
+                                  << std::endl;                            
+			return FAILED;                        
+                    }
+                }
 	}
 	else {
 		misr_dataset = H5Dopen2(outputFile, dsetPath.c_str(), H5P_DEFAULT);
