@@ -529,7 +529,7 @@ int af_GenerateOutputCumulative_MisrAsSrc(AF_InputParmeterFile &inputArgs, hid_t
 			}
 			else if (inputArgs.CompareStrCaseInsensitive(resampleMethod, "summaryInterpolate")) {
 				nsrcPixels = new int [trgCellNum];
-				summaryInterpolate(misrSingleData, targetNNsrcID, srcCellNum, srcProcessedData, nsrcPixels, trgCellNum);
+				summaryInterpolateNoSD(misrSingleData, targetNNsrcID, srcCellNum, srcProcessedData, nsrcPixels, trgCellNum);
 				#if 0 // DEBUG_TOOL
 				std::cout << "DBG_TOOL> No nodata values: \n";
 				for(int i = 0; i < trgCellNum; i++) {

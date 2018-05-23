@@ -90,7 +90,7 @@ int main(int argc, char ** argv)
 	int * nsrcPixels;
 	printf("interpolating\n");
 	nsrcPixels = (int *) malloc(sizeof(int) * nCelldest);
-	summaryInterpolate(src_rad, tarNNSouID, nCellsrc, src_rad_out, nsrcPixels, nCelldest);
+	summaryInterpolateNoSD(src_rad, tarNNSouID, nCellsrc, src_rad_out, nsrcPixels, nCelldest);
 
 	printf("No nodata values: \n");
 	for(int i = 0; i < nCelldest; i++) {

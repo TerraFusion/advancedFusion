@@ -720,7 +720,7 @@ void summaryInterpolate(double * souVal, int * souNNTarID, int nSou, double * ta
 }
 
 /**
- * NAME:	summaryInterpolate
+ * NAME:	summaryInterpolateNoSD
  * DESCRIPTION:	Interpolation (summary) from fine resolution to coarse resolution
  * PARAMETERS:
  * 	double * souVal:	the input values at source cells
@@ -733,7 +733,7 @@ void summaryInterpolate(double * souVal, int * souNNTarID, int nSou, double * ta
  * 	double * tarVal:	the output (average) values at target cells
  * 	int * nSouPixels:	the output numbers of contributing source cells to each target cell
  */
-void summaryInterpolate(double * souVal, int * souNNTarID, int nSou, double * tarVal, int * nSouPixels, int nTar) 
+void summaryInterpolateNoSD(double * souVal, int * souNNTarID, int nSou, double * tarVal, int * nSouPixels, int nTar) 
 {
 	summaryInterpolate(souVal, souNNTarID, nSou, tarVal, NULL, nSouPixels, nTar);
 }
