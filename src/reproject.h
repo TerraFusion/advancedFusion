@@ -81,23 +81,6 @@ void nnInterpolate(double * souVal, double * tarVal, int * tarNNSouID, int nTar)
 void summaryInterpolate(double * souVal, int * souNNTarID, int nSou, double * tarVal, double * tarSD, int * nSouPixels, int nTar);
 
 
-/**
- * NAME:	summaryInterpolateNoSD (old version)
- * DESCRIPTION:	Interpolation (summary) from fine resolution to coarse resolution 
- * 	Please use void summaryInterpolate(double * souVal, int * souNNTarID, int nSou, double * tarVal, double * tarSD, int * nSouPixels, int nTar) whenever possible
- * PARAMETERS:
- * 	double * souVal:	the input values at source cells
- * 	int * souNNTarID:	the IDs of nearest neighboring target cells for each source cells (generated from "nearestNeighbor")
- * 	int nSou:		the number of source cells
- * 	double * tarVal:	the output (average) values at target cells
- * 	int * nSouPixels:	the output numbers of contributing source cells to each target cell
- *	int nTar:		the number of target cells
- * Output:
- * 	double * tarVal:	the output (average) values at target cells
- * 	int * nSouPixels:	the output numbers of contributing source cells to each target cell
- */
-void summaryInterpolateNoSD(double * souVal, int * souNNTarID, int nSou, double * tarVal, int * nSouPixels, int nTar);
-
 
 /**
  * NAME:	clipping

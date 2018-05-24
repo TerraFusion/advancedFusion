@@ -489,7 +489,7 @@ int af_GenerateOutputCumulative_ModisAsSrc(AF_InputParmeterFile &inputArgs, hid_
 		}
 		else if (inputArgs.CompareStrCaseInsensitive(resampleMethod, "summaryInterpolate")) {
 			nsrcPixels = new int [trgCellNumNoShift];
-			summaryInterpolateNoSD(modisSingleData, targetNNsrcID, srcCellNum, srcProcessedData, nsrcPixels, trgCellNumNoShift);
+			summaryInterpolate(modisSingleData, targetNNsrcID, srcCellNum, srcProcessedData, NULL, nsrcPixels, trgCellNumNoShift);
 			#if 0 // DEBUG_TOOL
 			std::cout << "DBG_TOOL> No nodata values: \n";
 			for(int i = 0; i < trgCellNumNoShift; i++) {
