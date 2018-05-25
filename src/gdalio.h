@@ -1,7 +1,7 @@
 /**
  * gdalio.h
  * Authors: Yizhao Gao <ygao29@illinois.edu>
- * Date: {01/25/2018}
+ * Date: {05/25/2018}
  */
 
 #ifndef GDALIOH
@@ -30,6 +30,8 @@ void gdalIORegister();
  * Output:
  *	double ** px:		longitude of output pixel centers, memory will be allocated in this function
  *	double ** py:		latitude of ouput pixel centers, memory will be allocated in this function
+ * Return:
+ *	int:	the total number of pixels
  */
 int getCellCenterLatLon(int outputEPSG, double xMin, double yMin, double xMax, double yMax, double cellSize, double ** px, double ** py);
 
@@ -48,5 +50,17 @@ int getCellCenterLatLon(int outputEPSG, double xMin, double yMin, double xMax, d
  * 	double cellSize:	output raste cell size
  */
 void writeGeoTiff(char * fileName, double * grid, int outputEPSG, double xMin, double yMin, double xMax, double yMax, double cellSize);
+
+
+/**
+ * NAME:	getMaxRadius
+ * DESCRIPTION:	Get the maximum distance (in meters) for user-defined-grid to be used in "nearestNeighbor" when using summary interpolate
+ * PARAMETERS:
+ *	int epsgCode:		EPSG code of the spatial reference system
+ * 	double cellSize:	Raste cell size
+ * Return:
+ *	double:		the maximum distance (in meters) to be used in "nearestNeighbor"
+ */
+double getMaxRadius(int epsgCode, double cellSize);
 
 #endif

@@ -1,7 +1,7 @@
 /**
  * gdalio.cpp
  * Authors: Yizhao Gao <ygao29@illinois.edu>
- * Date: {01/14/2018}
+ * Date: {05/25/2018}
  */
 
 #include <stdio.h>
@@ -39,6 +39,8 @@ void gdalIORegister()
  * Output:
  *	double ** px:		longitude of output pixel centers, memory will be allocated in this function
  *	double ** py:		latitude of ouput pixel centers, memory will be allocated in this function
+ * Return:
+ *	int:	the total number of pixels
  */
 int getCellCenterLatLon(int outputEPSG, double xMin, double yMin, double xMax, double yMax, double cellSize, double ** px, double ** py) 
 {
@@ -193,3 +195,49 @@ void writeGeoTiff(char * fileName, double * grid, int outputEPSG, double xMin, d
 
 	return;
 }
+
+/**
+ * NAME:	getMaxRadius
+ * DESCRIPTION:	Get the maximum distance (in meters) for user-defined-grid to be used in "nearestNeighbor" when using summary interpolate
+ * PARAMETERS:
+ *	int epsgCode:		EPSG code of the spatial reference system
+ * 	double cellSize:	Raste cell size
+ * Return:
+ *	double:		the maximum distance (in meters) to be used in "nearestNeighbor"
+ */
+double getMaxRadius(int epsgCode, double cellSize) {
+
+        const double earthRadius = 6367444;
+
+        OGRSpatialReferenceH hSRS = OSRNewSpatialReference(NULL);
+        OSRImportFromEPSG(hSRS, epsgCode);
+
+        char *SRSWKT = NULL;
+        OSRExportToWkt(hSRS,&SRSWKT);
+        printf("Output SRS Info:\n\tEPSG CODE: %d\n\t%s\n", epsgCode, SRSWKT);
+
+        double maxRadius;
+
+        int isProjected = OSRIsProjected(hSRS);
+        if(isProjected) {
+                printf("\tIs a Projected Cooridinate System.\n");
+
+                char * unitName = NULL;
+                double unitConversion;
+                unitConversion = OSRGetLinearUnits(hSRS, &unitName);
+                printf("\tUnit Name: %s (%lf)\n", unitName, unitConversion);
+
+                maxRadius = cellSize * unitConversion;
+
+        }
+        else {
+                printf("\tIs a Geographic Cooridinate System.\n");
+
+                maxRadius = earthRadius * cellSize * M_PI / 180;
+        }
+        printf("Max Radius for Resampling: %lf meters\n", maxRadius);
+        return maxRadius;
+}
+
+
+
