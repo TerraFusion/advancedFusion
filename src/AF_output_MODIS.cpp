@@ -394,7 +394,7 @@ int af_GenerateOutputCumulative_ModisAsSrc(AF_InputParmeterFile &inputArgs, hid_
 
 	int ret = SUCCEED;
 
-	// strVec_t multiVarNames = inputArgs.GetMultiVariableNames("MODIS"); // modis_MultiVars;
+	// strVec_t multiVarNames = inputArgs.GetMultiVariableNames(MODIS_STR); // modis_MultiVars;
 	std::string modisResolution = inputArgs.GetMODIS_Resolution();
 
 	// two multi-value variables are expected as this point
@@ -424,7 +424,7 @@ int af_GenerateOutputCumulative_ModisAsSrc(AF_InputParmeterFile &inputArgs, hid_
 		return FAILED;
 	}
     int srcOutputWidth = widthShifted;
-	if(inputArgs.GetMISR_Shift() == "ON" && inputArgs.GetTargetInstrument() == "MISR") {
+	if(inputArgs.GetMISR_Shift() == "ON" && inputArgs.GetTargetInstrument() == MISR_STR) {
 		trgCellNum = widthShifted * heightShifted;
 	}
 	else {
@@ -508,7 +508,7 @@ int af_GenerateOutputCumulative_ModisAsSrc(AF_InputParmeterFile &inputArgs, hid_
 		// check if need to shift by MISR (shift==ON & target) case before writing
 		double * srcProcessedDataShifted = NULL;
 		double * srcProcessedDataPtr = NULL;
-		if(inputArgs.GetMISR_Shift() == "ON" && inputArgs.GetTargetInstrument() == "MISR") {
+		if(inputArgs.GetMISR_Shift() == "ON" && inputArgs.GetTargetInstrument() == MISR_STR) {
 			std::cout << "\nSource MODIS radiance MISR-base shifting...\n";
 			#if DEBUG_ELAPSE_TIME
 			StartElapseTime();

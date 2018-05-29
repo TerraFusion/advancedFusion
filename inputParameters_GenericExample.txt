@@ -1,11 +1,11 @@
 #=============================================================
 # Example of resampling among instruments.
-# Allowed source and target instruments combinations:
+# Supported source and target instruments combinations:
 #  - MISR to MODIS
 #  - MODIS to MISR
 #  - ASTER to MODIS
 #  - ASTER to MISR
-#  - <an instrument> to USER_DEFINE
+#  - <one of MODIS,MISR,ASTER> to USER_DEFINE
 #  - (more will be added)
 #
 # Refer to below specification. These entries are order free.

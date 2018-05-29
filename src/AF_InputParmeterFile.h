@@ -37,6 +37,17 @@ const std::string USER_Y_MIN="USER_Y_MIN";
 const std::string USER_Y_MAX="USER_Y_MAX";
 const std::string USER_RESOLUTION="USER_RESOLUTION";
 
+
+/*===================================================================
+ * instrument name strings for <SOURCE or TARGET>_INSTRUMENT entry
+ */
+const std::string MODIS_STR = "MODIS";
+const std::string MISR_STR = "MISR";
+const std::string ASTER_STR = "ASTER";
+const std::string USERGRID_STR = "USER_DEFINE";
+
+
+
 /*-------------------------
  * New types
  */
@@ -96,6 +107,13 @@ class AF_InputParmeterFile
 	 */
 	bool CompareStrCaseInsensitive(const std::string& s1, const std::string& s2);
 
+
+	/*==============================================================
+	 * Functions to get input based parameter of internal functions
+	 */
+	double GetMaxRadiusForNNeighborFunc(std::string instrument);
+
+
 	protected:
 	/*===========================================
 	 * Function to Validate user input values
@@ -110,6 +128,7 @@ class AF_InputParmeterFile
 	bool CheckRevise_ASTERresolution(std::string &str);
 	bool CheckRevise_ASTERbands(std::vector<std::string> &strVec);
 	#endif
+
 
 	private:
 	bool didReadHeaderFile;

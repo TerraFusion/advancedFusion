@@ -170,7 +170,7 @@ int af_GenerateOutputCumulative_AsterAsSrc(AF_InputParmeterFile &inputArgs, hid_
 
 	int ret = SUCCEED;
 
-	// strVec_t multiVarNames = inputArgs.GetMultiVariableNames("ASTER"); // aster_MultiVars;
+	// strVec_t multiVarNames = inputArgs.GetMultiVariableNames(ASTER_STR); // aster_MultiVars;
 	std::string asterResolution = inputArgs.GetASTER_Resolution();
 
 	// two multi-value variables are expected as this point
@@ -208,7 +208,7 @@ int af_GenerateOutputCumulative_AsterAsSrc(AF_InputParmeterFile &inputArgs, hid_
 		return FAILED;
 	}
     int srcOutputWidth = widthShifted;
-	if(inputArgs.GetMISR_Shift() == "ON" && inputArgs.GetTargetInstrument() == "MISR") {
+	if(inputArgs.GetMISR_Shift() == "ON" && inputArgs.GetTargetInstrument() == MISR_STR) {
 		trgCellNum = widthShifted * heightShifted;
 	}
 	else {
@@ -300,7 +300,7 @@ int af_GenerateOutputCumulative_AsterAsSrc(AF_InputParmeterFile &inputArgs, hid_
 		int * srcPixelCountDataPtr = NULL;
 
 		// if MISR is target and Shift is On
-		if(inputArgs.GetMISR_Shift() == "ON" && inputArgs.GetTargetInstrument() == "MISR") {
+		if(inputArgs.GetMISR_Shift() == "ON" && inputArgs.GetTargetInstrument() == MISR_STR) {
 			std::cout << "\nSource ASTER radiance MISR-base shifting...\n";
 			#if DEBUG_ELAPSE_TIME
 			StartElapseTime();

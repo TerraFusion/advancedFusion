@@ -56,7 +56,7 @@ int AF_GetGeolocationDataFromInstrument(std::string instrument, AF_InputParmeter
 	/*======================================================
  	 * MODIS section
  	 */
-	if (instrument == "MODIS" ) {
+	if (instrument == MODIS_STR ) {
 		std::string resolution = inputArgs.GetMODIS_Resolution();
 		#if DEBUG_TOOL
 		std::cout << "DBG_TOOL " << __FUNCTION__ << "> Modis resolution: " << resolution << "\n";
@@ -75,7 +75,7 @@ int AF_GetGeolocationDataFromInstrument(std::string instrument, AF_InputParmeter
 	/*======================================================
  	 * MISR section
  	 */
-	else if (instrument == "MISR") {
+	else if (instrument == MISR_STR) {
 		std::string resolution = inputArgs.GetMISR_Resolution();
 		#if DEBUG_TOOL
 		std::cout << "DBG_TOOL " << __FUNCTION__ << "> Misr resolution: " << resolution << "\n";
@@ -95,7 +95,7 @@ int AF_GetGeolocationDataFromInstrument(std::string instrument, AF_InputParmeter
 	/*======================================================
  	 * ASTER section
  	 */
-	else if (instrument == "ASTER" ) {
+	else if (instrument == ASTER_STR ) {
 		//Get ASTER input parameters EX: "TIR", "ImageData10"
 		std::string resolution = inputArgs.GetASTER_Resolution();
 		strVec_t bands = inputArgs.GetASTER_Bands();
@@ -114,7 +114,7 @@ int AF_GetGeolocationDataFromInstrument(std::string instrument, AF_InputParmeter
 	/*======================================================
 	 * USER_DEFINE section
 	 */
-	else if (instrument == "USER_DEFINE") {
+	else if (instrument == USERGRID_STR) {
 		// targetX == lon , targetY == lat, nPoints == cellNum according to test_userdefinedgrids.cpp
 	    int userOuputEPSG = inputArgs.GetUSER_EPSG();
 	    double userXmin = inputArgs.GetUSER_xMin();
@@ -164,7 +164,7 @@ int   AF_GenerateTargetRadiancesOutput(AF_InputParmeterFile &inputArgs, hid_t ou
 	std::string instrument = inputArgs.GetTargetInstrument();
 
 	// there is no radiance for this case. just skip.
-	if (instrument == "USER_DEFINE") {
+	if (instrument == USERGRID_STR) {
 		return SUCCEED;
 	}
 
@@ -203,8 +203,8 @@ int   AF_GenerateTargetRadiancesOutput(AF_InputParmeterFile &inputArgs, hid_t ou
 	/*======================================================
  	 * MODIS section
  	 */
-	if (instrument == "MODIS") {
-		multiVarNames = inputArgs.GetMultiVariableNames("MODIS"); // modis_MultiVars;
+	if (instrument == MODIS_STR) {
+		multiVarNames = inputArgs.GetMultiVariableNames(MODIS_STR); // modis_MultiVars;
 
 		// for one multi-value Variable case.
 		if (trgInputMultiVarsMap.size() != 1) {
@@ -230,7 +230,7 @@ int   AF_GenerateTargetRadiancesOutput(AF_InputParmeterFile &inputArgs, hid_t ou
 	/*======================================================
  	 * MISR section
  	 */
-	else if (instrument == "MISR") {
+	else if (instrument == MISR_STR) {
 
 		// for two multi-value Variable case.
 		if (trgInputMultiVarsMap.size() != 2) {
@@ -303,7 +303,7 @@ int   AF_GenerateSourceRadiancesOutput(AF_InputParmeterFile &inputArgs, hid_t ou
 	/*======================================================
  	 * MODIS section
  	 */
-	if (instrument == "MODIS") {
+	if (instrument == MODIS_STR) {
 		// for one multi-value Variable case.
 		if (srcInputMultiVarsMap.size() != 1) {
 			std::cout << __FUNCTION__ << ":" << __LINE__ <<  "> Error building source input list with MODIS. There must be only one multi-value variable.\n";
@@ -320,7 +320,7 @@ int   AF_GenerateSourceRadiancesOutput(AF_InputParmeterFile &inputArgs, hid_t ou
 	/*======================================================
  	 * MISR section
  	 */
-	else if (instrument == "MISR") {
+	else if (instrument == MISR_STR) {
 		// for two multi-value Variable case.
 		if (srcInputMultiVarsMap.size() != 2) {
 			std::cout << __FUNCTION__ << ":" << __LINE__ <<  "> Error building source input list with MISR. There must be only two multi-value variables.\n";
@@ -338,7 +338,7 @@ int   AF_GenerateSourceRadiancesOutput(AF_InputParmeterFile &inputArgs, hid_t ou
 	/*======================================================
  	 * ASTER section
  	 */
-	else if (instrument == "ASTER") {
+	else if (instrument == ASTER_STR) {
 		// for one multi-value Variable case.
 		if (srcInputMultiVarsMap.size() != 1) {
 			std::cout << __FUNCTION__ << ":" << __LINE__ <<  "> Error building source input list with ASTER. There must be only one multi-value variable.\n";
@@ -400,7 +400,7 @@ void Test_Parser(std::string headerFile)
 	/*-------------------------------------------------------
 	 * MODIS section
 	 */
-	if(srcInstrument == "MODIS" || trgInstrument == "MODIS") {
+	if(srcInstrument == MODIS_STR || trgInstrument == MODIS_STR) {
 		std::string modisResolution = inputArgs.GetMODIS_Resolution();
 		std::cout << "TEST Parser>  MODIS resolution: " << modisResolution << "\n";
 
@@ -416,7 +416,7 @@ void Test_Parser(std::string headerFile)
 	/*-------------------------------------------------------
 	 * MISR section
 	 */
-	if(srcInstrument == "MISR" || trgInstrument == "MISR") {
+	if(srcInstrument == MISR_STR || trgInstrument == MISR_STR) {
 		std::string misrResolution = inputArgs.GetMISR_Resolution();
 		std::cout << "TEST Parser>  MISR resolution: " << misrResolution << "\n";
 
@@ -439,7 +439,7 @@ void Test_Parser(std::string headerFile)
 	/*-------------------------------------------------------
 	 * ASTER section
 	 */
-	if(srcInstrument == "ASTER" || trgInstrument == "ASTER") {
+	if(srcInstrument == ASTER_STR || trgInstrument == ASTER_STR) {
 		std::string asterResolution = inputArgs.GetASTER_Resolution();
 		std::cout << "TEST Parser>  ASTER resolution: " << asterResolution << "\n";
 
@@ -455,7 +455,7 @@ void Test_Parser(std::string headerFile)
 	/*-------------------------------------------------------
 	 * USER_DEFINE section
 	 */
-	if(srcInstrument == "USER_DEFINE" || trgInstrument == "USER_DEFINE") {
+	if(srcInstrument == USERGRID_STR || trgInstrument == USERGRID_STR) {
 	    int userEPSG = inputArgs.GetUSER_EPSG();
 	    std::cout << "TEST Parser> USER EPSG: " << userEPSG << std::endl;
 	    double userXmin = inputArgs.GetUSER_xMin();
@@ -510,6 +510,7 @@ int main(int argc, char *argv[])
 	std::cout << "DBG_TOOL main> src instrument: " << srcInstrument << std::endl;
 	std::cout << "DBG_TOOL main> target instrument: " << trgInstrument << std::endl;
 	#endif
+
 	
 	#if 0 // TEST : multi-value variable map , remove later
 	//---------------------------------------------------
@@ -617,7 +618,7 @@ int main(int argc, char *argv[])
 	ret = af_GetWidthAndHeightForOutputDataSize(inputArgs.GetTargetInstrument() /* target base output */, inputArgs, widthShifted, heightShifted);
 	trgOutputWidth = widthShifted;
 	// MISR-target & shift case update
-	if(inputArgs.GetMISR_Shift() == "ON" && inputArgs.GetTargetInstrument() == "MISR") {
+	if(inputArgs.GetMISR_Shift() == "ON" && inputArgs.GetTargetInstrument() == MISR_STR) {
 		std::cout << "Target latitude MISR-base block unstacking...\n";
 		#if DEBUG_ELAPSE_TIME
 		StartElapseTime();
@@ -663,7 +664,7 @@ int main(int argc, char *argv[])
 	double * targetLongitudeShifted = NULL;
 
 	// MISR-target & shift case update
-	if(inputArgs.GetMISR_Shift() == "ON" && inputArgs.GetTargetInstrument() == "MISR") {
+	if(inputArgs.GetMISR_Shift() == "ON" && inputArgs.GetTargetInstrument() == MISR_STR) {
 		std::cout << "Target longitude MISR-base block unstacking...\n";
 		#if DEBUG_ELAPSE_TIME
 		StartElapseTime();
@@ -712,13 +713,16 @@ int main(int argc, char *argv[])
 	// source is low and target is similar or high resolution case (ex: MISRtoMODIS and vice versa)
 	if (inputArgs.CompareStrCaseInsensitive(resampleMethod, "nnInterpolate")) {
 		targetNNsrcID = new int [trgCellNumNoShift];
-		nearestNeighborBlockIndex(&srcLatitude, &srcLongitude, srcCellNum, targetLatitude, targetLongitude, targetNNsrcID, NULL, trgCellNumNoShift, 1000);
+		double maxRadius = inputArgs.GetMaxRadiusForNNeighborFunc(srcInstrument);
+		nearestNeighborBlockIndex(&srcLatitude, &srcLongitude, srcCellNum, targetLatitude, targetLongitude, targetNNsrcID, NULL, trgCellNumNoShift, maxRadius);
 	} 
 	// source is high and target is low resolution case (ex: ASTERtoMODIS)
 	else if (inputArgs.CompareStrCaseInsensitive(resampleMethod, "summaryInterpolate")) {
+		// when summaryInterpolate is used, need to swap source and target. This is cases for projecting high resolution to low resolution case like ASTER to MODIS
 		targetNNsrcID = new int [srcCellNum];
-		// this need to swap source and target for high resolution to low resolution case like ASTER to MODIS
-		nearestNeighborBlockIndex(&targetLatitude, &targetLongitude, trgCellNumNoShift, srcLatitude, srcLongitude, targetNNsrcID, NULL, srcCellNum, 1000);
+		// get it from src instrument of nearestNeighbor point of view, which is switched for this case, thus use target instrument.
+		double maxRadius = inputArgs.GetMaxRadiusForNNeighborFunc(trgInstrument);
+		nearestNeighborBlockIndex(&targetLatitude, &targetLongitude, trgCellNumNoShift, srcLatitude, srcLongitude, targetNNsrcID, NULL, srcCellNum, maxRadius);
 	}
 	#if DEBUG_ELAPSE_TIME
 	StopElapseTimeAndShow("DBG_TIME> nearestNeighborBlockIndex DONE.");

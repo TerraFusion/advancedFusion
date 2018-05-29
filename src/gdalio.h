@@ -53,7 +53,7 @@ void writeGeoTiff(char * fileName, double * grid, int outputEPSG, double xMin, d
 
 
 /**
- * NAME:	getMaxRadius
+ * NAME:	getMaxRadiusOfUserdefine
  * DESCRIPTION:	Get the maximum distance (in meters) for user-defined-grid to be used in "nearestNeighbor" when using summary interpolate
  * PARAMETERS:
  *	int epsgCode:		EPSG code of the spatial reference system
@@ -61,6 +61,6 @@ void writeGeoTiff(char * fileName, double * grid, int outputEPSG, double xMin, d
  * Return:
  *	double:		the maximum distance (in meters) to be used in "nearestNeighbor"
  */
-double getMaxRadius(int epsgCode, double cellSize);
+double getMaxRadiusOfUserdefine(int epsgCode, double cellSize);
 
 #endif

@@ -197,7 +197,7 @@ void writeGeoTiff(char * fileName, double * grid, int outputEPSG, double xMin, d
 }
 
 /**
- * NAME:	getMaxRadius
+ * NAME:	getMaxRadiusOfUserdefine
  * DESCRIPTION:	Get the maximum distance (in meters) for user-defined-grid to be used in "nearestNeighbor" when using summary interpolate
  * PARAMETERS:
  *	int epsgCode:		EPSG code of the spatial reference system
@@ -205,7 +205,7 @@ void writeGeoTiff(char * fileName, double * grid, int outputEPSG, double xMin, d
  * Return:
  *	double:		the maximum distance (in meters) to be used in "nearestNeighbor"
  */
-double getMaxRadius(int epsgCode, double cellSize) {
+double getMaxRadiusOfUserdefine(int epsgCode, double cellSize) {
 
         const double earthRadius = 6367444;
 
@@ -214,28 +214,28 @@ double getMaxRadius(int epsgCode, double cellSize) {
 
         char *SRSWKT = NULL;
         OSRExportToWkt(hSRS,&SRSWKT);
-        printf("Output SRS Info:\n\tEPSG CODE: %d\n\t%s\n", epsgCode, SRSWKT);
+        //printf("DBG Output SRS Info:\n\tEPSG CODE: %d\n\t%s\n", epsgCode, SRSWKT);
 
         double maxRadius;
 
         int isProjected = OSRIsProjected(hSRS);
         if(isProjected) {
-                printf("\tIs a Projected Cooridinate System.\n");
+                //printf("\tIs a Projected Cooridinate System.\n");
 
                 char * unitName = NULL;
                 double unitConversion;
                 unitConversion = OSRGetLinearUnits(hSRS, &unitName);
-                printf("\tUnit Name: %s (%lf)\n", unitName, unitConversion);
+                //printf("\tUnit Name: %s (%lf)\n", unitName, unitConversion);
 
                 maxRadius = cellSize * unitConversion;
 
         }
         else {
-                printf("\tIs a Geographic Cooridinate System.\n");
+                //printf("\tIs a Geographic Cooridinate System.\n");
 
                 maxRadius = earthRadius * cellSize * M_PI / 180;
         }
-        printf("Max Radius for Resampling: %lf meters\n", maxRadius);
+        //printf("DBG> Max Radius for Resampling: %lf meters\n", maxRadius);
         return maxRadius;
 }
 

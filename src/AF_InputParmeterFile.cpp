@@ -19,6 +19,7 @@
 
 #include "AF_InputParmeterFile.h"
 #include "AF_debug.h"
+#include "gdalio.h"
 
 
 /*=================================================================
@@ -576,7 +577,7 @@ void AF_InputParmeterFile::ParseByLine()
 }
 
 
-/*===================================================
+/* ##########################################################
  *	Functions to check input values
  */
 
@@ -602,7 +603,7 @@ int AF_InputParmeterFile::CheckParsedValues()
 	/*=================================================
 	 * MODIS section
 	 */
-	if (sourceInstrument == "MODIS" || targetInstrument == "MODIS") {
+	if (sourceInstrument == MODIS_STR || targetInstrument == MODIS_STR) {
 		isValidInput = CheckRevise_MODISresolution(modis_Resolution);
 		if (isValidInput == false) {
 			return -1; // failed
@@ -613,7 +614,7 @@ int AF_InputParmeterFile::CheckParsedValues()
 	/*=================================================
 	 * ASTER section
 	 */
-	if (sourceInstrument == "ASTER" || targetInstrument == "ASTER") {
+	if (sourceInstrument == ASTER_STR || targetInstrument == ASTER_STR) {
 		isValidInput = CheckRevise_ASTERresolution(aster_Resolution);
 		if (isValidInput == false) {
 			return -1; // failed
@@ -852,10 +853,97 @@ bool AF_InputParmeterFile::CheckRevise_ASTERbands(std::vector<std::string> &strV
 	return ret;
 }
 
+/* ######################################################################
+ * Functions to get input based parameter of internal functions
+ */
 
-//=============================================================
-// Functions to get input values from the input parameter file
-//
+/*=================================================================
+ * Check Aster bands input
+ *
+ * Parameter:
+ *  - instrument : instrumane name string.
+ *
+ * Return:
+ *  - Success :  > 0
+ *  - Fail : 0
+ */
+double AF_InputParmeterFile::GetMaxRadiusForNNeighborFunc(std::string instrument)
+{
+	double maxRadius = 0.0;
+
+	/*---------------------
+	 * MODIS section
+	 */
+	if(instrument == MODIS_STR) {
+		if(modis_Resolution == "_1KM") {
+			maxRadius = 5040.0;
+		}
+		else if(modis_Resolution == "_500m") {
+			maxRadius = 2520.0;
+		}
+		else if(modis_Resolution == "_250m") {
+			maxRadius = 1260.0;
+		}
+		#if DEBUG_TOOL_PARSER
+		std::cout << "DBG_PARSER " << __FUNCTION__ << ":" << __LINE__ << "> modis_Resolution: " << modis_Resolution << ", maxRadius: " << maxRadius <<  std::endl;
+		#endif
+        return maxRadius;
+    }
+	/*---------------------
+	 * MISR section
+	 */
+    else if(instrument == MISR_STR) {
+		if(misr_Resolution == "H") {
+			maxRadius = 302.0;
+		}
+		else if(misr_Resolution == "L") {
+			maxRadius = 1155.0;
+		}
+		#if DEBUG_TOOL_PARSER
+		std::cout << "DBG_PARSER " << __FUNCTION__ << ":" << __LINE__ << "> misr_Resolution: " << misr_Resolution << ", maxRadius: " << maxRadius <<  std::endl;
+		#endif
+        return maxRadius;
+    }
+	/*---------------------
+	 * ASTER section
+	 */
+    else if(instrument == ASTER_STR) {
+		if(aster_Resolution == "TIR") { // 90M
+			maxRadius = 95.0;
+		}
+		else if(aster_Resolution == "SWIR") { // 30M
+			maxRadius = 32.0;
+		}
+		else if(aster_Resolution == "VNIR") { // 15M
+			maxRadius = 17.0;
+		}
+		#if DEBUG_TOOL_PARSER
+		std::cout << "DBG_PARSER " <<  __FUNCTION__ << ":" << __LINE__ << "> aster_Resolution: " << aster_Resolution << ", maxRadius: " << maxRadius <<  std::endl;
+		#endif
+        return maxRadius;
+	}
+	/*-------------------------
+	 * USER_DEFINE section
+	 */
+	else if(instrument == USERGRID_STR) {
+		int userEPSG =  GetUSER_EPSG();
+		double userResolution = GetUSER_Resolution();
+		maxRadius =  getMaxRadiusOfUserdefine(userEPSG, userResolution);
+		#if DEBUG_TOOL_PARSER
+		std::cout << "DBG_PARSER " << __FUNCTION__ << ":" << __LINE__ << "> userEPSG: " << userEPSG << ", userResolution: " << userResolution << ", maxRadius: " << maxRadius <<  std::endl;
+		#endif
+		return maxRadius;
+    }
+    else {
+        std::cerr << __FUNCTION__ << ":" << __LINE__ << "> Error: incorrect instrument name '"<< instrument << "' is specified." << "\n";
+        return 0;
+    }
+}
+
+
+/* #########################################################################
+ *  Functions to get input values from the input parameter file
+ */
 std::string AF_InputParmeterFile::GetOuputFilePath()
 {
 	return outputFilePath;
@@ -919,7 +1007,6 @@ std::vector<std::string>  AF_InputParmeterFile::GetMODIS_Bands()
 }
 
 
-#if 1 // JK_ASTER2MODIS
 /*---------------------
  * ASTER section
  */
@@ -932,7 +1019,6 @@ std::vector<std::string>  AF_InputParmeterFile::GetASTER_Bands()
 {
 	return aster_Bands;
 }
-#endif
 
 
 /*---------------------
@@ -1009,10 +1095,10 @@ double AF_InputParmeterFile::GetUSER_Resolution()
  */
 std::vector<std::string> & AF_InputParmeterFile::GetMultiVariableNames(std::string instrument)
 {
-    if(instrument == "MODIS") {
+    if(instrument == MODIS_STR) {
         return modis_MultiVars;
     }
-    else if(instrument == "MISR") {
+    else if(instrument == MISR_STR) {
         return misr_MultiVars;
     }
     else {
@@ -1039,7 +1125,7 @@ void AF_InputParmeterFile::DBG_displayinputListMap(std::string &instrument, std:
 
     std::cout << "JKDBG> trgInputMultiVarsMap.size(): " << trgInputMultiVarsMap.size() << "\n";
     // display strBuf with array index
-	if (instrument == "MODIS") {
+	if (instrument == MODIS_STR) {
         multiVarNames = modis_MultiVars;
 
         if (trgInputMultiVarsMap.size() != 1) {
@@ -1056,7 +1142,7 @@ void AF_InputParmeterFile::DBG_displayinputListMap(std::string &instrument, std:
     }
     //--------------------------------------------------------
     // Use these for two multi-value Variable case. MISR and ASTER
-	else if (instrument == "MISR") {
+	else if (instrument == MISR_STR) {
         multiVarNames = misr_MultiVars;
 
         if (trgInputMultiVarsMap.size() != 2) {
@@ -1117,11 +1203,11 @@ int AF_InputParmeterFile::BuildMultiValueVariableMap(std::string &instrument, st
 	/*===========================================================
 	 * MODIS section
 	 */
-	if (instrument == "MODIS") {
+	if (instrument == MODIS_STR) {
     	#if DEBUG_TOOL_PARSER
-		if (targetInstrument == "MODIS")
+		if (targetInstrument == MODIS_STR)
 			std::cout << "DBG_PARSER " << __FUNCTION__ << ":" << __LINE__ << "> Target is MODIS\n";
-		if (sourceInstrument == "MODIS")
+		if (sourceInstrument == MODIS_STR)
 			std::cout << "DBG_PARSER " << __FUNCTION__ << ":" << __LINE__ << "> Source is MODIS\n";
 		std::cout << "DBG_PARSER " << __FUNCTION__ << ":" << __LINE__ << "> modis_MultiVars.size(): " << modis_MultiVars.size() << "\n";
 		std::cout << "DBG_PARSER " << __FUNCTION__ << ":" << __LINE__ << "> modis_Bands.size(): " << modis_Bands.size() << "\n";
@@ -1200,11 +1286,11 @@ int AF_InputParmeterFile::BuildMultiValueVariableMap(std::string &instrument, st
 	/*===========================================================
 	 * MISR section
 	 */
-	else if (instrument == "MISR") {
+	else if (instrument == MISR_STR) {
     	#if DEBUG_TOOL_PARSER
-		if (targetInstrument == "MISR")
+		if (targetInstrument == MISR_STR)
 			std::cout << "DBG_PARSER " << __FUNCTION__ << ":" << __LINE__ << "> Target is MISR\n";
-		if (sourceInstrument == "MISR")
+		if (sourceInstrument == MISR_STR)
 			std::cout << "DBG_PARSER " << __FUNCTION__ << ":" << __LINE__ << "> Source is MISR\n";
 		std::cout << "DBG_PARSER " << __FUNCTION__ << ":" << __LINE__ << "> misr_MultiVars.size(): " << misr_MultiVars.size() << "\n";
 		#endif
@@ -1244,11 +1330,11 @@ int AF_InputParmeterFile::BuildMultiValueVariableMap(std::string &instrument, st
 	/*===========================================================
 	 * ASTER section
 	 */
-	else if (instrument == "ASTER") {
+	else if (instrument == ASTER_STR) {
     	#if DEBUG_TOOL_PARSER
-		if (targetInstrument == "ASTER")
+		if (targetInstrument == ASTER_STR)
 			std::cout << "DBG_PARSER " << __FUNCTION__ << ":" << __LINE__ << "> Target is ASTER\n";
-		if (sourceInstrument == "ASTER")
+		if (sourceInstrument == ASTER_STR)
 			std::cout << "DBG_PARSER " << __FUNCTION__ << ":" << __LINE__ << "> Source is ASTER\n";
 		std::cout << "DBG_PARSER " << __FUNCTION__ << ":" << __LINE__ << "> aster_MultiVars.size(): " << aster_MultiVars.size() << "\n";
 		std::cout << "DBG_PARSER " << __FUNCTION__ << ":" << __LINE__ << "> aster_Bands.size(): " << aster_Bands.size() << "\n";

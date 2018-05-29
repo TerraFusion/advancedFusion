@@ -186,7 +186,7 @@ int af_GenerateOutputCumulative_MisrAsTrg(AF_InputParmeterFile &inputArgs, hid_t
 	/*
 	 * get targetOutputWidth and trgCellNum
 	 */
-	ret = af_GetWidthAndHeightForOutputDataSize("MISR", inputArgs, widthShifted, heightShifted);
+	ret = af_GetWidthAndHeightForOutputDataSize(MISR_STR, inputArgs, widthShifted, heightShifted);
 	if(ret < 0) {
 		return FAILED;
 	}
@@ -433,7 +433,7 @@ int af_GenerateOutputCumulative_MisrAsSrc(AF_InputParmeterFile &inputArgs, hid_t
 
 	int ret = SUCCEED;
 
-	// strVec_t multiVarNames = inputArgs.GetMultiVariableNames("MISR"); // misr_MultiVars;
+	// strVec_t multiVarNames = inputArgs.GetMultiVariableNames(MISR_STR); // misr_MultiVars;
 	std::string misrResolution = inputArgs.GetMISR_Resolution();
 
 	// two multi-value variables are expected as this point

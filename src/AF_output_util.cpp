@@ -37,14 +37,14 @@ int af_GetWidthAndHeightForOutputDataSize(std::string instrument, AF_InputParmet
 	std::string trgInstrument = inputArgs.GetTargetInstrument();
 
 	// MISR shift case. Shift always if misr is target and Shift is On for all source instrument and target geolocation data
-	if(misrShift == "ON" && trgInstrument == "MISR") {
+	if(misrShift == "ON" && trgInstrument == MISR_STR) {
 		std::string resolution = inputArgs.GetMISR_Resolution();
 		getMISRFinalImageSize(&alongTrackHeight, &crossTrackWidth, (resolution=="L") ? 0 : 1);
 	}
 	/*-------------------------------------------------------
 	 * MODIS section
 	 */
-	else if (instrument == "MODIS") {
+	else if (instrument == MODIS_STR) {
 		std::string resolution = inputArgs.GetMODIS_Resolution();
 		if (resolution == "_1KM") {
 			crossTrackWidth = 1354;
@@ -59,7 +59,7 @@ int af_GetWidthAndHeightForOutputDataSize(std::string instrument, AF_InputParmet
 	/*-------------------------------------------------------
 	 * MISR section
 	 */
-	else if (instrument == "MISR") {
+	else if (instrument == MISR_STR) {
 		std::string resolution = inputArgs.GetMISR_Resolution();
 		if (resolution == "L") {  // 1.1KM
 			crossTrackWidth = 512;
@@ -71,7 +71,7 @@ int af_GetWidthAndHeightForOutputDataSize(std::string instrument, AF_InputParmet
 	/*-------------------------------------------------------
 	 * USER_DEFINE section
 	 */
-	else if (instrument == "USER_DEFINE") {
+	else if (instrument == USERGRID_STR) {
 		double xMin = inputArgs.GetUSER_xMin();
 		double xMax = inputArgs.GetUSER_xMax();
 		double cellSize = inputArgs.GetUSER_Resolution();
