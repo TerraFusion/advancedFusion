@@ -170,23 +170,34 @@ def make_run_dir( dir ):
     return newDir
 
 def worker( data ):
+    logger.info("Received data.")
+    logger.info("Creating config file.")
     # First need to create the config file
     with open( data.get_config_file(), 'w' ) as f:
         config = data.get_config()
         for key in config:
             f.write("{}: {}\n".format( key, config[key] ) )
 
+    # Create the yyyy.mm dir in the output file path
+    try:
+        os.makedirs( os.path.dirname( data.get_config()['OUTPUT_FILE_PATH'] ))
+    except OSError as e:
+        if e.errno != errno.EEXIST:
+            raise
+
+    logger.info("Calling the AFtool")
     # Now we can call the executable
     args = [ data.get_exe(), data.get_config_file() ]
-    
+    logger.debug(' '.join(args))
     try:
         with open( data.get_log_file(), 'w' ) as f:
             subprocess.check_call( args, stdout=f, 
                 stderr=subprocess.STDOUT)
     except:
-        logger.exception("Encountered exception when processing AF \
-            granule: {}.\nSee: {}\nfor more details.".format(
+        logger.error("Encountered exception when processing AF \
+granule: {}.\nSee: {}\nfor more details.".format(
             data.get_orbit(), data.get_log_file()))
+        raise
 
 def main(pool):
     parser = argparse.ArgumentParser(description="This is an MPI \
@@ -278,7 +289,12 @@ def main(pool):
                     granule = Granule()
 
                     in_path = os.path.join(root, file)
-                    out_path = os.path.join( out_dirs['data'], "ADVNCE_FUSE_" + file)
+                    o_start = bfutils.file.orbit_start( 
+                        bfutils.file.bf_file_orbit( in_path) )
+
+                    year_month_dir = o_start[0:4] + '.' + o_start[4:6]
+                    out_path = os.path.join( out_dirs['data'], 
+                        year_month_dir, "ADVNCE_FUSE_" + file )
 
                     job_config = config.copy()
                     job_config['INPUT_FILE_PATH'] = in_path
@@ -313,8 +329,8 @@ def main(pool):
 
     logger.info( logger.get_run_dir() )
     logger.info("Sending jobs to workers...")
+    logger.info("Waiting for jobs to complete...")
     results = pool.map( worker, jobs )
-    pool.close()
     logger.info("Done.")
 
 if __name__ == "__main__":
@@ -325,6 +341,14 @@ if __name__ == "__main__":
             pool.wait()
         else:
             main(pool)
+    except SystemExit as e:
+        if e.code == 0:
+            pool.close()
+            raise
+        else:
+            logger.exception("Encountered exception")
+            mpi_comm.Abort()
     except:
         logger.exception("Encountered exception")
         mpi_comm.Abort()
+        
