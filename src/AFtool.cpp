@@ -61,16 +61,13 @@ int AF_GetGeolocationDataFromInstrument(std::string instrument, AF_InputParmeter
 		#if DEBUG_TOOL
 		std::cout << "DBG_TOOL " << __FUNCTION__ << "> Modis resolution: " << resolution << "\n";
 		#endif
-		*latitude = get_modis_lat(inputFile, (char*) resolution.c_str(), &cellNum);
-		if (latitude == NULL) {
-			std::cerr << __FUNCTION__ <<  "> Error: failed to get MODIS latitude.\n";
-			return FAILED;
-		}
-		*longitude = get_modis_long(inputFile, (char*) resolution.c_str(), &cellNum);
-		if (longitude == NULL) {
-			std::cerr << __FUNCTION__ <<  "> Error: failed to get MODIS longitude.\n";
-			return FAILED;
-		}
+		
+        CALL_CHECK( *latitude = get_modis_lat(inputFile, (char*) resolution.c_str(), &cellNum), double*, == NULL);
+		if (*latitude == NULL) return FAILED;
+		
+        CALL_CHECK( *longitude = get_modis_long(inputFile, (char*) resolution.c_str(), &cellNum), double*, == NULL );
+		if (*longitude == NULL) return FAILED;
+
 	}
 	/*======================================================
  	 * MISR section
@@ -80,16 +77,13 @@ int AF_GetGeolocationDataFromInstrument(std::string instrument, AF_InputParmeter
 		#if DEBUG_TOOL
 		std::cout << "DBG_TOOL " << __FUNCTION__ << "> Misr resolution: " << resolution << "\n";
 		#endif
-		*latitude = get_misr_lat(inputFile, (char*) resolution.c_str(), &cellNum);
-		if (latitude == NULL) {
-			std::cerr << __FUNCTION__ <<  "> Error: failed to get MISR latitude.\n";
-			return FAILED;
-		}
-		*longitude = get_misr_long(inputFile, (char*) resolution.c_str(), &cellNum);
-		if (longitude == NULL) {
-			std::cerr << __FUNCTION__ <<  "> Error: failed to get MISR longitude.\n";
-			return FAILED;
-		}
+		
+        CALL_CHECK( *latitude = get_misr_lat(inputFile, (char*) resolution.c_str(), &cellNum), double*, == NULL );
+        if (*latitude == NULL) return FAILED;
+
+
+		CALL_CHECK( *longitude = get_misr_long(inputFile, (char*) resolution.c_str(), &cellNum), double*, == NULL );
+        if (*longitude == NULL) return FAILED;
 
 	}
 	/*======================================================
@@ -100,17 +94,14 @@ int AF_GetGeolocationDataFromInstrument(std::string instrument, AF_InputParmeter
 		std::string resolution = inputArgs.GetASTER_Resolution();
 		strVec_t bands = inputArgs.GetASTER_Bands();
 		// pass the first band (bands[0]) as it always exists and lat&lon is the same for a resolution.
-		*latitude = get_ast_lat(inputFile, (char*) resolution.c_str(), (char*)bands[0].c_str(), &cellNum);
-		if (latitude == NULL) {
-			std::cerr << __FUNCTION__ <<  "> Error: failed to get ASTER latitude.\n";
-			return FAILED;
-		}
-		*longitude = get_ast_long(inputFile, (char*) resolution.c_str(), (char*)bands[0].c_str(), &cellNum);
-		if (longitude == NULL) {
-			std::cerr << __FUNCTION__ <<  "> Error: failed to get ASTER longitude.\n";
-			return FAILED;
-		}
-	}
+		
+        CALL_CHECK( *latitude = get_ast_lat(inputFile, (char*) resolution.c_str(), (char*)bands[0].c_str(), &cellNum), double*, == NULL );
+        if (*latitude == NULL) return FAILED;
+		
+		CALL_CHECK( *longitude = get_ast_long(inputFile, (char*) resolution.c_str(), (char*)bands[0].c_str(), &cellNum), double*, == NULL );
+        if (*longitude == NULL) return FAILED;
+	
+    }
 	/*======================================================
 	 * USER_DEFINE section
 	 */
@@ -122,7 +113,8 @@ int AF_GetGeolocationDataFromInstrument(std::string instrument, AF_InputParmeter
 	    double userYmin = inputArgs.GetUSER_yMin();
 	    double userYmax = inputArgs.GetUSER_yMax();
 	    double userRsolution = inputArgs.GetUSER_Resolution();
-		cellNum = getCellCenterLatLon(userOuputEPSG, userXmin, userYmin, userXmax, userYmax, userRsolution, longitude, latitude);
+		CALL_CHECK( cellNum = getCellCenterLatLon(userOuputEPSG, userXmin, userYmin, userXmax, userYmax, userRsolution, longitude, latitude),
+            int, == FAILED );
 
 		#if DEBUG_TOOL
 		double *lonPtr = (double*)*longitude;
@@ -133,7 +125,7 @@ int AF_GetGeolocationDataFromInstrument(std::string instrument, AF_InputParmeter
 		#endif
 	}
 	else {
-		std::cerr << __FUNCTION__ << "> Error: invalid instrument - " << instrument << "\n";
+        ERR_MSG("Invalid instrument - " << instrument << std::endl);
 		return FAILED;
 	}
 
@@ -171,26 +163,22 @@ int   AF_GenerateTargetRadiancesOutput(AF_InputParmeterFile &inputArgs, hid_t ou
 	//----------------------------------
 	// prepare group of dataset
 	printf("Creating target group...\n");
-	hid_t gcpl_id = H5Pcreate (H5P_LINK_CREATE);
-	if(gcpl_id < 0) {
-		std::cerr << __FUNCTION__ <<  "> Error: H5Pcreate.\n";
-		return FAILED;
-	}
-	herr_t status = H5Pset_create_intermediate_group (gcpl_id, 1);
-	if(status < 0) {
-		std::cerr << __FUNCTION__ <<  "> Error: H5Pset_create_intermediate_group.\n";
-		return FAILED;
-	}
-	hid_t group_id = H5Gcreate2(outputFile, TRG_DATA_GROUP.c_str(), gcpl_id, H5P_DEFAULT, H5P_DEFAULT);
-	if(group_id < 0) {
-		std::cerr << __FUNCTION__ <<  "> Error: H5Gcreate2 in output file.\n";
-		return FAILED;
-	}
-	herr_t grp_status = H5Gclose(group_id);
-	if(grp_status < 0) {
-		std::cerr << __FUNCTION__ <<  "> Error: H5Gclose in output file.\n";
-		return FAILED;
-	}
+    hid_t gcpl_id;
+	CALL_CHECK( gcpl_id = H5Pcreate (H5P_LINK_CREATE), hid_t, < 0 );
+	if(gcpl_id < 0) return FAILED;
+
+    herr_t status;
+	CALL_CHECK( status = H5Pset_create_intermediate_group (gcpl_id, 1), herr_t, < 0);
+	if(status < 0) return FAILED;
+	
+    hid_t group_id;
+    CALL_CHECK( group_id = H5Gcreate2(outputFile, TRG_DATA_GROUP.c_str(), gcpl_id, H5P_DEFAULT, H5P_DEFAULT),
+        hid_t, < 0 );
+	if(group_id < 0) return FAILED;
+
+    herr_t grp_status;
+	CALL_CHECK( grp_status = H5Gclose(group_id), herr_t, < 0 );
+	if(grp_status < 0) return FAILED;
 
 	strVec_t multiVarNames;
 	// std::string mixType = "COMBINATION"; // Default
@@ -208,17 +196,16 @@ int   AF_GenerateTargetRadiancesOutput(AF_InputParmeterFile &inputArgs, hid_t ou
 
 		// for one multi-value Variable case.
 		if (trgInputMultiVarsMap.size() != 1) {
-			std::cout << __FUNCTION__ << ":" << __LINE__ <<  "> Error building target input list with MODIS. There must be only one multi-value variable.\n";
+			ERR_MSG("Error building target input list with MODIS. There must be only one multi-value variable." << std::endl);
 			return FAILED;
 		}
 
 		// TODO_LATER - decide for loop inside or loop outside
 		#if 1 // case for looping inside
-		ret = af_GenerateOutputCumulative_ModisAsTrg(inputArgs, outputFile, srcFile, trgCellNum, trgInputMultiVarsMap);
-		if(ret == FAILED) {
-			std::cerr << __FUNCTION__ <<  "> Error: Generating MODIS target output.\n";
-			return FAILED;
-		}
+		CALL_CHECK( ret = af_GenerateOutputCumulative_ModisAsTrg(inputArgs, outputFile, srcFile, trgCellNum, trgInputMultiVarsMap),
+            int, == FAILED );
+		if(ret == FAILED) return FAILED;
+
 		#else // case for looping from outside
 		for(int j = 0; j < trgInputMultiVarsMap[multiVarNames[0]].size(); ++j) {
 			std::cout << trgInputMultiVarsMap[multiVarNames[0]][j]	<< ", ";
@@ -234,13 +221,13 @@ int   AF_GenerateTargetRadiancesOutput(AF_InputParmeterFile &inputArgs, hid_t ou
 
 		// for two multi-value Variable case.
 		if (trgInputMultiVarsMap.size() != 2) {
-			std::cout << __FUNCTION__ << ":" << __LINE__ <<  "> Error building target input list with MISR. There must be only two multi-value variables.\n";
+			ERR_MSG("Error building target input list with MISR. There must be only two multi-value variables." << std::endl);
 			return FAILED;
 		}
 
 		ret = af_GenerateOutputCumulative_MisrAsTrg(inputArgs, outputFile, srcFile, trgCellNum, trgInputMultiVarsMap);
 		if(ret == FAILED) {
-			std::cerr << __FUNCTION__ <<  "> Error: Generating MISR target output.\n";
+			ERR_MSG("Error generating MISR target output.\n");
 			return FAILED;
 		}
 	}
@@ -269,26 +256,21 @@ int   AF_GenerateSourceRadiancesOutput(AF_InputParmeterFile &inputArgs, hid_t ou
 	//----------------------------------
 	// prepare group of dataset
 	printf("writing data fields\n");
-	hid_t gcpl_id = H5Pcreate (H5P_LINK_CREATE);
-	if(gcpl_id < 0) {
-		std::cerr << __FUNCTION__ <<  "> Error: H5Pcreate.\n";
-		return FAILED;
-	}
-	herr_t status = H5Pset_create_intermediate_group (gcpl_id, 1);
-	if(status < 0) {
-		std::cerr << __FUNCTION__ <<  "> Error: H5Pset_create_intermediate_group.\n";
-		return FAILED;
-	}
-	hid_t group_id = H5Gcreate2(outputFile, SRC_DATA_GROUP.c_str(), gcpl_id, H5P_DEFAULT, H5P_DEFAULT);
-	if(group_id < 0) {
-		std::cerr << __FUNCTION__ <<  "> Error: H5Gcreate2 in output file.\n";
-		return FAILED;
-	}
-	herr_t grp_status = H5Gclose(group_id);
-	if(grp_status < 0) {
-		std::cerr << __FUNCTION__ <<  "> Error: H5Gclose in output file.\n";
-		return FAILED;
-	}
+	hid_t gcpl_id;
+    CALL_CHECK( gcpl_id = H5Pcreate (H5P_LINK_CREATE), hid_t, < 0);
+	if(gcpl_id < 0) return FAILED;
+
+    herr_t status;
+	CALL_CHECK( status = H5Pset_create_intermediate_group (gcpl_id, 1), herr_t, < 0 );
+	if(status < 0) return FAILED;
+
+    hid_t group_id;
+	CALL_CHECK( group_id = H5Gcreate2(outputFile, SRC_DATA_GROUP.c_str(), gcpl_id, H5P_DEFAULT, H5P_DEFAULT), hid_t, < 0);
+	if(group_id < 0) return FAILED;
+
+    herr_t grp_status;
+	CALL_CHECK( grp_status = H5Gclose(group_id), herr_t, < 0 );
+	if(grp_status < 0) return FAILED;
 
 	strVec_t multiVarNames;
 	std::string instrument = inputArgs.GetSourceInstrument();
@@ -306,13 +288,14 @@ int   AF_GenerateSourceRadiancesOutput(AF_InputParmeterFile &inputArgs, hid_t ou
 	if (instrument == MODIS_STR) {
 		// for one multi-value Variable case.
 		if (srcInputMultiVarsMap.size() != 1) {
-			std::cout << __FUNCTION__ << ":" << __LINE__ <<  "> Error building source input list with MODIS. There must be only one multi-value variable.\n";
-			return FAILED;
+			ERR_MSG("Error building source input list with MODIS. There must be only one multi-value variable." << std::endl);
+			ret = FAILED;
+            goto done;
 		}
 
 		ret = af_GenerateOutputCumulative_ModisAsSrc(inputArgs, outputFile, targetNNsrcID,  trgCellNum, srcFile, srcCellNum, srcInputMultiVarsMap);
 		if (ret == FAILED) {
-			std::cout << __FUNCTION__ << ":" << __LINE__ <<  "> failed generating output for MODIS.\n";
+			ERR_MSG("Failed generating output for MODIS." << std::endl);
 			ret = FAILED;
 			goto done;
 		}
@@ -323,14 +306,14 @@ int   AF_GenerateSourceRadiancesOutput(AF_InputParmeterFile &inputArgs, hid_t ou
 	else if (instrument == MISR_STR) {
 		// for two multi-value Variable case.
 		if (srcInputMultiVarsMap.size() != 2) {
-			std::cout << __FUNCTION__ << ":" << __LINE__ <<  "> Error building source input list with MISR. There must be only two multi-value variables.\n";
+			ERR_MSG("Error building source input list with MISR. There must be only two multi-value variables." << std::endl);
 			ret = FAILED;
 			goto done;
 		}
 
 		ret = af_GenerateOutputCumulative_MisrAsSrc(inputArgs, outputFile, targetNNsrcID,  trgCellNum, srcFile, srcCellNum, srcInputMultiVarsMap);
 		if (ret == FAILED) {
-			std::cout << __FUNCTION__ << ":" << __LINE__ <<  "> failed generating output for MISR.\n";
+			ERR_MSG("Failed generating output for MISR." << std::endl);
 			ret = FAILED;
 			goto done;
 		}
@@ -341,13 +324,13 @@ int   AF_GenerateSourceRadiancesOutput(AF_InputParmeterFile &inputArgs, hid_t ou
 	else if (instrument == ASTER_STR) {
 		// for one multi-value Variable case.
 		if (srcInputMultiVarsMap.size() != 1) {
-			std::cout << __FUNCTION__ << ":" << __LINE__ <<  "> Error building source input list with ASTER. There must be only one multi-value variable.\n";
+			ERR_MSG("Error building source input list with ASTER. There must be only one multi-value variable." << std::endl);
 			return FAILED;
 		}
 
 		ret = af_GenerateOutputCumulative_AsterAsSrc(inputArgs, outputFile, targetNNsrcID,  trgCellNum, srcFile, srcCellNum, srcInputMultiVarsMap);
 		if (ret == FAILED) {
-			std::cout << __FUNCTION__ << ":" << __LINE__ <<  "> failed generating output for ASTER.\n";
+			ERR_MSG("Failed generating output for ASTER." << std::endl);
 			ret = FAILED;
 			goto done;
 		}
@@ -371,11 +354,8 @@ void Test_Parser(std::string headerFile)
     AF_InputParmeterFile inputArgs;
     inputArgs.headerFileName = headerFile;
     inputArgs.ParseByLine();
-    ret = inputArgs.CheckParsedValues();
-    if (ret < 0) {
-		std::cout << __FUNCTION__ << ":" << __LINE__ << " > Failed inputArgs.CheckParsedValues()\n";
-        return;
-    }
+    CALL_CHECK(ret = inputArgs.CheckParsedValues(), int, < 0);
+    if (ret < 0) return;
 
 	/*-------------------------------------------------------
 	 * COMMON section
@@ -564,12 +544,11 @@ int main(int argc, char *argv[])
 	#if DEBUG_ELAPSE_TIME
 	StartElapseTime();
 	#endif
-	ret = AF_GetGeolocationDataFromInstrument(srcInstrument, inputArgs, inputFile, &srcLatitude /*OUT*/, &srcLongitude /*OUT*/, srcCellNum /*OUT*/);
-	if (ret == FAILED) {
-		std::cerr << __FUNCTION__ << "> Error getting geolocation data from source instrument - " << srcInstrument << ".\n";
-		return FAILED;
-	}
-	#if DEBUG_ELAPSE_TIME
+	CALL_CHECK( ret = AF_GetGeolocationDataFromInstrument(srcInstrument, inputArgs, inputFile, &srcLatitude /*OUT*/, &srcLongitude /*OUT*/, srcCellNum /*OUT*/),
+        int, == FAILED );
+	if (ret == FAILED) return FAILED;
+	
+    #if DEBUG_ELAPSE_TIME
 	StopElapseTimeAndShow("DBG_TIME> get source lat/long DONE.");
 	#endif
 	#if DEBUG_TOOL
@@ -590,7 +569,7 @@ int main(int argc, char *argv[])
 	#endif
 	ret = AF_GetGeolocationDataFromInstrument(trgInstrument, inputArgs, inputFile, &targetLatitude /*OUT*/, &targetLongitude /*OUT*/, trgCellNumNoShift /*OUT*/);
 	if (ret == FAILED) {
-		std::cerr << __FUNCTION__ << "> Error: getting geolocation data from target instrument - " << trgInstrument << ".\n";
+		ERR_MSG("getting geolocation data from target instrument - " << trgInstrument << std::endl);
 		return FAILED;
 	}
 	#if DEBUG_ELAPSE_TIME
@@ -615,7 +594,10 @@ int main(int argc, char *argv[])
 	/*
 	 * Figure out trgOutputWidth and new trgCellNum by MISR target shift case
 	 */
-	ret = af_GetWidthAndHeightForOutputDataSize(inputArgs.GetTargetInstrument() /* target base output */, inputArgs, widthShifted, heightShifted);
+	CALL_CHECK( ret = af_GetWidthAndHeightForOutputDataSize(inputArgs.GetTargetInstrument() /* target base output */, inputArgs, widthShifted, heightShifted),
+        int, == FAILED );
+    if( ret == FAILED ) return FAILED;
+
 	trgOutputWidth = widthShifted;
 	// MISR-target & shift case update
 	if(inputArgs.GetMISR_Shift() == "ON" && inputArgs.GetTargetInstrument() == MISR_STR) {
@@ -649,9 +631,10 @@ int main(int argc, char *argv[])
 	#endif
 	int lat_status =  af_write_mm_geo(output_file, 0, targetLatitudePtr, trgCellNumNew, trgOutputWidth);
 	if(lat_status < 0) {
-		std::cerr << "Error: writing latitude geolocation.\n";
+		ERR_MSG("Error writing latitude geolocation." << std::endl);
 		return FAILED;
 	}
+
 	#if DEBUG_ELAPSE_TIME
 	StopElapseTimeAndShow("DBG_TIME> write geo lattitude data DONE.");
 	#endif
@@ -687,7 +670,7 @@ int main(int argc, char *argv[])
 	#endif
 	int long_status = af_write_mm_geo(output_file, 1, targetLongitudePtr, trgCellNumNew, trgOutputWidth);
 	if(long_status < 0) {
-		std::cerr << "Error: writing longitude geolocation.\n";
+		ERR_MSG("Error writing longitude geolocation." << std::endl);
 		return FAILED;
 	}
 	#if DEBUG_ELAPSE_TIME
@@ -745,18 +728,16 @@ int main(int argc, char *argv[])
 	std::cout  <<  "\nGenerating target instrument " << trgInstrument << " radiance output...\n";
 	// build target instrument multi-value variable map
 	std::map<std::string, strVec_t> trgInputMultiVarsMap;
-	ret = inputArgs.BuildMultiValueVariableMap(trgInstrument, trgInputMultiVarsMap);
-	if (ret < 0) {
-		std::cerr << __FUNCTION__ << "> Error: build multi-value variable map for " << trgInstrument << ".\n";
-		return FAILED;
-	}
+	CALL_CHECK( ret = inputArgs.BuildMultiValueVariableMap(trgInstrument, trgInputMultiVarsMap), int,
+        < 0 );
+	if (ret < 0) return FAILED;
+
 	// write target instrument radiances to output file
 	// Note: pass not-shifted-trgCellNum as it will internally replace if condition met
-	ret = AF_GenerateTargetRadiancesOutput(inputArgs, output_file, trgCellNumNoShift, inputFile, trgInputMultiVarsMap);
-	if (ret < 0) {
-		std::cerr << "Error: generate target radiance output.\n";
-		return FAILED;
-	}
+	CALL_CHECK( ret = AF_GenerateTargetRadiancesOutput(inputArgs, output_file, trgCellNumNoShift, inputFile, trgInputMultiVarsMap),
+        int, < 0 );
+	if (ret < 0) return FAILED;
+
 	std::cout << "Writing target radiance output done.\n";
 
 
@@ -767,18 +748,16 @@ int main(int argc, char *argv[])
 	std::cout  <<  "\nGenerating source instrument " << srcInstrument << " radiance output...\n";
 	// build source instrument multi-value variable map
 	std::map<std::string, strVec_t> srcInputMultiVarsMap;
-	ret = inputArgs.BuildMultiValueVariableMap(srcInstrument, srcInputMultiVarsMap);
-	if (ret < 0) {
-		std::cerr << __FUNCTION__ << "> Error: build multi-value variable map for " << srcInstrument << ".\n";
-		return FAILED;
-	}
+	CALL_CHECK( ret = inputArgs.BuildMultiValueVariableMap(srcInstrument, srcInputMultiVarsMap),
+        int, < 0 );
+	if (ret < 0) return FAILED;
+
 	// write source instrument radiances to output file
 	// Note: pass not-shifted-trgCellNum as it will internally replace if condition met
-	ret = AF_GenerateSourceRadiancesOutput(inputArgs, output_file, targetNNsrcID, trgCellNumNoShift, inputFile, srcCellNum, srcInputMultiVarsMap);
-	if (ret < 0) {
-		std::cerr << "Error: generate source radiance output.\n";
-		return FAILED;
-	}
+	CALL_CHECK( ret = AF_GenerateSourceRadiancesOutput(inputArgs, output_file, targetNNsrcID, trgCellNumNoShift, inputFile, srcCellNum, srcInputMultiVarsMap),
+        int, < 0 );
+	if (ret < 0) return FAILED;
+
 	std::cout << "Writing source radiance output done.\n";
 
 	if (targetNNsrcID)
@@ -792,17 +771,13 @@ int main(int argc, char *argv[])
 	StartElapseTime();
 	#endif
 	std::cout  <<  "\nClosing file...\n";
-	herr_t close_status = af_close(inputFile);
-	if(close_status < 0){
-		std::cerr  <<  "Error: closing input data file.\n";
-		return FAILED;
-	}
+    herr_t close_status;
+	CALL_CHECK( close_status = af_close(inputFile), herr_t, < 0);
+	if(close_status < 0) return FAILED;
 
-	close_status = af_close(output_file);
-	if(close_status < 0){
-		std::cerr  <<  "Error: closing output data file.\n";
-		return FAILED;
-	}
+	CALL_CHECK( close_status = af_close(output_file), herr_t, < 0);
+	if(close_status < 0) return FAILED;
+
 	#if DEBUG_ELAPSE_TIME
 	StopElapseTimeAndShow("DBG_TIME> Closing file DONE.");
 	#endif

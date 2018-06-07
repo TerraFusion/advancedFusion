@@ -12,6 +12,7 @@
 #include <ogr_api.h>
 #include <cpl_conv.h>
 #include <omp.h>
+#include "AF_common.h"
 
 /**
  * NAME:	gdalIORegister
@@ -41,6 +42,7 @@ void gdalIORegister()
  *	double ** py:		latitude of ouput pixel centers, memory will be allocated in this function
  * Return:
  *	int:	the total number of pixels
+ *          -1 on failure
  */
 int getCellCenterLatLon(int outputEPSG, double xMin, double yMin, double xMax, double yMax, double cellSize, double ** px, double ** py) 
 {
@@ -55,16 +57,16 @@ int getCellCenterLatLon(int outputEPSG, double xMin, double yMin, double xMax, d
 
 	if(NULL == (*px = (double *)malloc(sizeof(double) * nPoints))) 
 	{
-		printf("ERROR: Out of memory at line %d in file %s\n", __LINE__, __FILE__);
-		printf("The number of output cells : %d\n may be too large\n", nPoints);
-		exit(1);	
+        ERR_MSG("Out of memory. The number of output cells: " << nPoints << 
+        std::endl << " may be too large." << std::endl);
+        return FAILED;
 	}
 	
 	if(NULL == (*py = (double *)malloc(sizeof(double) * nPoints))) 
 	{
-		printf("ERROR: Out of memory at line %d in file %s\n", __LINE__, __FILE__);
-		printf("The number of output cells : %d\n may be too large\n", nPoints);
-		exit(1);	
+        ERR_MSG("Out of memory. The number of output cells: " << nPoints << 
+        std::endl << " may be too large." << std::endl);
+        return FAILED;
 	}
 
 	double * x = *px;

@@ -20,6 +20,7 @@
 #include "io.h"
 #include "AF_debug.h"
 #include "hdf5.h"
+#include "AF_common.h"
 #define FALSE   0
 
 //Band constants for MODIS
@@ -183,11 +184,11 @@ double* get_misr_lat(hid_t file, char* resolution, int* size)
 	
 	printf("Retrieveing latitude data for MISR\n");
 	//Retrieve latitude dataset and dataspace
-	double* lat_data = af_read(file, lat_dataset_name);
-	*size = dim_sum(af_read_size(file, lat_dataset_name), 3);
-	if(lat_data == NULL){
-		return NULL;
-	}
+	double* lat_data;
+    CALL_CHECK( lat_data = af_read(file, lat_dataset_name), double*, == NULL );
+	if(lat_data == NULL) return NULL;
+	
+    *size = dim_sum(af_read_size(file, lat_dataset_name), 3);
 	//printf("lat_data: %f\n", lat_data[0]);
 	return lat_data;
 }
@@ -2282,27 +2283,45 @@ hsize_t* af_read_size(hid_t file, char* dataset_name)
 
 double* af_read(hid_t file, char* dataset_name)
 {
-	hid_t dataset = H5Dopen2(file, dataset_name, H5P_DEFAULT);
+	hid_t dataset;
+    CALL_CHECK( dataset = H5Dopen2(file, dataset_name, H5P_DEFAULT), hid_t, < 0 );
 	if(dataset < 0){
-		printf("Dataset open error\n");
 		return NULL; 
 	}
-	hid_t dataspace = H5Dget_space(dataset);
+
+	hid_t dataspace;
+    CALL_CHECK( dataspace = H5Dget_space(dataset), hid_t, < 0);
 	if(dataspace < 0){
-		printf("Dataspace open error\n");
 		return NULL;	
 	}
 	
-	const int ndims = H5Sget_simple_extent_ndims(dataspace);
+	int ndims;
+    CALL_CHECK( ndims = H5Sget_simple_extent_ndims(dataspace), const int, < 0 );
+    if( ndims < 0 ) return NULL;
+
 	hsize_t dims[ndims];
-	H5Sget_simple_extent_dims(dataspace, dims, NULL);
-	hid_t memspace = H5Screate_simple(ndims,dims,NULL);
-	hid_t dtype = H5Dget_type(dataset);
-	hid_t ndtype = H5Tget_native_type(dtype, H5T_DIR_DESCEND);
+	
+    int retval;
+    CALL_CHECK( retval = H5Sget_simple_extent_dims(dataspace, dims, NULL), int, < 0 );
+    if( retval < 0 ) return NULL;
+
+	hid_t memspace;
+    CALL_CHECK( memspace = H5Screate_simple(ndims,dims,NULL), hid_t, < 0 );
+    if( memspace < 0 ) return NULL;
+
+	hid_t dtype;
+    CALL_CHECK( dtype = H5Dget_type(dataset), hid_t, < 0 );
+    if( dtype < 0 ) return NULL;
+
+	hid_t ndtype;
+    CALL_CHECK( ndtype = H5Tget_native_type(dtype, H5T_DIR_DESCEND), hid_t, < 0);
+    if( ndtype < 0 ) return NULL;
+
 	if(strstr(dataset_name, "ASTER") != NULL && strstr(dataset_name, "Geolocation") != NULL){
 		//Special case for ASTER geolocation because they are 64bit floating point numbers
 		double* data = (double*)calloc ( dim_sum(dims, sizeof(dims)/sizeof(hsize_t)) , sizeof(double) );
-		herr_t status = H5Dread(dataset, ndtype, memspace, memspace, H5P_DEFAULT, data);
+		herr_t status;
+        CALL_CHECK( status = H5Dread(dataset, ndtype, memspace, memspace, H5P_DEFAULT, data), herr_t, < 0);
 		H5Dclose(dataset);	
 		H5Sclose(dataspace);
 		H5Tclose(dtype);
@@ -2315,7 +2334,8 @@ double* af_read(hid_t file, char* dataset_name)
 	else{
 		float* data = (float*)calloc ( dim_sum(dims, sizeof(dims)/sizeof(hsize_t)) , sizeof(ndtype) );
 		double* converted_data = (double*)calloc ( dim_sum(dims, sizeof(dims)/sizeof(hsize_t)) , sizeof(double) );
-		herr_t status = H5Dread(dataset, ndtype, memspace, memspace, H5P_DEFAULT, data);
+		herr_t status;
+        CALL_CHECK( status = H5Dread(dataset, ndtype, memspace, memspace, H5P_DEFAULT, data), herr_t, < 0 );
 		int i;
 		for(i=0;i < dim_sum(dims, sizeof(dims)/sizeof(hsize_t)); i++){
 			converted_data[i] = (double) data[i];
