@@ -1,0 +1,15 @@
+#!/bin/bash
+#PBS -l nodes=1:ppn=32
+#PBS -l walltime=4:00:00
+
+cd $PBS_O_WORKDIR
+
+source /opt/modules/default/init/bash
+
+module load bwpy
+module load bwpy-mpi
+module swap PrgEnv-cray PrgEnv-intel
+module load cray-hdf5/1.8.16
+export LD_LIBRARY_PATH=/projects/sciteam/jq0/TerraFusion/gdal/lib:$LD_LIBRARY_PATH
+
+aprun -n 3 -d 4 -b -- bwpy-environ -- python process.py /u/sciteam/clipp/scratch/basicfusion/ ~/scratch/af_out/ 37500 37501 ../../inputParameters_MISR2MODIS.txt ~/projects/advancedFusion/AFtool

@@ -11,6 +11,10 @@ import time
 from schwimmbad import MPIPool
 import yaml
 import subprocess
+from enum import IntEnum
+
+# Define communication tags
+Tags = IntEnum('Tags', 'FAIL SUCCEED' )
 
 LOG_FMT='[%(asctime)s] [%(name)12s] [%(levelname)8s] [%(filename)s:%(lineno)d] %(message)s'
 LOG_DATE_FMT='%d-%m-%Y:%H:%M:%S8'
@@ -24,13 +28,20 @@ class Granule:
     def __init__(self):
         self.input_path = None
         self.out_path = None
+        self.job_config = {}
 
-    def add_input_path(self, path):
-        self.input_path = path
-    
-    def add_output_path(self, path):
-        self.out_path = path
-    
+    def set_input_path(self, path):
+        self.job_config['INPUT_FILE_PATH'] = path
+   
+    def get_input_path(self):
+        return self.job_config['INPUT_FILE_PATH']
+
+    def set_output_path(self, path):
+        self.job_config['OUTPUT_FILE_PATH'] = path
+   
+    def get_output_path(self):
+        return self.job_config['OUTPUT_FILE_PATH']
+
     def set_config_file(self, file ):
         """
         Set the path of the config file
@@ -133,11 +144,10 @@ rank_name = "Rank {}".format(mpi_rank)
 #================== LOGGING ======================
 logging.setLoggerClass(Log)
 logFormatter = logging.Formatter( LOG_FMT, LOG_DATE_FMT)
-consoleHandler = logging.StreamHandler(sys.stdout)
-consoleHandler.setFormatter(logFormatter)
-rootLogger = logging.getLogger()
-rootLogger.addHandler(consoleHandler)
 logger = logging.getLogger(name = rank_name)
+
+#================== CONSTANTS =========================
+FAILED_FILE = 'failed_granules.txt'
 
 def make_run_dir( dir ):
     '''
@@ -170,6 +180,12 @@ def make_run_dir( dir ):
     return newDir
 
 def worker( data ):
+
+    # Set the per-rank file handler for logger
+    fileHandler = logging.FileHandler( data.get_log_file(), mode='a')
+    fileHandler.setFormatter( logFormatter )
+    logger.addHandler( fileHandler)
+
     logger.info("Received data.")
     logger.info("Creating config file.")
     # First need to create the config file
@@ -190,14 +206,17 @@ def worker( data ):
     args = [ data.get_exe(), data.get_config_file() ]
     logger.debug(' '.join(args))
     try:
-        with open( data.get_log_file(), 'w' ) as f:
+        with open( data.get_log_file(), 'a' ) as f:
             subprocess.check_call( args, stdout=f, 
                 stderr=subprocess.STDOUT)
-    except:
-        logger.error("Encountered exception when processing AF \
+    except subprocess.CalledProcessError as e:
+        logger.exception("Encountered exception when processing AF \
 granule: {}.\nSee: {}\nfor more details.".format(
             data.get_orbit(), data.get_log_file()))
-        raise
+
+        return (data, Tags.FAIL )
+
+    return (data, Tags.SUCCEED)
 
 def main(pool):
     parser = argparse.ArgumentParser(description="This is an MPI \
@@ -238,11 +257,23 @@ def main(pool):
     #Define the log level. Logger has already been defined globally,
     # but we need to add a few more parameters to it.
     ll = getattr( logging, args.ll )
-    global rootLogger
+    rootLogger = logging.getLogger()
     global logger
-
     rootLogger.setLevel( ll )
 
+    #=================================
+    # SLAVE ENTRY POINT              =
+    #=================================
+    if not pool.is_master():        #=
+        pool.wait()                 #=
+        return                      #=
+    #=================================
+
+    # Console handler should only be for master rank
+    consoleHandler = logging.StreamHandler(sys.stdout)
+    consoleHandler.setFormatter(logFormatter)
+    rootLogger.addHandler(consoleHandler)
+    
     logger.info("Creating output directory")
     logger.debug("Output dir: {}".format(args.output_dir))
     
@@ -331,16 +362,36 @@ def main(pool):
     logger.info("Sending jobs to workers...")
     logger.info("Waiting for jobs to complete...")
     results = pool.map( worker, jobs )
+    pool.close()
     logger.info("Done.")
 
+    logger.info("Checking for failed granules...")
+    
+    
+    logger.failed_file = os.path.join( logger.get_run_dir(), FAILED_FILE )
+    some_failed = False
+    with open( logger.failed_file, 'w' ) as f:
+        for granule in results:
+            if granule[1] == Tags.FAIL:
+                some_failed = True
+                f.write(
+                    'Orbit: {}\nInput: {}\nOutput: {}\nLog file: {}\nConfig file: {}\n\n'.format(
+                    granule[0].get_orbit(), granule[0].get_input_path(),
+                    granule[0].get_output_path(), granule[0].get_log_file(),
+                    granule[0].get_config_file()))
+
+
+    if some_failed:
+        logger.info(
+            "Some granules failed. See: {} for more details.".format(
+            logger.failed_file))
+            
 if __name__ == "__main__":
     try:
         pool = MPIPool()
         
-        if not pool.is_master():
-            pool.wait()
-        else:
-            main(pool)
+        main(pool)
+    
     except SystemExit as e:
         if e.code == 0:
             pool.close()
