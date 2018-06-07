@@ -61,16 +61,13 @@ int AF_GetGeolocationDataFromInstrument(std::string instrument, AF_InputParmeter
 		#if DEBUG_TOOL
 		std::cout << "DBG_TOOL " << __FUNCTION__ << "> Modis resolution: " << resolution << "\n";
 		#endif
-		*latitude = get_modis_lat(inputFile, (char*) resolution.c_str(), &cellNum);
-		if (latitude == NULL) {
-			std::cerr << __FUNCTION__ <<  "> Error: failed to get MODIS latitude.\n";
-			return FAILED;
-		}
-		*longitude = get_modis_long(inputFile, (char*) resolution.c_str(), &cellNum);
-		if (longitude == NULL) {
-			std::cerr << __FUNCTION__ <<  "> Error: failed to get MODIS longitude.\n";
-			return FAILED;
-		}
+		
+        CALL_CHECK( *latitude = get_modis_lat(inputFile, (char*) resolution.c_str(), &cellNum), double*, == NULL);
+		if (*latitude == NULL) return FAILED;
+		
+        CALL_CHECK( *longitude = get_modis_long(inputFile, (char*) resolution.c_str(), &cellNum), double*, == NULL );
+		if (*longitude == NULL) return FAILED;
+
 	}
 	/*======================================================
  	 * MISR section
@@ -80,16 +77,13 @@ int AF_GetGeolocationDataFromInstrument(std::string instrument, AF_InputParmeter
 		#if DEBUG_TOOL
 		std::cout << "DBG_TOOL " << __FUNCTION__ << "> Misr resolution: " << resolution << "\n";
 		#endif
-		*latitude = get_misr_lat(inputFile, (char*) resolution.c_str(), &cellNum);
-		if (latitude == NULL) {
-			std::cerr << __FUNCTION__ <<  "> Error: failed to get MISR latitude.\n";
-			return FAILED;
-		}
-		*longitude = get_misr_long(inputFile, (char*) resolution.c_str(), &cellNum);
-		if (longitude == NULL) {
-			std::cerr << __FUNCTION__ <<  "> Error: failed to get MISR longitude.\n";
-			return FAILED;
-		}
+		
+        CALL_CHECK( *latitude = get_misr_lat(inputFile, (char*) resolution.c_str(), &cellNum), double*, == NULL );
+		if (*latitude == NULL) return FAILED;
+
+
+		CALL_CHECK( *longitude = get_misr_long(inputFile, (char*) resolution.c_str(), &cellNum), double*, == NULL );
+		if (*longitude == NULL) return FAILED;
 
 	}
 	/*======================================================
@@ -100,17 +94,14 @@ int AF_GetGeolocationDataFromInstrument(std::string instrument, AF_InputParmeter
 		std::string resolution = inputArgs.GetASTER_Resolution();
 		strVec_t bands = inputArgs.GetASTER_Bands();
 		// pass the first band (bands[0]) as it always exists and lat&lon is the same for a resolution.
-		*latitude = get_ast_lat(inputFile, (char*) resolution.c_str(), (char*)bands[0].c_str(), &cellNum);
-		if (latitude == NULL) {
-			std::cerr << __FUNCTION__ <<  "> Error: failed to get ASTER latitude.\n";
-			return FAILED;
-		}
-		*longitude = get_ast_long(inputFile, (char*) resolution.c_str(), (char*)bands[0].c_str(), &cellNum);
-		if (longitude == NULL) {
-			std::cerr << __FUNCTION__ <<  "> Error: failed to get ASTER longitude.\n";
-			return FAILED;
-		}
-	}
+		
+        CALL_CHECK( *latitude = get_ast_lat(inputFile, (char*) resolution.c_str(), (char*)bands[0].c_str(), &cellNum), double*, == NULL );
+		if (*latitude == NULL) return FAILED;
+		
+		CALL_CHECK( *longitude = get_ast_long(inputFile, (char*) resolution.c_str(), (char*)bands[0].c_str(), &cellNum), double*, == NULL );
+		if (*longitude == NULL) return FAILED;
+	
+    }
 	/*======================================================
 	 * USER_DEFINE section
 	 */
@@ -564,12 +555,11 @@ int main(int argc, char *argv[])
 	#if DEBUG_ELAPSE_TIME
 	StartElapseTime();
 	#endif
-	ret = AF_GetGeolocationDataFromInstrument(srcInstrument, inputArgs, inputFile, &srcLatitude /*OUT*/, &srcLongitude /*OUT*/, srcCellNum /*OUT*/);
-	if (ret == FAILED) {
-		std::cerr << __FUNCTION__ << "> Error getting geolocation data from source instrument - " << srcInstrument << ".\n";
-		return FAILED;
-	}
-	#if DEBUG_ELAPSE_TIME
+	CALL_CHECK( ret = AF_GetGeolocationDataFromInstrument(srcInstrument, inputArgs, inputFile, &srcLatitude /*OUT*/, &srcLongitude /*OUT*/, srcCellNum /*OUT*/),
+        int, == FAILED );
+	if (ret == FAILED) return FAILED;
+	
+    #if DEBUG_ELAPSE_TIME
 	StopElapseTimeAndShow("DBG_TIME> get source lat/long DONE.");
 	#endif
 	#if DEBUG_TOOL
