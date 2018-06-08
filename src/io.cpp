@@ -184,10 +184,10 @@ double* get_misr_lat(hid_t file, char* resolution, int* size)
 	printf("Retrieveing latitude data for MISR\n");
 	//Retrieve latitude dataset and dataspace
 	double* lat_data = af_read(file, lat_dataset_name);
-	*size = dim_sum(af_read_size(file, lat_dataset_name), 3);
 	if(lat_data == NULL){
 		return NULL;
 	}
+	*size = dim_sum(af_read_size(file, lat_dataset_name), 3);
 	//printf("lat_data: %f\n", lat_data[0]);
 	return lat_data;
 }

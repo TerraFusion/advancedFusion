@@ -62,12 +62,12 @@ int AF_GetGeolocationDataFromInstrument(std::string instrument, AF_InputParmeter
 		std::cout << "DBG_TOOL " << __FUNCTION__ << "> Modis resolution: " << resolution << "\n";
 		#endif
 		*latitude = get_modis_lat(inputFile, (char*) resolution.c_str(), &cellNum);
-		if (latitude == NULL) {
+		if (*latitude == NULL) {
 			std::cerr << __FUNCTION__ <<  "> Error: failed to get MODIS latitude.\n";
 			return FAILED;
 		}
 		*longitude = get_modis_long(inputFile, (char*) resolution.c_str(), &cellNum);
-		if (longitude == NULL) {
+		if (*longitude == NULL) {
 			std::cerr << __FUNCTION__ <<  "> Error: failed to get MODIS longitude.\n";
 			return FAILED;
 		}
@@ -81,12 +81,12 @@ int AF_GetGeolocationDataFromInstrument(std::string instrument, AF_InputParmeter
 		std::cout << "DBG_TOOL " << __FUNCTION__ << "> Misr resolution: " << resolution << "\n";
 		#endif
 		*latitude = get_misr_lat(inputFile, (char*) resolution.c_str(), &cellNum);
-		if (latitude == NULL) {
+		if (*latitude == NULL) {
 			std::cerr << __FUNCTION__ <<  "> Error: failed to get MISR latitude.\n";
 			return FAILED;
 		}
 		*longitude = get_misr_long(inputFile, (char*) resolution.c_str(), &cellNum);
-		if (longitude == NULL) {
+		if (*longitude == NULL) {
 			std::cerr << __FUNCTION__ <<  "> Error: failed to get MISR longitude.\n";
 			return FAILED;
 		}
@@ -101,12 +101,12 @@ int AF_GetGeolocationDataFromInstrument(std::string instrument, AF_InputParmeter
 		strVec_t bands = inputArgs.GetASTER_Bands();
 		// pass the first band (bands[0]) as it always exists and lat&lon is the same for a resolution.
 		*latitude = get_ast_lat(inputFile, (char*) resolution.c_str(), (char*)bands[0].c_str(), &cellNum);
-		if (latitude == NULL) {
+		if (*latitude == NULL) {
 			std::cerr << __FUNCTION__ <<  "> Error: failed to get ASTER latitude.\n";
 			return FAILED;
 		}
 		*longitude = get_ast_long(inputFile, (char*) resolution.c_str(), (char*)bands[0].c_str(), &cellNum);
-		if (longitude == NULL) {
+		if (*longitude == NULL) {
 			std::cerr << __FUNCTION__ <<  "> Error: failed to get ASTER longitude.\n";
 			return FAILED;
 		}
