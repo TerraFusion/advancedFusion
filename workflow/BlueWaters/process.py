@@ -31,16 +31,16 @@ class Granule:
         self.job_config = {}
 
     def set_input_path(self, path):
-        self.job_config['INPUT_FILE_PATH'] = path
+        self.job_config[in_file_key] = path
    
     def get_input_path(self):
-        return self.job_config['INPUT_FILE_PATH']
+        return self.job_config[in_file_key]
 
     def set_output_path(self, path):
-        self.job_config['OUTPUT_FILE_PATH'] = path
+        self.job_config[out_file_key] = path
    
     def get_output_path(self):
-        return self.job_config['OUTPUT_FILE_PATH']
+        return self.job_config[out_file_key]
 
     def set_config_file(self, file ):
         """
@@ -62,6 +62,10 @@ class Granule:
         self.job_config = config
 
     def get_config(self):
+        """
+        Returns a dict that represents the configuration file passed
+        to the AF tool.
+        """
         return self.job_config
 
     def set_log_file(self, path):
@@ -74,16 +78,38 @@ class Granule:
         """
         Set path to the executable to run.
         """
-        self.exe = exe
+        self.exe = os.path.abspath(exe)
 
     def get_exe(self):
+        """
+        Get the binary exectuable path for Advanced Fusion
+        """
         return self.exe
 
     def set_orbit(self, orbit):
         self.orbit = orbit
 
     def get_orbit(self):
+        """
+        Return this granule's orbit (int)
+        """
         return self.orbit
+
+    def set_h5dump(self, h5dump):
+        """
+        Set path of h5dump file.
+        """
+        self.h5dump = h5dump
+
+    def get_h5dump(self):
+        """
+        Return path of h5dump file
+        """
+        return self.h5dump
+
+    def __iter__(self):
+        for attr, value in self.__dict__.items():
+            yield attr, value
 
 class Log(logging.Logger):
     """
@@ -97,6 +123,11 @@ class Log(logging.Logger):
         self.level = None
         self.log_dirs = {}
         self.orbit = None
+
+    def set_log_file( self, log ):
+        self.log_file = log
+    def get_log_file( self ):
+        return self.log_file
 
     def set_level(self, level):
         self.level = level
@@ -134,6 +165,19 @@ class Log(logging.Logger):
         """
         return self.log_dirs
 
+    def addFileHandler(self, path, *args, **kwargs):
+        """
+        Wraps around logging.FileHandler and self.addHandler to add a
+        file handler to the logger. Also stores the path of the log
+        file to self (can be retrieved by get_log_file() at a later
+        time. (path, *args, **kwargs) are the arguments passed directly
+        to logging.FileHandler().
+        """
+
+        fileHandler = logging.FileHandler( path, *args, **kwargs )
+        fileHandler.setFormatter(logFormatter)
+        self.addHandler(fileHandler)
+        self.set_log_file(path)
 
 #=================== MPI VARIABLES =====================
 mpi_comm = MPI.COMM_WORLD
@@ -148,6 +192,8 @@ logger = logging.getLogger(name = rank_name)
 
 #================== CONSTANTS =========================
 FAILED_FILE = 'failed_granules.txt'
+out_file_key = 'OUTPUT_FILE_PATH'
+in_file_key = 'INPUT_FILE_PATH'
 
 def make_run_dir( dir ):
     '''
@@ -179,15 +225,52 @@ def make_run_dir( dir ):
 
     return newDir
 
+def do_h5dump( granule ):
+    """
+    Generate h5dump of an hdf5 file
+    """
+    # Create the yyyy.mm dir in the h5dump directory
+    try:
+        os.makedirs( os.path.dirname( granule.get_h5dump() ))
+    except OSError as e:
+        if e.errno != errno.EEXIST:
+            raise
+
+    args = ['h5dump', '-H', granule.get_config()[out_file_key] ]
+    
+    with open( granule.get_h5dump(), 'w' ) as f:
+        subprocess.check_call( args, stdout=f, stderr=subprocess.STDOUT)
+
+def do_af( granule):
+    """
+    Generate advanced fusion output for a granule.
+    """
+    # Now we can call the executable
+    args = [ granule.get_exe(), granule.get_config_file() ]
+    logger.debug(' '.join(args))
+    with open( granule.get_log_file(), 'a' ) as f:
+        subprocess.check_call( args, stdout=f, 
+            stderr=subprocess.STDOUT)
+    
 def worker( data ):
 
-    # Set the per-rank file handler for logger
+    global logger
+    ret = Tags.SUCCEED
+
+    # Remove any old file handlers from previous orbits
+    logger.handlers = [ h for h in logger.handlers if (type(h) != logging.FileHandler)]
+
+    # Set the per-rank file handler for this specific orbit
     fileHandler = logging.FileHandler( data.get_log_file(), mode='a')
     fileHandler.setFormatter( logFormatter )
     logger.addHandler( fileHandler)
 
-    logger.info("Received data.")
-    logger.info("Creating config file.")
+    data_str = ""
+    for attr, val in data:
+        data_str = data_str + "{}: {}\n".format(attr, val)
+
+    logger.info("Received data: \n{}".format( data_str ))
+    logger.info("Creating config file: {}".format(data.get_config_file()))
     # First need to create the config file
     with open( data.get_config_file(), 'w' ) as f:
         config = data.get_config()
@@ -196,27 +279,55 @@ def worker( data ):
 
     # Create the yyyy.mm dir in the output file path
     try:
-        os.makedirs( os.path.dirname( data.get_config()['OUTPUT_FILE_PATH'] ))
+        os.makedirs( os.path.dirname( data.get_config()[out_file_key] ))
     except OSError as e:
         if e.errno != errno.EEXIST:
             raise
 
+    #=======================
+    # advanced fusion
+    #
+
     logger.info("Calling the AFtool")
-    # Now we can call the executable
-    args = [ data.get_exe(), data.get_config_file() ]
-    logger.debug(' '.join(args))
     try:
-        with open( data.get_log_file(), 'a' ) as f:
-            subprocess.check_call( args, stdout=f, 
-                stderr=subprocess.STDOUT)
+        do_af(data)
     except subprocess.CalledProcessError as e:
         logger.exception("Encountered exception when processing AF \
 granule: {}.\nSee: {}\nfor more details.".format(
             data.get_orbit(), data.get_log_file()))
 
-        return (data, Tags.FAIL )
+        ret = Tags.FAIL
 
-    return (data, Tags.SUCCEED)
+    #===============
+    # h5dump
+    #
+    logger.info("Performing h5dump on file...") 
+    try:
+        do_h5dump( data )
+    except subprocess.CalledProcessError as e:
+        logger.exception("Encountered exception when processing h5dump: {}.\
+\nSee: {}\nfor more details.".format(
+            data.get_orbit(), data.get_h5dump()))
+
+        ret = Tags.FAIL
+
+    logger.info("Done.")
+    logger.info("Granule generated {}.".format( 
+        'successfully' if ret == Tags.SUCCEED else 'unsuccessfully'))
+    return (data, ret)
+
+def check_h5dump():
+    args = ['which', 'h5dump']
+    proc = subprocess.Popen( args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT )
+    proc.wait()
+
+    with open( logger.get_log_file(), 'a') as f:
+        for line in proc.stdout:
+            print( line.decode('UTF-8' ) )
+            f.write( line.decode('UTF-8') )
+            
+    if proc.returncode != 0:
+        raise RuntimeError("h5dump not visible!")
 
 def main(pool):
     parser = argparse.ArgumentParser(description="This is an MPI \
@@ -232,17 +343,17 @@ def main(pool):
     parser.add_argument("output_dir", help="Output AF directory. \
     Will be created if it doesn't exist", type=str)
 
-    parser.add_argument("orbit_min", help="Inclusive lower bound \
-    for the orbit range.", type=int)
-
-    parser.add_argument("orbit_max", help="Inclusive upper bound \
-    for the orbit range", type=int)
-
     parser.add_argument("config", help="A yaml-compatible file that \
     describes the parameters to pass to the AF tool. The set of \
     recognized parameters is described on the AF GitHub. NOTE: \
     The OUTPUT_FILE_PATH and INPUT_FILE_PATH parameters will be \
     IGNORED by this script.", type=str, default="./AFconfig.txt")
+
+    req_grp = parser.add_argument_group(title='Required flags')
+    req_grp.add_argument("--range", "-r", help="Specify the inclusive \
+    range of orbits to process. May specify multiple ranges. At least \
+    one range is required.", nargs=2, action='append', type=int, 
+    required=True)
 
     parser.add_argument("af_tool", help="Path to the AF binary.",
     type=str)
@@ -252,7 +363,6 @@ def main(pool):
         "DEBUG"], default="INFO")
 
     args = parser.parse_args()
-
 
     #Define the log level. Logger has already been defined globally,
     # but we need to add a few more parameters to it.
@@ -278,7 +388,9 @@ def main(pool):
     logger.debug("Output dir: {}".format(args.output_dir))
     
     out_dirs = { 'data': os.path.join(args.output_dir, 'data'), 
-                 'logs': os.path.join(args.output_dir, 'logs')}
+                 'logs': os.path.join(args.output_dir, 'logs'),
+                 'h5dump': os.path.join( args.output_dir, 'data', 'h5dump')
+               }
     for i in out_dirs:
         # Create directories
         try:
@@ -289,9 +401,16 @@ def main(pool):
 
     # Setup log directory for this run
     logger.create_log_dirs( out_dirs['logs'] )
-    logger.debug("run dir: {}".format(logger.get_run_dir()))
+    logger.info("run dir: {}".format(logger.get_run_dir()))
 
+    # Set file handler for master
+    log_file = os.path.join( logger.get_log_dirs()['af_log'], 'master.log')
+    logger.addFileHandler( log_file )
 
+    logger.info("Checking for h5dump visibility...")
+    check_h5dump()
+    logger.info("h5dump visible.")
+    
     logger.info("Parsing input directory for BF files")
     
     # Read the config file
@@ -303,8 +422,9 @@ def main(pool):
     # We create the orbits dictionary to create a fast way of
     # determining which orbits we are not able to find.
     orbits = {}
-    for i in range( args.orbit_min, args.orbit_max + 1 ):
-        orbits[i] = None
+    for r in args.range:
+        for o in range( r[0], r[1] + 1 ):
+            orbits[o] = None
 
     count = 0
     jobs = []
@@ -328,8 +448,8 @@ def main(pool):
                         year_month_dir, "ADVNCE_FUSE_" + file )
 
                     job_config = config.copy()
-                    job_config['INPUT_FILE_PATH'] = in_path
-                    job_config['OUTPUT_FILE_PATH'] = out_path
+                    job_config[in_file_key] = in_path
+                    job_config[out_file_key] = out_path
 
                     granule.set_config( job_config )
                     config_file = os.path.join( log_dirs['configs'], str(orbit) + '_config.txt' ) 
@@ -340,6 +460,9 @@ def main(pool):
                     granule.set_orbit(orbit)
 
                     granule.set_exe( args.af_tool )
+
+                    h5_path = os.path.join( out_dirs['h5dump'], year_month_dir, os.path.basename( out_path + '.h5dump'))
+                    granule.set_h5dump( h5_path )
                     jobs.append( granule )
                     orbits.pop(orbit)
 
@@ -358,7 +481,6 @@ def main(pool):
 
         raise RuntimeError("BF files not found.")
 
-    logger.info( logger.get_run_dir() )
     logger.info("Sending jobs to workers...")
     logger.info("Waiting for jobs to complete...")
     results = pool.map( worker, jobs )
@@ -369,21 +491,22 @@ def main(pool):
     
     
     logger.failed_file = os.path.join( logger.get_run_dir(), FAILED_FILE )
-    some_failed = False
+    fail_count = 0
     with open( logger.failed_file, 'w' ) as f:
         for granule in results:
             if granule[1] == Tags.FAIL:
-                some_failed = True
+                fail_count = fail_count + 1
                 f.write(
-                    'Orbit: {}\nInput: {}\nOutput: {}\nLog file: {}\nConfig file: {}\n\n'.format(
+                    'Orbit: {}\nInput: {}\nOutput: {}\nLog file: {}\nConfig file: {}\nh5dump: {}\n\n'.format(
                     granule[0].get_orbit(), granule[0].get_input_path(),
                     granule[0].get_output_path(), granule[0].get_log_file(),
-                    granule[0].get_config_file()))
+                    granule[0].get_config_file(), granule[0].get_h5dump()))
 
 
-    if some_failed:
+    if fail_count:
         logger.info(
-            "Some granules failed. See: {} for more details.".format(
+            "{}/{} ({} %) granules failed. See: {} for more details.".format(
+            fail_count, len(results), round(100 * fail_count / len(results), 2), 
             logger.failed_file))
             
 if __name__ == "__main__":
