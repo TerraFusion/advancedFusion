@@ -55,3 +55,42 @@ qsub AFtest.pbs
 ```
 
 Some of the parameters in the script may need to be changed to suit your environment.
+
+## Configuration file
+
+process.py requires a configuration file that describes the parameters of the run. The parameters given are either consumed directly by the script, or are passed to the AF tool itself. The parameters that the AF tool accepts are described in its documentation. process.py will ignore the keys INPUT_FILE_PATH and OUTPUT_FILE_PATH, instead relying on internal logic for determining the input and output file paths. This is done because it is unreasonable for the user to specify every single input and output path.
+
+The keys that this script accepts are:
+
+### COMPARE_IMAGES  
+
+Provide a list of resampled datasets to compare using a structural similarity index. The template for each instrument is:
+
+**MISR**
+
+MISR [MISR_CAMERA_ANGLE] [MISR_RADIANCE] [MISR_RESOLUTION]
+
+where each [] variable is a value you have already specified elsewhere in the config file.
+
+**MODIS**
+
+MODIS [MODIS_BANDS] [MODIS_RESOLUTION]
+
+again, where each [] variable is a value already specified in the config file.
+
+An example of a line in the config file that directs the script to compare MISR AN Red_Radiance L vs MODIS 4 1KM, and MISR AN Blue_Radiance L vs MODIS 3 1KM is:
+
+```
+COMPARE_IMAGES: [ ['MISR AN Red_Radiance L', 'MODIS 4 1KM'], ['MISR AN Blue_Radiance L', 'MODIS 3 1KM'] ]
+```
+
+If you are requesting only a single comparison, you may do something like:
+
+```
+COMPARE_IMAGES: ['MISR AN Red_Radiance L', 'MODIS 4 1KM']
+```
+
+### COMPARE_THRESHOLD
+
+This parameter describes the threshold for the structural similarity percentage, below which an image comparison will be marked as bad. If this is not provided explicitly, the parameter will default to 0.90. Must be a value between 0 and 1.
+
