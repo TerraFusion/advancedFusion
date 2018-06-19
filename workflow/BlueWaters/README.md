@@ -68,29 +68,36 @@ Provide a list of resampled datasets to compare using a structural similarity in
 
 **MISR**
 
-MISR [MISR_CAMERA_ANGLE] [MISR_RADIANCE] [MISR_RESOLUTION]
+MISR [MISR_RESOLUTION] [MISR_CAMERA_ANGLE] [MISR_RADIANCE] 
 
 where each [] variable is a value you have already specified elsewhere in the config file.
 
 **MODIS**
 
-MODIS [MODIS_BANDS] [MODIS_RESOLUTION]
+MODIS [MODIS_RESOLUTION] [MODIS_BANDS] 
 
 again, where each [] variable is a value already specified in the config file.
+
+**ASTER**
+
+ASTER [ASTER_RESOLUTION] [ASTER BAND]
 
 An example of a line in the config file that directs the script to compare MISR AN Red_Radiance L vs MODIS 4 1KM, and MISR AN Blue_Radiance L vs MODIS 3 1KM is:
 
 ```
-COMPARE_IMAGES: [ ['MISR AN Red_Radiance L', 'MODIS 4 1KM'], ['MISR AN Blue_Radiance L', 'MODIS 3 1KM'] ]
+COMPARE_IMAGES: [ ['MISR L AN Red_Radiance', 'MODIS 1KM 4'], ['MISR L AN Blue_Radiance', 'MODIS 1KM 3'] ]
 ```
 
 If you are requesting only a single comparison, you may do something like:
 
 ```
-COMPARE_IMAGES: ['MISR AN Red_Radiance L', 'MODIS 4 1KM']
+COMPARE_IMAGES: ['MISR L AN Red_Radiance', 'MODIS 1KM 4']
 ```
 
 ### COMPARE_THRESHOLD
 
 This parameter describes the threshold for the structural similarity percentage, below which an image comparison will be marked as bad. If this is not provided explicitly, the parameter will default to 0.90. Must be a value between 0 and 1.
 
+### OUTPUT_PREFIX
+
+This parameter sets the prefix for the output Advanced Fusion files. This is useful (read: EXTERMELY useful) if you are using multiple configuration files during the same process.py run and want to differentiate your files from each other.

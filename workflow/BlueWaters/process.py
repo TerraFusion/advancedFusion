@@ -1,3 +1,5 @@
+import warnings
+warnings.simplefilter(action='ignore', category=FutureWarning)
 import argparse
 import logging
 import os
@@ -12,9 +14,12 @@ from schwimmbad import MPIPool
 import yaml
 import subprocess
 from enum import IntEnum
+import af_image
+from PIL import Image
+import json
 
 # Define communication tags
-Tags = IntEnum('Tags', 'FAIL SUCCEED' )
+Tags = IntEnum('Tags', 'START SUCCEED FAIL_IMAGE FAIL_AF FAIL_H5DUMP FAIL_IMG_CMP FAIL' )
 
 LOG_FMT='[%(asctime)s] [%(name)12s] [%(levelname)8s] [%(filename)s:%(lineno)d] %(message)s'
 LOG_DATE_FMT='%d-%m-%Y:%H:%M:%S8'
@@ -24,51 +29,99 @@ class Granule:
     Class that holds all information necessary for a specific orbit of BF->AF
     data.
     """
+    
+    wf_params = {"COMPARE_IMAGES", "COMPARE_THRESHOLD","OUTPUT_PREFIX"}
+    #tags = IntEnum('tags', 'START SUCCEED FAIL_IMAGE FAIL_AF FAIL_H5DUMP FAIL')
 
     def __init__(self):
-        self.input_path = None
-        self.out_path = None
-        self.job_config = {}
+        self.af_config = {}
+        self.wf_config = {}
+        
+        # Structural similarity of the images
+        self.similarity = []
+
+        self.images = {}
+        self.status = Tags.START
+
+    def set_status( self, status ):
+        """
+        Set the processing status. The proper tags are defined in Tags
+        """
+        self.status = status
+
+    def get_status( self ):
+        return self.status
 
     def set_input_path(self, path):
-        self.job_config[in_file_key] = path
+        self.af_config[in_file_key] = path
    
     def get_input_path(self):
-        return self.job_config[in_file_key]
+        """
+        Get the basic fusion input HDF5 file path.
+        """
+        return self.af_config[in_file_key]
 
     def set_output_path(self, path):
-        self.job_config[out_file_key] = path
+        """
+        Set the output path of the advanced fusion file.
+        """
+        self.af_config[out_file_key] = path
    
     def get_output_path(self):
-        return self.job_config[out_file_key]
+        """
+        Get the output path of the advanced fusion file.
+        """
+        return self.af_config[out_file_key]
 
-    def set_config_file(self, file ):
+    def set_af_config_file(self, file ):
         """
         Set the path of the config file
         """
-        self.job_config_file = file
+        self.af_config_file = file
 
-    def get_config_file( self ):
+    def get_af_config_file( self ):
         """
         Return path to the job config file
         """
-        return self.job_config_file
+        return self.af_config_file
 
     def set_config(self, config):
         """
-        Stores a dict that will be placed into self.job_config_file
-        (to be passed directly to the advanced fusion tool)
-        """
-        self.job_config = config
+        Stores a dict that will be placed into self.af_config_file
+        (to be passed directly to the advanced fusion tool).
+        For the parameters not used by the AF tool (but by this script),
+        they are separated into a separate dict. 
 
-    def get_config(self):
+        To retrieve parameters for the AF tool, call: get_af_config()
+
+        To retrieve all other parameters, call: get_workflow_config() 
+        """
+        
+        for key in config:
+            if key.upper() in self.wf_params:
+                self.wf_config[key.upper()] = config[key]
+            else:
+                self.af_config[key] = config[key]
+
+    def get_workflow_config(self):
+        """
+        Return the workflow-specific parameters passed to this script.
+        Returns a dict.
+        """
+        return self.wf_config
+
+    def get_af_config(self):
         """
         Returns a dict that represents the configuration file passed
         to the AF tool.
         """
-        return self.job_config
+        return self.af_config
 
     def set_log_file(self, path):
+        """
+        Set the path of the file that will contain log output for 
+        this granule.
+        """
         self.log_file = path
 
     def get_log_file(self):
@@ -107,10 +160,29 @@ class Granule:
         """
         return self.h5dump
 
+    def set_image_dir(self, dir):
+        self.image_dir = dir
+
+    def get_image_dir(self):
+        return self.image_dir
+
+    def set_img_threshold(self, threshold):
+        """
+        Set the threshold for image comparison
+        """
+        self.img_threshold = threshold
+
+    def get_img_threshold(self):
+        """
+        Get the threshold for image comparison
+        """
+        return self.img_threshold
+
     def __iter__(self):
         for attr, value in self.__dict__.items():
             yield attr, value
 
+    
 class Log(logging.Logger):
     """
     Class that contains logging utilites and metadata.
@@ -132,39 +204,6 @@ class Log(logging.Logger):
     def set_level(self, level):
         self.level = level
 
-    def set_run_dir(self, dir):
-        self.log_dirs['run'] = dir
-
-    def get_run_dir(self):
-        return self.log_dirs['run']
-
-    def create_log_dirs( self, out_path ):
-        """
-        Create and initialize all directories necessary to store
-        log information for this run.
-        """
-        self.log_dirs['run'] = make_run_dir( out_path )
-       
-        dirs = ['configs', 'af_log']
-
-        for dir in dirs:
-            self.log_dirs[dir] = os.path.join( self.get_run_dir(), dir)
-            os.makedirs( self.log_dirs[dir] )
-        
-        # Create empty file whose name is the current date
-        now = datetime.datetime.now()
-        cur_date = "{}_{}_{}.{}hr_{}min_{}sec".format( now.year, now.month, now.day,
-            now.hour, now.minute, now.second)
-
-        with open( os.path.join( self.get_run_dir(), cur_date ), 'w' ) as f:
-            pass
-
-    def get_log_dirs(self):
-        """
-        Return the dict that stores paths for all the log dirs
-        """
-        return self.log_dirs
-
     def addFileHandler(self, path, *args, **kwargs):
         """
         Wraps around logging.FileHandler and self.addHandler to add a
@@ -184,6 +223,7 @@ mpi_comm = MPI.COMM_WORLD
 mpi_rank = MPI.COMM_WORLD.Get_rank()
 mpi_size = MPI.COMM_WORLD.Get_size()
 rank_name = "Rank {}".format(mpi_rank)
+pool = None
 
 #================== LOGGING ======================
 logging.setLoggerClass(Log)
@@ -192,8 +232,15 @@ logger = logging.getLogger(name = rank_name)
 
 #================== CONSTANTS =========================
 FAILED_FILE = 'failed_granules.txt'
+GRANULE_SUMMARY = 'granule_summary.txt'
 out_file_key = 'OUTPUT_FILE_PATH'
 in_file_key = 'INPUT_FILE_PATH'
+COMPARE_THRESHOLD = 0.9
+SRC_DSET_PATH = "Source/Data_Fields/{}_Radiance"
+TARGET_DSET_PATH = "Target/Data_Fields/{}_Radiance"
+NUM_MODIS_BANDS = 38
+IMG_EXTENSION = ".png"
+LOG_SEP = "===================================================="
 
 def make_run_dir( dir ):
     '''
@@ -236,7 +283,7 @@ def do_h5dump( granule ):
         if e.errno != errno.EEXIST:
             raise
 
-    args = ['h5dump', '-H', granule.get_config()[out_file_key] ]
+    args = ['h5dump', '-H', granule.get_af_config()[out_file_key] ]
     
     with open( granule.get_h5dump(), 'w' ) as f:
         subprocess.check_call( args, stdout=f, stderr=subprocess.STDOUT)
@@ -246,77 +293,333 @@ def do_af( granule):
     Generate advanced fusion output for a granule.
     """
     # Now we can call the executable
-    args = [ granule.get_exe(), granule.get_config_file() ]
+    args = [ granule.get_exe(), granule.get_af_config_file() ]
     logger.debug(' '.join(args))
     with open( granule.get_log_file(), 'a' ) as f:
         subprocess.check_call( args, stdout=f, 
             stderr=subprocess.STDOUT)
-    
-def worker( data ):
+   
+def class_attr_string( obj ):
+    """
+    Return a string that represents all of a class's attributes.
 
-    global logger
-    ret = Tags.SUCCEED
-
-    # Remove any old file handlers from previous orbits
-    logger.handlers = [ h for h in logger.handlers if (type(h) != logging.FileHandler)]
-
-    # Set the per-rank file handler for this specific orbit
-    fileHandler = logging.FileHandler( data.get_log_file(), mode='a')
-    fileHandler.setFormatter( logFormatter )
-    logger.addHandler( fileHandler)
-
+    The object must have an __iter__ method that yields attributes
+    and their values.
+    """
     data_str = ""
-    for attr, val in data:
+    for attr, val in obj:
+        if type(val) is dict:
+            # Use json library to print a pretty version of dict
+            val = json.dumps(val, sort_keys=True, indent=2)
+
         data_str = data_str + "{}: {}\n".format(attr, val)
 
-    logger.info("Received data: \n{}".format( data_str ))
-    logger.info("Creating config file: {}".format(data.get_config_file()))
-    # First need to create the config file
-    with open( data.get_config_file(), 'w' ) as f:
-        config = data.get_config()
-        for key in config:
-            f.write("{}: {}\n".format( key, config[key] ) )
+    return data_str
 
-    # Create the yyyy.mm dir in the output file path
+def worker( data ):
+
     try:
-        os.makedirs( os.path.dirname( data.get_config()[out_file_key] ))
-    except OSError as e:
-        if e.errno != errno.EEXIST:
-            raise
+        global logger
 
-    #=======================
-    # advanced fusion
-    #
+        # Remove any old file handlers from previous orbits
+        logger.handlers = [ h for h in logger.handlers if (type(h) != logging.FileHandler)]
 
-    logger.info("Calling the AFtool")
-    try:
-        do_af(data)
-    except subprocess.CalledProcessError as e:
-        logger.exception("Encountered exception when processing AF \
-granule: {}.\nSee: {}\nfor more details.".format(
-            data.get_orbit(), data.get_log_file()))
+        # Set the per-rank file handler for this specific orbit
+        fileHandler = logging.FileHandler( data.get_log_file(), mode='a')
+        fileHandler.setFormatter( logFormatter )
+        logger.addHandler( fileHandler)
 
-        ret = Tags.FAIL
+        data_str = class_attr_string( data )
 
-    #===============
-    # h5dump
-    #
-    logger.info("Performing h5dump on file...") 
-    try:
-        do_h5dump( data )
-    except subprocess.CalledProcessError as e:
-        logger.exception("Encountered exception when processing h5dump: {}.\
-\nSee: {}\nfor more details.".format(
-            data.get_orbit(), data.get_h5dump()))
+        logger.info("Received data: \n{}".format( data_str ))
+        logger.info("Creating config file: {}".format(data.get_af_config_file()))
+        # First need to create the config file
+        with open( data.get_af_config_file(), 'w' ) as f:
+            af_config = data.get_af_config()
+            for key in af_config:
+                f.write("{}: {}\n".format( key, af_config[key] ) )
 
-        ret = Tags.FAIL
+        # Create the yyyy.mm dir in the output file path
+        try:
+            os.makedirs( os.path.dirname( data.get_af_config()[out_file_key] ))
+        except OSError as e:
+            if e.errno != errno.EEXIST:
+                raise
 
-    logger.info("Done.")
-    logger.info("Granule generated {}.".format( 
-        'successfully' if ret == Tags.SUCCEED else 'unsuccessfully'))
-    return (data, ret)
+        #=======================
+        # advanced fusion
+        #
+
+        logger.info("Calling the AFtool")
+        try:
+            do_af(data)
+        except:
+            logger.exception("Encountered exception when processing AF \
+    granule: {}.\nSee: {}\nfor more details.".format(
+                data.get_orbit(), data.get_log_file()))
+
+            data.set_status( Tags.FAIL_AF )
+            return data
+
+        #===============
+        # h5dump
+        #
+        logger.info("Performing h5dump on file...") 
+        try:
+            do_h5dump( data )
+        except:
+            logger.exception("Encountered exception when processing h5dump: {}.\
+    \nSee: {}\nfor more details.".format(
+                data.get_orbit(), data.get_h5dump()))
+
+            granule.set_status( Tags.FAIL_H5DUMP )
+            return data
+        
+        #===========================
+        # image verification
+        #
+        logger.info("Done.")
+        try:
+            wf_config = data.get_workflow_config()
+      
+            if wf_config["COMPARE_IMAGES"]:
+                # We need to figure out which datasets to retrieve based on
+                # data's configuration.
+                
+                logger.info("Creating images from datasets...")
+
+                src_dset_path = SRC_DSET_PATH.format( af_config["SOURCE_INSTRUMENT"].upper() )
+                target_dset_path = TARGET_DSET_PATH.format( af_config["TARGET_INSTRUMENT"].upper() )
+                
+                images = []
+                for instr_path in src_dset_path, target_dset_path:
+                    # Unfortunately, these ugly if statements are necessary because
+                    # each instrument function takes different parameters :(
+                    
+
+                    if "MODIS_Radiance" in instr_path:
+                        bands = af_config["MODIS_BANDS"]
+                        resolutions = af_config["MODIS_RESOLUTION"].upper().split()
+
+                        logger.info("Creating MODIS images...")
+                        
+                        if bands.upper() == "ALL":
+                            bands = range( NUM_MODIS_BANDS )
+                        else:
+                            # Split each band to a separate element, then convert 
+                            # each element to an integer
+                            bands = [ int(i) for i in bands.split() ]
+
+                        # band_idx and band are two different things. idx is 
+                        # index into dataset. Bands are assigned indices
+                        # according to which order they were given in the
+                        # config file.
+
+                        for resolution_idx, resolution in enumerate( resolutions ):
+                            for band_idx, band in enumerate(bands):
+
+                                img_name = instr_path.replace('/', '#') + "_{}_band_{}".format(resolution, band) + \
+                                    "_orbit_{}".format( data.get_orbit() ) + IMG_EXTENSION
+
+                                img_path = os.path.join( data.get_image_dir(), img_name )
+                                
+                                # Save image path into data
+                                dict_walker = data.images
+                                modis_dset = ["MODIS", resolution ]
+                                for key in modis_dset:
+                                    if key not in dict_walker:
+                                        dict_walker[str(key)] = {}
+
+                                    dict_walker = dict_walker[str(key)]
+
+                                logger.debug("data.images['MODIS'][{}][{}] = {}".format(
+                                    resolution, band, img_path))
+
+                                data.images["MODIS"][ resolution ][ str(band) ] = img_path
+                                
+                                images.append(img_path)
+                                
+                                logger.debug(LOG_SEP)
+                                logger.debug("out_path: {}".format( data.get_output_path()))
+                                logger.debug("instr_path: {}".format(instr_path))
+                                logger.debug("img_path: {}".format(img_path))
+                                logger.debug("band: {}".format(band))
+                                logger.debug("band_idx: {}".format(band_idx))
+
+                                af_image.print_modis( data.get_output_path(), band_idx, instr_path, img_path )
+                  
+                        logger.debug(LOG_SEP)
+                        
+                    elif "MISR_Radiance" in instr_path:
+                        # Get MISR camera angles
+                        angles = af_config["MISR_CAMERA_ANGLE"].upper().split()
+                        bands = af_config["MISR_RADIANCE"].split()
+                        resolutions = af_config["MISR_RESOLUTION"].upper().split()
+
+                        logger.info("Creating MISR images.")
+
+                        # We use enumerate to get index, instead of using the actual string.
+                        # print_misr expects integer that serves as index into dataset. The
+                        # order in which angles/bands are listed in the config file is the
+                        # order in which they are stored in the dataset.
+                        for res_idx, res in enumerate( resolutions ):
+                            for angle_idx, angle in enumerate( angles ):
+                                for band_idx, band in enumerate( bands ):
+                                    img_name = instr_path.replace('/', '#') + \
+                                        "_{}_{}_{}{}".format( angle, band.replace("_Radiance", "") , data.get_orbit(), 
+                                        IMG_EXTENSION )
+
+                                    img_path = os.path.join( data.get_image_dir(), img_name )
+
+                                    # Save image path into data.
+                                    # Recursively create a chain of dicts that
+                                    # describe the dataset. For instance, we would
+                                    # like to be able to access it like this:
+                                    # data.images["MODIS"]["L"]["AN"]["Red_Radiance"]
+                                    # 
+                                    # and have the path stored at that location.
+
+                                    dict_walker = data.images
+                                    misr_dset = ["MISR", res, angle ]
+                                    for key in misr_dset:
+                                        if key not in dict_walker:
+                                            dict_walker[str(key)] = {}
+
+                                        dict_walker = dict_walker[str(key)]
+                                        
+                                    data.images["MISR"][res][angle][str(band)] = img_path
+
+                                    logger.debug(LOG_SEP)
+                                    logger.debug("out_path: {}".format( data.get_output_path()))
+                                    logger.debug("angle: {}".format(angle))
+                                    logger.debug("angle_idx: {}".format( angle_idx))
+                                    logger.debug("band: {}".format(band))
+                                    logger.debug("band_idx: {}".format(band_idx))
+                                    logger.debug("instr_path: {}".format(instr_path))
+                                    logger.debug("img_path: {}".format( img_path))
+
+                                    af_image.print_misr( data.get_output_path(), angle_idx, 
+                                        band_idx, instr_path, img_path )
+
+                        
+                            logger.debug(LOG_SEP)
+        
+                    elif "ASTER_Radiance" in instr_path:
+                        # Get ASTER parameters
+                        resolutions = af_config["ASTER_RESOLUTION"].upper().split()
+                        bands = af_config["ASTER_BANDS"].upper().split()
+                        
+                        logger.info("Creating ASTER images.")
+                        # Landon Clipp 6/19/2018
+                        # Apparently, the ASTER_Radiance dataset only stores 
+                        # different bands in the dimensions. So just iterate
+                        # over the first dimension.
+                        for res_idx, res in enumerate( resolution ):
+                            for band_idx, band in enumerate( bands ):
+                                img_name = "{}_{}_{}_{}{}".format( instr_path.replace('/', '#'),
+                                res, band, data.get_orbit(), IMG_EXTENSION )
+
+                                img_path = os.path.join( data.get_image_dir(), img_name )
+
+                                dict_walker = data.images
+                                aster_dset = ["ASTER", res ]
+                                for key in aster_dset:
+                                    if key not in dict_walker:
+                                        dict_walker[str(key)] = {}
+
+                                data.images["ASTER"][res][band] = img_path
+
+                                logger.debug(LOG_SEP)
+                                logger.debug("out_path: {}".format( data.get_output_path()))
+                                logger.debug("resolution: {}".format(res))
+                                logger.debug("res_idx: {}".format(res_idx))
+                                logger.debug("band: {}".format(band))
+                                logger.debug("band_idx: {}".format(band_idx))
+                                logger.debug("instr_path: {}".format( instr_path ))
+                                logger.debug("img_path: {}".format(img_path))
+
+                                af_image.print_aster( data.get_output_path(), band_idx, 
+                                    instr_path, img_path )
+
+                            logger.debug(LOG_SEP)
+
+                    else:
+                        raise ValueError("Cannot determine the instrument \
+                        for image generation!")
+
+                logger.info("Images generated. Creating similarity metrics.")
+
+                for idx, val in enumerate( wf_config["COMPARE_IMAGES"] ) :
+                    # If it's a list, retrieve the cameras from each element
+                    if type(val) is list:
+                        dset1 = val[0].split()
+                        dset2 = val[1].split()
+
+                    # Else if it's a string, the next element is our second dataset
+                    elif type(val) is str:
+                        dest1 = val.split()
+                        dset2 = wf_config["COMPARE_IMAGES"][idx + 1].split()
+                    else:
+                        raise ValueError("Unknown value in COMPARE_IMAGES.")
+
+                    # "Recursively" iterate through the keys to retrieve the paths of the images.
+                    # All I'm doing is looping through the elements in dset1 and dset2 and retrieving
+                    # the intermediate values from data.images. For instance, 
+                    # say dset1 = ['MODIS', '1KM', '4']:
+                    # image1_path = data.images
+                    # image1_path = image1_path['MODIS']
+                    # image1_path = image1_path['1KM']
+                    # image1_path = image1_path['4']
+
+                    logger.debug(data.images)
+
+                    image1_path = data.images
+                    for key in dset1:
+                        image1_path = image1_path[str(key)]
+
+                    image2_path = data.images
+                    for key in dset2:
+                        image2_path = image2_path[str(key)]
+
+                    sim = af_image.structural_similarity( image1_path, image2_path )
+                    data.similarity.append(sim  )
+
+                    if sim < COMPARE_THRESHOLD:
+                        logger.warning("Images have similarity below designated threshold!")
+                        logger.warning("image 1: {}".format( image1_path ) )
+                        logger.warning("image 2: {}".format( image2_path ) )
+                        logger.warning("similarity: {}".format( sim ) )
+                        logger.warning("similarity threshold: {}".format( COMPARE_THRESHOLD ) )
+
+                        data.set_status( Tags.FAIL_IMG_CMP )
+                        return data
+
+                    else:
+                        logger.info("Images above similarity threshold.")
+                        logger.debug("image 1: {}".format( image1_path ) )
+                        logger.debug("image 2: {}".format( image2_path ) )
+                        logger.info("similarity: {}".format( sim ) )
+                        logger.info("similarity threshold: {}".format( COMPARE_THRESHOLD ) )
+        except:
+            logger.exception("Encountered exception")
+            data.set_status( Tags.FAIL_IMAGE )
+            return data
+
+        logger.info("Done.")
+
+        data.set_status( Tags.SUCCEED )
+        return data
+
+    except:
+        logger.exception("Encountered exception.")
+        data.set_status( Tags.FAIL )
+        return data
 
 def check_h5dump():
+    """
+    Check if h5dump is visible.
+    """
+
     args = ['which', 'h5dump']
     proc = subprocess.Popen( args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT )
     proc.wait()
@@ -328,6 +631,7 @@ def check_h5dump():
             
     if proc.returncode != 0:
         raise RuntimeError("h5dump not visible!")
+
 
 def main(pool):
     parser = argparse.ArgumentParser(description="This is an MPI \
@@ -343,25 +647,28 @@ def main(pool):
     parser.add_argument("output_dir", help="Output AF directory. \
     Will be created if it doesn't exist", type=str)
 
-    parser.add_argument("config", help="A yaml-compatible file that \
-    describes the parameters to pass to the AF tool. The set of \
-    recognized parameters is described on the AF GitHub. NOTE: \
-    The OUTPUT_FILE_PATH and INPUT_FILE_PATH parameters will be \
-    IGNORED by this script.", type=str, default="./AFconfig.txt")
+    parser.add_argument("af_tool", help="Path to the AF binary.",
+    type=str)
 
     req_grp = parser.add_argument_group(title='Required flags')
+    
     req_grp.add_argument("--range", "-r", help="Specify the inclusive \
     range of orbits to process. May specify multiple ranges. At least \
     one range is required.", nargs=2, action='append', type=int, 
     required=True)
-
-    parser.add_argument("af_tool", help="Path to the AF binary.",
-    type=str)
-
+    
+    req_grp.add_argument("--config", "-c", help="""Specify one or more
+    yaml-compatible files that describe the parameters of the AF run.
+    The parameters are either passed directly to the AF tool, or are 
+    used only by this script. The set of recognized parameters is 
+    described in the README of this directory. If multiple config files 
+    are given, multiple calls will be made to the AF tool, each with 
+    one output file.""", type=str, required=True, action='append' )
+    
     parser.add_argument("--ll", help="Define the log output level.",
     type=str, choices=["CRITICAL", "ERROR", "WARNING", "INFO",
-        "DEBUG"], default="INFO")
-
+        "DEBUG"], default="DEBUG")
+    
     args = parser.parse_args()
 
     #Define the log level. Logger has already been defined globally,
@@ -383,14 +690,19 @@ def main(pool):
     consoleHandler = logging.StreamHandler(sys.stdout)
     consoleHandler.setFormatter(logFormatter)
     rootLogger.addHandler(consoleHandler)
-    
+   
     logger.info("Creating output directory")
     logger.debug("Output dir: {}".format(args.output_dir))
     
-    out_dirs = { 'data': os.path.join(args.output_dir, 'data'), 
-                 'logs': os.path.join(args.output_dir, 'logs'),
-                 'h5dump': os.path.join( args.output_dir, 'data', 'h5dump')
-               }
+    out_dirs = {}
+    out_dirs['data'] = os.path.join(args.output_dir, 'data')
+    out_dirs['h5dump'] = os.path.join( args.output_dir, 'data', 'h5dump')
+    out_dirs['logs'] = os.path.join(args.output_dir, 'logs')
+    out_dirs['run'] = make_run_dir( out_dirs['logs'] )
+    out_dirs['images'] = os.path.join( out_dirs['data'], 'images' )
+    out_dirs['af_log'] = os.path.join( out_dirs['run'], 'af_log' )
+    out_dirs['configs'] = os.path.join( out_dirs['run'], 'configs' )
+
     for i in out_dirs:
         # Create directories
         try:
@@ -399,44 +711,81 @@ def main(pool):
             if e.errno != errno.EEXIST:
                 raise
 
-    # Setup log directory for this run
-    logger.create_log_dirs( out_dirs['logs'] )
-    logger.info("run dir: {}".format(logger.get_run_dir()))
+    # Create empty file in our run dir whose name is the current date
+    now = datetime.datetime.now()
+    cur_date = "{}_{}_{}.{}hr_{}min_{}sec".format( now.year, now.month, now.day,
+        now.hour, now.minute, now.second)
+
+    with open( os.path.join( out_dirs['run'], cur_date ), 'w' ) as f:
+        pass
+    
+    
+    logger.info("run dir: {}".format(out_dirs['run']))
 
     # Set file handler for master
-    log_file = os.path.join( logger.get_log_dirs()['af_log'], 'master.log')
+    log_file = os.path.join( out_dirs['af_log'], 'master.log')
     logger.addFileHandler( log_file )
+
+    # Print out command-line args
+    logger.info( " ".join(sys.argv) )
 
     logger.info("Checking for h5dump visibility...")
     check_h5dump()
     logger.info("h5dump visible.")
     
     logger.info("Parsing input directory for BF files")
-    
-    # Read the config file
-    with open( args.config, 'r') as f:
-        config = yaml.load(f)
+  
+    configs = []
+    for config_file in args.config:
+        # Read the config file
+        with open( args.config, 'r') as f:
+            configs.append(yaml.load(f))
+
+    # Set COMPARE_THRESHOLD if needed
+    if "COMPARE_THRESHOLD" in config:
+        global COMPARE_THRESHOLD
+        if type( config["COMPARE_THRESHOLD"] ) is not float:
+            raise TypeError("COMPARE_THRESHOLD should be a float.")
+
+        COMPARE_THRESHOLD = config["COMPARE_THRESHOLD"]
     
     # Discover all of the Basic Fusion files, making sure we have
     # all the files requested by orbit_min and orbit_max.
-    # We create the orbits dictionary to create a fast way of
+    # We create the orbits set to create a fast way of
     # determining which orbits we are not able to find.
-    orbits = {}
+    orbits = set()
     for r in args.range:
-        for o in range( r[0], r[1] + 1 ):
-            orbits[o] = None
+        orbits = orbits | set( range(r[0], r[1] + 1 ) )
 
     count = 0
     jobs = []
-    log_dirs = logger.get_log_dirs()
+
+    seen_year_month_config = {}
+    seen_year_month_log = {}
+    seen_year_month_image = {}
+
     for root, dirs, files in os.walk( args.input_dir ):
         for file in files:
+            
             try:
-
                 orbit = bfutils.file.bf_file_orbit( file )
+            except ValueError:
+                # if bf_file_orbit gives ValueError, then file isn't 
+                # a basic fusion file. Discard it and move on.
+                continue
+            
+                    
+            # If this granule is in our requested orbit range
+            if orbit in orbits:
+                count = count + 1
+               
                 
-                # If this granule is in our requested orbit range
-                if orbit in orbits:
+                for config_idx, config in enumerate(configs):
+                    
+                    # Print every so often
+                    if count % 500 == 0:
+                        logger.info("Orbit: {}".format(orbit))
+
                     granule = Granule()
 
                     in_path = os.path.join(root, file)
@@ -444,31 +793,75 @@ def main(pool):
                         bfutils.file.bf_file_orbit( in_path) )
 
                     year_month_dir = o_start[0:4] + '.' + o_start[4:6]
+
+                    if "OUTPUT_PREFIX" in config:
+                        prefix = config["OUTPUT_PREFIX"] + "_"
+                    else:
+                        prefix = "ADVNCE_FUSE_{}_".format(config_idx)
+
+                    # TODO
+                    # Finish integrating the multiple configuration files.
+                    #
                     out_path = os.path.join( out_dirs['data'], 
-                        year_month_dir, "ADVNCE_FUSE_" + file )
+                        year_month_dir, prefix + file )
 
-                    job_config = config.copy()
-                    job_config[in_file_key] = in_path
-                    job_config[out_file_key] = out_path
+                    # Set the configuration for this AF run
+                    af_config = config.copy()
+                    af_config[in_file_key] = in_path
+                    af_config[out_file_key] = out_path
+                    granule.set_config( af_config )
 
-                    granule.set_config( job_config )
-                    config_file = os.path.join( log_dirs['configs'], str(orbit) + '_config.txt' ) 
-                    granule.set_config_file( config_file ) 
+                    # Create the config year-month directory
+                    config_ym_dir = os.path.join( out_dirs['configs'], 
+                    year_month_dir )
+                    
+                    if config_ym_dir not in seen_year_month_config:
+                        try:
+                            os.makedirs( config_ym_dir )
+                        except OSError as e:
+                            if e.errno != errno.EEXIST:
+                                raise        
+                        # Keep track of which ym dirs we've seen so we don't make
+                        # more unnecessary (slow) system calls
+                        seen_year_month_config[ config_ym_dir ] = None
 
-                    log_file = os.path.join( log_dirs['af_log'], '{}.log'.format(orbit) )
+                    config_file = os.path.join( config_ym_dir, str(orbit) 
+                    + '_config_{}.txt'.format(config_idx) ) 
+
+                    granule.set_af_config_file( config_file ) 
+
+                    # Create the log year-month directory
+                    log_ym_dir = os.path.join( out_dirs['af_log'], year_month_dir )
+                    if log_ym_dir not in seen_year_month_log:
+                        try:
+                            os.makedirs( log_ym_dir )
+                        except OSError as e:
+                            if e.errno != errno.EEXIST:
+                                raise        
+                        seen_year_month_log[log_ym_dir] = None
+
+                    log_file = os.path.join( log_ym_dir, '{}.log'.format(orbit) )
                     granule.set_log_file( log_file )
+
                     granule.set_orbit(orbit)
 
                     granule.set_exe( args.af_tool )
+            
+                    # Create the image directory
+                    image_orbit_dir = os.path.join( out_dirs['images'], year_month_dir, str(orbit) )
+                    try:
+                        os.makedirs( image_orbit_dir )
+                    except OSError as e:
+                        if e.errno != errno.EEXIST:
+                            raise        
+                    granule.set_image_dir( image_orbit_dir )
 
                     h5_path = os.path.join( out_dirs['h5dump'], year_month_dir, os.path.basename( out_path + '.h5dump'))
                     granule.set_h5dump( h5_path )
                     jobs.append( granule )
-                    orbits.pop(orbit)
+                
+                orbits -= {orbit}
 
-            except ValueError:
-                # Catches ValueError from bfutils call
-                pass
    
     logger.info("Done.")
 
@@ -490,31 +883,34 @@ def main(pool):
     logger.info("Checking for failed granules...")
     
     
-    logger.failed_file = os.path.join( logger.get_run_dir(), FAILED_FILE )
+    logger.failed_file = os.path.join( out_dirs['run'], FAILED_FILE )
+    logger.granule_summary = os.path.join( out_dirs['run'], GRANULE_SUMMARY )
+
     fail_count = 0
-    with open( logger.failed_file, 'w' ) as f:
-        for granule in results:
-            if granule[1] == Tags.FAIL:
-                fail_count = fail_count + 1
-                f.write(
-                    'Orbit: {}\nInput: {}\nOutput: {}\nLog file: {}\nConfig file: {}\nh5dump: {}\n\n'.format(
-                    granule[0].get_orbit(), granule[0].get_input_path(),
-                    granule[0].get_output_path(), granule[0].get_log_file(),
-                    granule[0].get_config_file(), granule[0].get_h5dump()))
 
+    # Sort the results by orbit
+    results = sorted( results, key = lambda k: k.get_orbit() )
+   
+    with open( logger.granule_summary, 'w' ) as g_summary:
+        with open( logger.failed_file, 'w' ) as f:
+            for granule in results:
 
-    if fail_count:
-        logger.info(
-            "{}/{} ({} %) granules failed. See: {} for more details.".format(
-            fail_count, len(results), round(100 * fail_count / len(results), 2), 
-            logger.failed_file))
+                attr_string = class_attr_string(granule) + '\n'
+                g_summary.write( attr_string )
+
+                if granule.get_status() != Tags.SUCCEED:
+                    fail_count = fail_count + 1
+                    f.write( attr_string )
+
+    logger.info(
+        "{}/{} ({} %) granules failed. See: {} for more details.".format(
+        fail_count, len(results), round(100 * fail_count / len(results), 2), 
+        logger.failed_file))
             
 if __name__ == "__main__":
     try:
         pool = MPIPool()
-        
         main(pool)
-    
     except SystemExit as e:
         if e.code == 0:
             pool.close()

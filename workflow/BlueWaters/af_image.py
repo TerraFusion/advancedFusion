@@ -10,6 +10,7 @@ from PIL import Image
 from enum import IntEnum
 import contextlib
 import time
+from skimage.measure import compare_ssim as ssim
 
 @contextlib.contextmanager
 def timeit(ident):
@@ -23,50 +24,26 @@ path='/u/sciteam/clipp/scratch/af_out/data/2007.01/ADVNCE_FUSE_TERRA_BF_L1B_O376
 #dset="Source/Data_Fields/MODIS_Radiance"
 dset="Target/Data_Fields/MISR_Radiance"
 
-misr_cam = { 
-    'aa' : 0,
-    'af' : 1,
-    'an' : 2,
-    'ba' : 3,
-    'bf' : 4,
-    'ca' : 5,
-    'cf' : 6,
-    'da' : 7,
-    'df' : 8,
-}
 
-misr_band = {
-    'red'   : 0,
-    'green' : 1,
-    'blue'  : 2,
-    'nir'   : 3
-}
-
-def print_misr(file, camera, band, out_path):
+def print_misr(file, camera, band, dset_path, out_path):
     """
     From an advanced fusion file, print the specified MISR camera
     and band into an output image.
     file - Path to Advanced Fusion HDF5 file
-    camera - Choose from AA, AF, AN, BA, BF, CA, CF, DA, DF
-    band - Choose from red, green, blue, nir.
+    camera (int) -- Chooses the first dimension of MISR_Radiance
+    band (int) -- Chooses the second dimension of MISR_Radiance
+    dset_path (str) -- Dataset Path within the HDF5 file where MISR radiance
+        data is stored.
     out_path - output image path. Must contain a valid image extension (e.g. '.png')
     """
 
-    camera = camera.lower()
-    band = band.lower()
-    if camera not in misr_cam:
-        raise ValueError("choose camera from {}".format( misr_cam ))
-    if band not in misr_band:
-        raise ValueError("Choose band from {}".format( misr_band))
-    
-    dset_path="/Target/Data_Fields/MISR_Radiance"
     f = h5py.File( file, "r" )
     dataset = f[dset_path]
     _FillValue = dataset.attrs['_FillValue']
 
     with timeit('test1'):
         # Select specific camera, band
-        dataset = dataset[ misr_cam[camera], misr_band[band] ]
+        dataset = dataset[ camera, band ]
    
     with timeit('test2'):
         # Clip fill values to 0
@@ -116,7 +93,45 @@ def print_modis(file, band, dset_path, out_path):
         img = Image.fromarray( dataset, "L" )
         img.save(out_path)
 
+def print_aster(file, band, dest_path, out_path):
+    """
+    From an advanced fusion file, print the specified ASTER band to
+    an output image.
+    file (str) -- Path to an AF HDF5 file
+    band (int) -- ASTER band to select
+    dset_path (str) -- Absolute path of the ASTER dataset in the HDF5 file.
+        Must give in format "/path/to/ASTER_Radiance"
+    out_path (str) -- Output image path. Must contain a valid image
+        extension.
+    """
+
+    f = h5py.File(file, "r")
+    dataset = f[dset_path]
+    
+    _FillValue = dataset.attrs('_FillValue')
+
+    dataset = dataset[band]
+    # Clip fill values to 0
+    dataset[ dataset == _FillValue ] = 0.0
+    # Adjust range
+    dataset *= (255.0 / dataset.max())
+    dataset = np.uint8(dataset)
+    img = Image.fromarray( dataset, "L")
+    img.save(out_path)
+
+def structural_similarity( img_path1, img_path2 ):
+
+    image1 = np.asarray( Image.open( img_path1 ) )
+    image2 = np.asarray( Image.open( img_path2 ) )
+
+    return ssim( image1, image2 )
+
+
 if __name__ == "__main__":
     #print_h5_dset(dset, None)
     #print_misr( path, 'AN', 'blue', './pictures/misr_modisonmisr.png')
-    print_modis(path, 0, "/Source/Data_Fields/MODIS_Radiance", "./pictures/modis_modisonmisr_0.png")
+    #print_modis(path, 0, "/Source/Data_Fields/MODIS_Radiance", "./pictures/modis_modisonmisr_0.png")
+    #image1 = np.asarray( Image.open( "./pictures/modis_modisonmisr_0.png" ) )
+    image1 = np.asarray( Image.open('./pictures/cosmogram136.jpg'))
+    image2 = np.asarray( Image.open("./pictures/misr_modisonmisr.png") )
+    print(ssim( image1, image2 ))
