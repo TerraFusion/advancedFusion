@@ -94,6 +94,8 @@ If you are requesting only a single comparison, you may do something like:
 COMPARE_IMAGES: ['MISR L AN Red_Radiance', 'MODIS 1KM 4']
 ```
 
+NOTE: If this parameter is provided and is non-empty, the script will still generate *all* of the images in the output file.
+
 ### COMPARE_THRESHOLD
 
 This parameter describes the threshold for the structural similarity percentage, below which an image comparison will be marked as bad. If this is not provided explicitly, the parameter will default to 0.90. Must be a value between 0 and 1.
@@ -101,3 +103,11 @@ This parameter describes the threshold for the structural similarity percentage,
 ### OUTPUT_PREFIX
 
 This parameter sets the prefix for the output Advanced Fusion files. This is useful (read: EXTERMELY useful) if you are using multiple configuration files during the same process.py run and want to differentiate your files from each other.
+
+### PRINT_ALL_IMG
+
+Set this parameter to "True"/"yes"/"on" (case-insensitive) to enable printing of all images in the output AF file. The output images will be stored in the output directory given to the script, under "images". 
+
+Note that the COMPARE_IMAGES parameter will create all of the images in the output HDF5 file. Whether or not the script generates all images is simply the result of "if PRINT_ALL_IMG or COMPARE_IMAGES", meaning that if either COMPARE_IMAGES is non-empty or PRINT_ALL_IMAGES = True, all the images will be generated.
+
+

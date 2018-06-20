@@ -93,12 +93,13 @@ def print_modis(file, band, dset_path, out_path):
         img = Image.fromarray( dataset, "L" )
         img.save(out_path)
 
-def print_aster(file, band, dest_path, out_path):
+def print_aster(file, band, dset_path, out_path):
     """
     From an advanced fusion file, print the specified ASTER band to
     an output image.
     file (str) -- Path to an AF HDF5 file
-    band (int) -- ASTER band to select
+    band (int) -- ASTER band index to select (this is an index into the first
+        dataset dimension)
     dset_path (str) -- Absolute path of the ASTER dataset in the HDF5 file.
         Must give in format "/path/to/ASTER_Radiance"
     out_path (str) -- Output image path. Must contain a valid image
@@ -108,7 +109,7 @@ def print_aster(file, band, dest_path, out_path):
     f = h5py.File(file, "r")
     dataset = f[dset_path]
     
-    _FillValue = dataset.attrs('_FillValue')
+    _FillValue = dataset.attrs['_FillValue']
 
     dataset = dataset[band]
     # Clip fill values to 0
