@@ -654,231 +654,16 @@ def worker( data ):
         if data.get_status() == Tags.SUCCEED_H5DUMP:
             try:
                 do_img_gen_verify( data )
-
-#                wf_config = data.get_workflow_config()
-#          
-#                if wf_config["COMPARE_IMAGES"] or wf_config["PRINT_ALL_IMG"]:
-#                    # We need to figure out which datasets to retrieve based on
-#                    # data's configuration.
-#                    
-#                    logger.info("Creating images from datasets...")
-#
-#                    src_dset_path = SRC_DSET_PATH.format( af_config["SOURCE_INSTRUMENT"].upper() )
-#                    target_dset_path = TARGET_DSET_PATH.format( af_config["TARGET_INSTRUMENT"].upper() )
-#                    
-#                    images = []
-#                    for instr_path in src_dset_path, target_dset_path:
-#                        # Unfortunately, these ugly if statements are necessary because
-#                        # each instrument function takes different parameters :(
-#                        
-#
-#                        if "MODIS_Radiance" in instr_path:
-#                            bands = af_config["MODIS_BANDS"]
-#                            resolutions = af_config["MODIS_RESOLUTION"].upper().split()
-#
-#                            logger.info("Creating MODIS images...")
-#                            
-#                            if bands.upper() == "ALL":
-#                                bands = range( NUM_MODIS_BANDS )
-#                            else:
-#                                # Split each band to a separate element, then convert 
-#                                # each element to an integer
-#                                bands = [ int(i) for i in bands.split() ]
-#
-#                            # band_idx and band are two different things. idx is 
-#                            # index into dataset. Bands are assigned indices
-#                            # according to which order they were given in the
-#                            # config file.
-#
-#                            for resolution_idx, resolution in enumerate( resolutions ):
-#                                for band_idx, band in enumerate(bands):
-#
-#                                    img_name = instr_path.replace('/', '#') + "_{}_band_{}".format(resolution, band) + \
-#                                        "_orbit_{}".format( data.get_orbit() ) + IMG_EXTENSION
-#
-#                                    img_path = os.path.join( data.get_image_dir(), img_name )
-#                                    
-#                                    # Save image path into data
-#                                    dict_walker = data.images
-#                                    modis_dset = ["MODIS", resolution ]
-#                                    for key in modis_dset:
-#                                        if key not in dict_walker:
-#                                            dict_walker[str(key)] = {}
-#
-#                                        dict_walker = dict_walker[str(key)]
-#
-#                                    logger.debug("data.images['MODIS'][{}][{}] = {}".format(
-#                                        resolution, band, img_path))
-#
-#                                    data.images["MODIS"][ resolution ][ str(band) ] = img_path
-#                                    
-#                                    images.append(img_path)
-#                                    
-#                                    logger.debug(LOG_SEP)
-#                                    logger.debug("out_path: {}".format( data.get_output_path()))
-#                                    logger.debug("instr_path: {}".format(instr_path))
-#                                    logger.debug("img_path: {}".format(img_path))
-#                                    logger.debug("band: {}".format(band))
-#                                    logger.debug("band_idx: {}".format(band_idx))
-#
-#                                    af_image.print_modis( data.get_output_path(), band_idx, instr_path, img_path )
-#                      
-#                            logger.debug(LOG_SEP)
-#                            
-#                        elif "MISR_Radiance" in instr_path:
-#                            # Get MISR camera angles
-#                            angles = af_config["MISR_CAMERA_ANGLE"].upper().split()
-#                            bands = af_config["MISR_RADIANCE"].split()
-#                            resolutions = af_config["MISR_RESOLUTION"].upper().split()
-#
-#                            logger.info("Creating MISR images.")
-#
-#                            # We use enumerate to get index, instead of using the actual string.
-#                            # print_misr expects integer that serves as index into dataset. The
-#                            # order in which angles/bands are listed in the config file is the
-#                            # order in which they are stored in the dataset.
-#                            for res_idx, res in enumerate( resolutions ):
-#                                for angle_idx, angle in enumerate( angles ):
-#                                    for band_idx, band in enumerate( bands ):
-#                                        img_name = instr_path.replace('/', '#') + \
-#                                            "_{}_{}_{}{}".format( angle, band.replace("_Radiance", "") , data.get_orbit(), 
-#                                            IMG_EXTENSION )
-#
-#                                        img_path = os.path.join( data.get_image_dir(), img_name )
-#
-#                                        # Save image path into data.
-#                                        # Recursively create a chain of dicts that
-#                                        # describe the dataset. For instance, we would
-#                                        # like to be able to access it like this:
-#                                        # data.images["MODIS"]["L"]["AN"]["Red_Radiance"]
-#                                        # 
-#                                        # and have the path stored at that location.
-#
-#                                        dict_walker = data.images
-#                                        misr_dset = ["MISR", res, angle ]
-#                                        for key in misr_dset:
-#                                            if key not in dict_walker:
-#                                                dict_walker[str(key)] = {}
-#
-#                                            dict_walker = dict_walker[str(key)]
-#                                            
-#                                        data.images["MISR"][res][angle][str(band)] = img_path
-#
-#                                        logger.debug(LOG_SEP)
-#                                        logger.debug("out_path: {}".format( data.get_output_path()))
-#                                        logger.debug("angle: {}".format(angle))
-#                                        logger.debug("angle_idx: {}".format( angle_idx))
-#                                        logger.debug("band: {}".format(band))
-#                                        logger.debug("band_idx: {}".format(band_idx))
-#                                        logger.debug("instr_path: {}".format(instr_path))
-#                                        logger.debug("img_path: {}".format( img_path))
-#
-#                                        af_image.print_misr( data.get_output_path(), angle_idx, 
-#                                            band_idx, instr_path, img_path )
-#
-#                            
-#                                logger.debug(LOG_SEP)
-#            
-#                        elif "ASTER_Radiance" in instr_path:
-#                            # Get ASTER parameters
-#                            res = af_config["ASTER_RESOLUTION"].upper().split()[0]
-#                            bands = af_config["ASTER_BANDS"].upper().split()
-#                            
-#                            logger.info("Creating ASTER images.")
-#                            # Landon Clipp 6/19/2018
-#                            # Apparently, the ASTER_Radiance dataset only stores 
-#                            # different bands in the dimensions. So just iterate
-#                            # over the first dimension. Note: first for loop
-#                            for band_idx, band in enumerate( bands ):
-#                                img_name = "{}_{}_{}_{}{}".format( instr_path.replace('/', '#'),
-#                                res, band, data.get_orbit(), IMG_EXTENSION )
-#
-#                                img_path = os.path.join( data.get_image_dir(), img_name )
-#
-#                                dict_walker = data.images
-#                                aster_dset = ["ASTER", res ]
-#                                for key in aster_dset:
-#                                    if key not in dict_walker:
-#                                        dict_walker[key] = {}
-#
-#                                data.images["ASTER"][res][band] = img_path
-#
-#                                logger.debug(LOG_SEP)
-#                                logger.debug("out_path: {}".format( data.get_output_path()))
-#                                logger.debug("band: {}".format(band))
-#                                logger.debug("band_idx: {}".format(band_idx))
-#                                logger.debug("instr_path: {}".format( instr_path ))
-#                                logger.debug("img_path: {}".format(img_path))
-#
-#                                af_image.print_aster( data.get_output_path(), band_idx, 
-#                                    instr_path, img_path )
-#
-#                            logger.debug(LOG_SEP)
-#
-#                        else:
-#                            raise ValueError("Cannot determine the instrument \
-#                            for image generation!")
-#
-#                    logger.info("Images generated.")
-#
-#                    if wf_config["COMPARE_IMAGES"]:
-#                        logger.info("Creating similarity metrics.")
-#
-#                        for idx, val in enumerate( wf_config["COMPARE_IMAGES"] ) :
-#                            # If it's a list, retrieve the cameras from each element
-#                            if type(val) is list:
-#                                dset1 = val[0].split()
-#                                dset2 = val[1].split()
-#
-#                            # Else if it's a string, the next element is our second dataset
-#                            elif type(val) is str:
-#                                dest1 = val.split()
-#                                dset2 = wf_config["COMPARE_IMAGES"][idx + 1].split()
-#                            else:
-#                                raise ValueError("Unknown value in COMPARE_IMAGES.")
-#
-#                            # "Recursively" iterate through the keys to retrieve the paths of the images.
-#                            # All I'm doing is looping through the elements in dset1 and dset2 and retrieving
-#                            # the intermediate values from data.images. For instance, 
-#                            # say dset1 = ['MODIS', '1KM', '4']:
-#                            # image1_path = data.images
-#                            # image1_path = image1_path['MODIS']
-#                            # image1_path = image1_path['1KM']
-#                            # image1_path = image1_path['4']
-#
-#                            logger.debug(data.images)
-#
-#                            image1_path = data.images
-#                            for key in dset1:
-#                                image1_path = image1_path[str(key)]
-#
-#                            image2_path = data.images
-#                            for key in dset2:
-#                                image2_path = image2_path[str(key)]
-#
-#                            sim = af_image.structural_similarity( image1_path, image2_path )
-#                            data.similarity.append(sim  )
-#
-#                            if sim < wf_config["COMPARE_THRESHOLD"]:
-#                                logger.warning("Images have similarity below designated threshold!")
-#                                logger.warning("image 1: {}".format( image1_path ) )
-#                                logger.warning("image 2: {}".format( image2_path ) )
-#                                logger.warning("similarity: {}".format( sim ) )
-#                                logger.warning("similarity threshold: {}".format( wf_config["COMPARE_THRESHOLD"] ) )
-#
-#                                data.set_status( Tags.FAIL_IMG_CMP )
-#                                return data
-#
-#                            else:
-#                                logger.info("Images above similarity threshold.")
-#                                logger.debug("image 1: {}".format( image1_path ) )
-#                                logger.debug("image 2: {}".format( image2_path ) )
-#                                logger.info("similarity: {}".format( sim ) )
-#                                logger.info("similarity threshold: {}".format( wf_config["COMPARE_THRESHOLD"] ) )
-        
             except:
                 logger.exception("Encountered exception")
                 return data
+
+            # Dump your data into the image dir
+            data_dump_file = '{}_dump.log'.format( data.get_workflow_config()["OUTPUT_PREFIX"] )
+            dump_path = os.path.join( data.get_image_dir(), data_dump_file )
+
+            with open( dump_path, 'w' ) as f:
+                f.write( class_attr_string( data ) + '\n' )
 
             data.set_status( Tags.SUCCEED_IMG )
 
@@ -907,6 +692,94 @@ def check_h5dump():
             
     if proc.returncode != 0:
         raise RuntimeError("h5dump not visible!")
+
+
+def check_configs(configs):
+
+    only_pair_msg = "Can only list pairs of datasets to compare images!"
+    dset_not_in_config = "Listed a dataset in COMPARE_IMAGES that was not requested in the config file."
+
+    num_misr_args = 4
+    num_modis_args = 3 
+    num_aster_args = 3
+    for config in configs:
+
+        # Convert all of the AF parameters to strings
+        for key in config:
+            if key not in Granule.wf_params:
+                config[key] = str(config[key])
+
+        # Check the COMPARE_IMAGES
+        if "COMPARE_IMAGES" in config:
+            for cmp_idx, cmp in enumerate( config["COMPARE_IMAGES"] ):
+                if type(cmp) is str:
+
+                    if len( config["COMPARE_IMAGES"] ) != 2:
+                        raise ValueError(only_pair_msg)
+
+                    if cmp_idx > 0:
+                        continue
+
+                    cmp = cmp.split()
+                    cmp2 = config["COMPARE_IMAGES"][cmp_idx + 1].split()
+
+                elif type(cmp) is list:
+                    if len(cmp) != 2:
+                        raise ValueError(only_pair_msg)
+
+                    cmp2 = cmp[1].split()
+                    cmp = cmp[0].split()
+
+                for dset in cmp, cmp2:
+                    instr = dset[0]
+
+                    if instr == "MISR":
+
+                        if len(dset) != num_misr_args:
+                            raise ValueError("Must provide {} arguments for MISR COMPARE_IMAGES.".format(num_misr_args))
+
+                        res = dset[1]
+                        angle = dset[2]
+                        radiance = dset[3]
+
+                        if res not in config["MISR_RESOLUTION"] or \
+                        angle not in config["MISR_CAMERA_ANGLE"] or \
+                        radiance not in config["MISR_RADIANCE"]:
+                            
+                            raise ValueError(dset_not_in_config) 
+
+                    elif instr == "MODIS":
+                        if len(dset) != num_misr_args:
+                            raise ValueError("Must provide {} arguments for MODIS COMPARE_IMAGES.".format(num_modis_args))
+
+                        res = dset[1]
+                        band = dset[2]
+
+                        if res not in config["MODIS_RESOLUTION"] or \
+                        band not in config["MODIS_BANDS"]:
+                            raise ValueError(dset_not_in_config) 
+
+                    elif instr == "ASTER":
+                        if len(dset) != num_aster_args:
+                            raise ValueError("Must provide {} arguments for ASTER COMPARE_IMAGES.".format(num_misr_args))
+                        
+                        res = dset[1]
+                        band = dset[2]
+
+                        if res not in config["ASTER_RESOLUTION"] or \
+                        band not in config["ASTER_BANDS"]:
+                            raise ValueError(dset_not_in_config) 
+
+                    else:
+                        raise ValueError("Unsupported instrument '{}' listed in COMPARE_IMAGES.".format(instr))
+
+
+        if "COMPARE_THRESHOLD" in config:
+            threshold = config["COMPARE_THRESHOLD"]
+
+            if threshold < 0.0 or threshold > 1.0:
+                raise ValueError("COMPARE_THRESHOLD value should be between 0 and 1 (inclusive)")
+
 
 
 def main(pool):
@@ -1024,8 +897,9 @@ def main(pool):
     logger.info("Checking for h5dump visibility...")
     check_h5dump()
     logger.info("h5dump visible.")
-    
-    logger.info("Parsing input directory for BF files")
+   
+    logger.info("Checking validity of configuration files...")
+
   
     configs = []
     for config_file in args.config:
@@ -1034,6 +908,9 @@ def main(pool):
             conf = yaml.load(f)
         configs.append(conf)
 
+    check_configs( configs )
+
+    logger.info("Parsing input directory for BF files")
     # Discover all of the Basic Fusion files, making sure we have
     # all the files requested by orbit_min and orbit_max.
     # We create the orbits set to create a fast way of
@@ -1104,6 +981,7 @@ def main(pool):
                             prefix = config["OUTPUT_PREFIX"] + "_"
                         else:
                             prefix = "ADVNCE_FUSE_{}_".format(config_idx)
+                            config["OUTPUT_PREFIX"] = prefix
 
                         out_path = os.path.join( out_dirs['data'], 
                             year_month_dir, prefix + file )
