@@ -1858,7 +1858,7 @@ double* get_ast_lat(hid_t file, char* subsystem, char* d_name, int*size)
 
 	//Get total data size
 	printf("Get total data size\n");
-	int total_size = 0;
+	long total_size = 0;
 	for(i = 0; i < num_groups; i++){
 		char* name = names[i];
 		if(strcmp(name, "") == 0) {
@@ -1876,9 +1876,14 @@ double* get_ast_lat(hid_t file, char* subsystem, char* d_name, int*size)
 		}
 		total_size += curr_dim[0]*curr_dim[1];
 		free(curr_dim);
+		// check overflow
+		if(total_size < 0) {
+			printf("Error: total_size '%ld' overflowed.\n", total_size);
+			return NULL;
+		}
 	}
 	#if DEBUG_IO
-	printf("DBG_IO %s:%d> Get total_size: %d\n", __FUNCTION__, __LINE__, total_size);
+	printf("DBG_IO %s:%d> Get total_size: %ld\n", __FUNCTION__, __LINE__, total_size);
 	#endif
 	
 	printf("Reading values\n");
