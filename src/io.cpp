@@ -1857,8 +1857,8 @@ double* get_ast_lat(hid_t file, char* subsystem, char* d_name, int*size)
 	}
 
 	//Get total data size
-	printf("Get total data size\n");
-	long total_size = 0;
+	printf("Getting total data size\n");
+	int total_size = 0;
 	for(i = 0; i < num_groups; i++){
 		char* name = names[i];
 		if(strcmp(name, "") == 0) {
@@ -1876,14 +1876,25 @@ double* get_ast_lat(hid_t file, char* subsystem, char* d_name, int*size)
 		}
 		total_size += curr_dim[0]*curr_dim[1];
 		free(curr_dim);
+		#if DEBUG_IO
+		printf("DBG_IO %s:%d> Get total_size: %d\n", __FUNCTION__, __LINE__, total_size);
+		#endif
+
 		// check overflow
 		if(total_size < 0) {
-			printf("Error: total_size '%ld' overflowed.\n", total_size);
+			/* As lone as using 'int' for total cell number in the code; because
+			 * total cell number variable type was started as int type from the beginning,
+			 * and 'int' type limit is about 2 billion.
+			 * To remedy this, use long type which probably can cover all instrument cases.
+			 * This update involves refactoring all the functions generting,passing,receving
+			 * the total cell number.
+			 */
+			printf("\nError: Failed to continue reading ASTER latitude data due to the 2 billion pixel limit.\n");
 			return NULL;
 		}
 	}
 	#if DEBUG_IO
-	printf("DBG_IO %s:%d> Get total_size: %ld\n", __FUNCTION__, __LINE__, total_size);
+	printf("DBG_IO %s:%d> Get total_size: %d\n", __FUNCTION__, __LINE__, total_size);
 	#endif
 	
 	printf("Reading values\n");
@@ -2000,7 +2011,7 @@ double* get_ast_long(hid_t file, char* subsystem, char* d_name, int* size)
 	}
 	
 	//Get total data size
-	printf("Get total data size\n");
+	printf("Getting total data size\n");
 	int total_size = 0;
 	int store_count = 0;
 	for(i = 0; i < num_groups; i++){
@@ -2020,6 +2031,23 @@ double* get_ast_long(hid_t file, char* subsystem, char* d_name, int* size)
 		}
 		total_size += curr_dim[0]*curr_dim[1];
 		free(curr_dim);
+
+		#if DEBUG_IO
+		printf("DBG_IO %s:%d> Get total_size: %d\n", __FUNCTION__, __LINE__, total_size);
+		#endif
+
+		// check overflow
+		if(total_size < 0) {
+			/* As lone as using 'int' for total cell number in the code; because
+			 * total cell number variable type was started as int type from the beginning,
+			 * and 'int' type limit is about 2 billion.
+			 * To remedy this, use long type which probably can cover all instrument cases.
+			 * This update involves refactoring all the functions generting,passing,receving
+			 * the total cell number.
+			 */
+			printf("\nError: Failed to continue reading ASTER longitude data due to the 2 billion pixel limit.\n");
+			return NULL;
+		}
 	}
 	#if DEBUG_IO
 	printf("DBG_IO %s:%d> Get total_size: %d\n", __FUNCTION__, __LINE__, total_size);
