@@ -51,7 +51,8 @@ def print_misr(file, camera, band, dset_path, out_path):
 
     with timeit('test3'):
         #  Adjust range
-        dataset *= (255.0 / dataset.max())
+        if dataset.max() != 0:
+            dataset *= (255.0 / dataset.max())
 
     with timeit('test4'):
         img = Image.fromarray( np.uint8(dataset), "L" )
@@ -84,7 +85,8 @@ def print_modis(file, band, dset_path, out_path):
 
     with timeit('test3'):
         # Adjust range
-        dataset *= (255.0 / dataset.max() )
+        if dataset.max() != 0:
+            dataset *= (255.0 / dataset.max() )
 
     with timeit('testconvert'):
         dataset = np.uint8(dataset)
@@ -115,7 +117,8 @@ def print_aster(file, band, dset_path, out_path):
     # Clip fill values to 0
     dataset[ dataset == _FillValue ] = 0.0
     # Adjust range
-    dataset *= (255.0 / dataset.max())
+    if dataset.max() != 0:
+        dataset *= (255.0 / dataset.max())
     dataset = np.uint8(dataset)
     img = Image.fromarray( dataset, "L")
     img.save(out_path)

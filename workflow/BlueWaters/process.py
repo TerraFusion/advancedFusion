@@ -675,8 +675,8 @@ def worker( data ):
         # image generation/verification
         #
 
-        if data.get_status() == Tags.SUCCEED_H5DUMP and ("COMPARE_IMAGES" in wf_conf or \ (
-        "PRINT_ALL_IMG" in wf_conf and wf_conf["PRINT_ALL_IMG"] = True )):
+        if data.get_status() == Tags.SUCCEED_H5DUMP and ("COMPARE_IMAGES" in wf_conf or \
+        ("PRINT_ALL_IMG" in wf_conf and wf_conf["PRINT_ALL_IMG"] == True )):
             try:
                 do_img_gen_verify( data )
             except:
@@ -917,15 +917,6 @@ def main(pool):
     out_dirs['configs'] = os.path.join( out_dirs['run'], 'configs' )
     create_dirs(out_dirs)
 
-    
-    # Create empty file in our run dir whose name is the current date
-    now = datetime.datetime.now()
-    cur_date = "{}_{}_{}.{}hr_{}min_{}sec".format( now.year, now.month, now.day,
-        now.hour, now.minute, now.second)
-
-    with open( os.path.join( out_dirs['run'], cur_date ), 'w' ) as f:
-        pass
-    
     
     logger.info("run dir: {}".format(out_dirs['run']))
 
