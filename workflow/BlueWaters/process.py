@@ -32,7 +32,7 @@ yaml.constructor.Constructor.add_constructor(u'tag:yaml.org,2002:bool', add_bool
 
 
 # Define communication tags
-Tags = IntEnum('Tags', 'START SUCCEED_AF SUCCEED_H5DUMP SUCCEED_IMG SUCCEED_ALL' )
+Tags = IntEnum('Tags', 'START SUCCEED_AF SUCCEED_H5DUMP SUCCEED_IMG BAD_COMPARE SUCCEED_ALL' )
 
 LOG_FMT='[%(asctime)s] [%(name)12s] [%(levelname)8s] [%(filename)s:%(lineno)d] %(message)s'
 LOG_DATE_FMT='%d-%m-%Y:%H:%M:%S8'
@@ -57,6 +57,7 @@ class Granule:
 
         self.images = {}
         self.status = Tags.START
+        self.remove_af = False
 
     def sim_above_thresh( self ):
         """
@@ -68,9 +69,9 @@ class Granule:
         above_thresh = True
         for sim in self.similarity:
             if sim < self.get_workflow_config()["COMPARE_THRESHOLD"]:
-                above_thresh = False
+                above_thresh =  False
 
-        if not self.similarity and above_thresh:
+        if self.similarity and above_thresh:
             return True
         
         return False
@@ -216,7 +217,10 @@ class Granule:
 
     def __iter__(self):
         for attr, value in self.__dict__.items():
-            yield attr, value
+            if attr == "status":
+                yield attr, value.name
+            else:
+                yield attr, value
 
     
 class Log(logging.Logger):
@@ -579,17 +583,29 @@ def do_img_gen_verify( data ):
                     logger.debug("image 2: {}".format( image2_path ) )
                     logger.info("similarity: {}".format( sim ) )
                     logger.info("similarity threshold: {}".format( wf_config["COMPARE_THRESHOLD"] ) )
-    
+   
+def remove_file( file ):
+    """
+    Wraps os.remove, and discards any FileNotFound exceptions.
+    """
+    try:
+        os.remove( file )
+    except FileNotFoundError:
+        pass
+
 def worker( data ):
 
+    rm_file_info = "Removing output AF granule (as directed by command line argument)."
+    
     try:
         global logger
-
+        wf_conf = data.get_workflow_config()
+        af_conf = data.get_af_config()
         # Remove any old file handlers from previous orbits
         logger.handlers = [ h for h in logger.handlers if (type(h) != logging.FileHandler)]
 
         # Set the per-rank file handler for this specific orbit
-        fileHandler = logging.FileHandler( data.get_log_file(), mode='a')
+        fileHandler = logging.FileHandler( data.get_log_file(), mode='w')
         fileHandler.setFormatter( logFormatter )
         logger.addHandler( fileHandler)
 
@@ -627,6 +643,10 @@ def worker( data ):
         granule: {}.\nSee: {}\nfor more details.".format(
                     data.get_orbit(), data.get_log_file()))
 
+                if data.remove_af:
+                    logger.info( rm_file_info )
+                    remove_file( data.get_output_path() )
+                
                 return data
 
             data.set_status( Tags.SUCCEED_AF )
@@ -643,6 +663,9 @@ def worker( data ):
         \nSee: {}\nfor more details.".format(
                     data.get_orbit(), data.get_h5dump()))
 
+                if data.remove_af:
+                    logger.info(rm_file_info)
+                    remove_file( data.get_output_path() )
                 return data
         
             logger.info("Done.")
@@ -651,23 +674,33 @@ def worker( data ):
         #===========================
         # image generation/verification
         #
-        if data.get_status() == Tags.SUCCEED_H5DUMP:
+
+        if data.get_status() == Tags.SUCCEED_H5DUMP and ("COMPARE_IMAGES" in wf_conf or \ (
+        "PRINT_ALL_IMG" in wf_conf and wf_conf["PRINT_ALL_IMG"] = True )):
             try:
                 do_img_gen_verify( data )
             except:
                 logger.exception("Encountered exception")
+                if data.remove_af:
+                    logger.info(rm_file_info)
+                    remove_file( data.get_output_path() )
                 return data
+            
+            if data.sim_above_thresh():
+                data.set_status( Tags.SUCCEED_IMG )
+            else:
+                data.set_status( Tags.BAD_COMPARE )
 
-            # Dump your data into the image dir
-            data_dump_file = '{}_dump.log'.format( data.get_workflow_config()["OUTPUT_PREFIX"] )
-            dump_path = os.path.join( data.get_image_dir(), data_dump_file )
+        
+        # Dump granule attributes again
+        logger.info("Dumping data attributes again...")
+        logger.info( class_attr_string( data ) + '\n' )
 
-            with open( dump_path, 'w' ) as f:
-                f.write( class_attr_string( data ) + '\n' )
+        logger.info("Granule generated successfully.")
 
-            data.set_status( Tags.SUCCEED_IMG )
-
-        logger.info("Done.")
+        if data.remove_af:
+            logger.info(rm_file_info)
+            remove_file( data.get_output_path() )
 
         data.set_status( Tags.SUCCEED_ALL )
         return data
@@ -699,9 +732,9 @@ def check_configs(configs):
     only_pair_msg = "Can only list pairs of datasets to compare images!"
     dset_not_in_config = "Listed a dataset in COMPARE_IMAGES that was not requested in the config file."
 
-    num_misr_args = 4
-    num_modis_args = 3 
-    num_aster_args = 3
+    num_misr_args = 3
+    num_modis_args = 2 
+    num_aster_args = 2
     for config in configs:
 
         # Convert all of the AF parameters to strings
@@ -735,7 +768,7 @@ def check_configs(configs):
 
                     if instr == "MISR":
 
-                        if len(dset) != num_misr_args:
+                        if len(dset) - 1 != num_misr_args:
                             raise ValueError("Must provide {} arguments for MISR COMPARE_IMAGES.".format(num_misr_args))
 
                         res = dset[1]
@@ -749,7 +782,7 @@ def check_configs(configs):
                             raise ValueError(dset_not_in_config) 
 
                     elif instr == "MODIS":
-                        if len(dset) != num_misr_args:
+                        if len(dset) - 1 != num_modis_args:
                             raise ValueError("Must provide {} arguments for MODIS COMPARE_IMAGES.".format(num_modis_args))
 
                         res = dset[1]
@@ -760,7 +793,7 @@ def check_configs(configs):
                             raise ValueError(dset_not_in_config) 
 
                     elif instr == "ASTER":
-                        if len(dset) != num_aster_args:
+                        if len(dset) - 1 != num_aster_args:
                             raise ValueError("Must provide {} arguments for ASTER COMPARE_IMAGES.".format(num_misr_args))
                         
                         res = dset[1]
@@ -830,6 +863,10 @@ def main(pool):
     NOTE: This is a BETA feature and has some undocumented behavior!""",
     type=str )
 
+    parser.add_argument("--remove-af", help="""Remove the AF files after
+    they have been generated. This is useful if you only care about the 
+    h5dump or images.""", action='store_true', default=False )
+
     args = parser.parse_args()
 
     #Define the log level. Logger has already been defined globally,
@@ -869,7 +906,12 @@ def main(pool):
     out_dirs['logs'] = os.path.join(args.output_dir, 'logs')
     create_dirs(out_dirs)
     out_dirs['h5dump'] = os.path.join( args.output_dir, 'data', 'h5dump')
-    out_dirs['run'] = make_run_dir( out_dirs['logs'] )
+
+    # Instead of using make_run_dir, I've decided that we will simply
+    # dump logs into the same directory. This will make it easier to
+    # keep track of logs. Log files will be overwritten
+    #out_dirs['run'] = make_run_dir( out_dirs['logs'] )
+    out_dirs['run'] = out_dirs['logs']
     out_dirs['images'] = os.path.join( out_dirs['data'], 'images' )
     out_dirs['af_log'] = os.path.join( out_dirs['run'], 'af_log' )
     out_dirs['configs'] = os.path.join( out_dirs['run'], 'configs' )
@@ -1025,7 +1067,6 @@ def main(pool):
                         granule.set_log_file( log_file )
 
                         granule.set_orbit(orbit)
-
                         granule.set_exe( args.af_tool )
                 
                         # Create the image directory
@@ -1036,6 +1077,8 @@ def main(pool):
                             if e.errno != errno.EEXIST:
                                 raise        
                         granule.set_image_dir( image_orbit_dir )
+
+                        granule.remove_af = args.remove_af
 
                         h5_path = os.path.join( out_dirs['h5dump'], year_month_dir, os.path.basename( out_path + '.h5dump'))
                         granule.set_h5dump( h5_path )
@@ -1082,8 +1125,7 @@ def main(pool):
 
                 # "If granule didn't succeed or (we are doing similarity
                 # comparison and any similarity is below the threshold)"
-                if granule.get_status() != Tags.SUCCEED_ALL or  \
-                (granule.similarity and not granule.sim_above_thresh):
+                if granule.get_status() != Tags.SUCCEED_ALL:
                     fail_count = fail_count + 1
                     f.write( attr_string )
 
