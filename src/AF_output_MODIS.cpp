@@ -5,6 +5,14 @@
  *
  * DEVELOPERS:
  *  - Jonathan Kim (jkm@illinois.edu)
+ *  - Hyo-Kyung (Joe) Lee (hyoklee@hdfgroup.org)
+      \author Hyo-Kyung (Joe) Lee (hyoklee@hdfgroup.org)
+      \date may 18, 2018
+      \note added cf attributes in af_WriteSingleRadiance_ModisAsSrc().
+      \date May 15, 2018
+      \note added valid_min attribute in af_WriteSingleRadiance_ModisAsTrg().
+      \date May 14, 2018
+      \note added coordinates and _FillValue attributes in af_WriteSingleRadiance_ModisAsTrg().
  */
 
 #include "AF_output_MODIS.h"
@@ -16,26 +24,39 @@
 #include "misrutil.h"
 
 
-/*===============================================================================
+/*#############################################################################
  *
  * MODIS as Target instrument, functions to generate radiance data
  *
- *===============================================================================*/
-// TODO: once radiance data becomes all float internally, use float directly without converting via HDF5
-/* T: type of data type of output data
- * T_IN : input data type
- * T_OUT : output data type
+ *############################################################################*/
 
-  
-  \author Hyo-Kyung (Joe) Lee (hyoklee@hdfgroup.org)
-  \date May 15, 2018
-  \note added valid_min attribute.
-  \date May 14, 2018
-  \note added coordinates and _FillValue attributes.
-
+/*=====================================================================
+ * DESCRIPTION:
+ *   Write radiance output data of a single orbit of the given band for
+ *   MODIS as the target instrument.
+ *   Only called by af_GenerateOutputCumulative_ModisAsTrg().
+ *
+ * PARAMETER:
+ *  - outputFile : HDF5 id for output file
+ *  - dataTypeH5 : HDF5 id for output datatype
+ *  - fileSpaceH5 : HDF5 id file sapce
+ *  - modisData : MODIS data pointer (not processed)
+ *  - modisDataSize : number of cells (pixels) in MODIS data
+ *  - outputWidth : cross-track (width) size for output image
+ *  - bandIdx : MODIS band index.
+ *
+ * RETURN:
+ *  - Success: SUCCEED  (defined in AF_common.h)
+ *  - Fail : FAILED  (defined in AF_common.h)
+ *
+ * NOTE:
+ *  - TODO: if radiance data becomes all float internally, use float directly
+ *    without converting via HDF5
  */
+// T_IN : input data type
+// T_OUT : output data type
 template <typename T_IN, typename T_OUT>
-static int af_WriteSingleRadiance_ModisAsTrg(hid_t outputFile, hid_t modisDatatype, hid_t modisFilespace, T_IN* modisData, int modisDataSize, int outputWidth, int bandIdx)
+static int af_WriteSingleRadiance_ModisAsTrg(hid_t outputFile, hid_t dataTypeH5, hid_t fileSpaceH5, T_IN* modisData, int modisDataSize, int outputWidth, int bandIdx)
 {
 	#if DEBUG_TOOL
 	std::cout << "DBG_TOOL " << __FUNCTION__ << "> BEGIN \n";
@@ -67,29 +88,23 @@ static int af_WriteSingleRadiance_ModisAsTrg(hid_t outputFile, hid_t modisDataty
 	}
 
 
-        /*-------------------------------------
-         * if first time, create dataset
-         * otherwise, open existing one
-         */
+	/*-------------------------------------
+	 * if first time, create dataset
+	 * otherwise, open existing one
+	 */
 	if(bandIdx==0) { // means new
-		modis_dataset = H5Dcreate2(outputFile, dsetPath.c_str(), dataTypeOutH5, modisFilespace,H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+		modis_dataset = H5Dcreate2(outputFile, dsetPath.c_str(), dataTypeOutH5, fileSpaceH5,H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
 		if(modis_dataset < 0) {
 			std::cerr << __FUNCTION__ << ":" << __LINE__ <<  "> Error: H5Dcreate2 target data in output file.\n";
 			return FAILED;
 		}
-                else {
-                    char* units = "Watts/m^2/micrometer/steradian";
-                    if(af_write_cf_attributes(modis_dataset,
-                                              units,
-                                              -999.0,
-                                              0.0) < 0) {
-			std::cerr
-                            << __FUNCTION__ << ":" << __LINE__
-                            <<  "> Error: af_write_cf_attributes"
-                            << std::endl;
-                    }
-                    
-                }
+		else {
+			// make compatible with CF convention (NetCDF)
+			char* units = "Watts/m^2/micrometer/steradian";
+			if(af_write_cf_attributes(modis_dataset, units, -999.0, 0.0) < 0) {
+				std::cerr << __FUNCTION__ << ":" << __LINE__ <<  "> Error: af_write_cf_attributes" << std::endl;
+			}
+		}
 	}
 	else {
 		modis_dataset = H5Dopen2(outputFile, dsetPath.c_str(), H5P_DEFAULT);
@@ -129,17 +144,17 @@ static int af_WriteSingleRadiance_ModisAsTrg(hid_t outputFile, hid_t modisDataty
 	count3dFile[1] = modisDataSize/outputWidth; // y
 	count3dFile[2] = outputWidth;  // x
 
-	status = H5Sselect_hyperslab(modisFilespace, H5S_SELECT_SET, star3dFile, NULL, count3dFile, NULL);
+	status = H5Sselect_hyperslab(fileSpaceH5, H5S_SELECT_SET, star3dFile, NULL, count3dFile, NULL);
 	if(status < 0) {
 		std::cerr << __FUNCTION__ << ":" << __LINE__ <<  "> Error: H5Sselect_hyperslab for Modis target .\n";
-		ret = -1;
+		ret = FAILED;
 		goto done;
 	}
 
-	status = H5Dwrite(modis_dataset, modisDatatype, memspace, modisFilespace, H5P_DEFAULT, modisData);
+	status = H5Dwrite(modis_dataset, dataTypeH5, memspace, fileSpaceH5, H5P_DEFAULT, modisData);
 	if(status < 0) {
 		std::cerr << __FUNCTION__ << ":" << __LINE__ <<  "> Error: H5Dwrite for Modis target .\n";
-		ret = -1;
+		ret = FAILED;
 		goto done;
 	}
 done:
@@ -152,6 +167,23 @@ done:
 }
 
 
+/*=========================================================================
+ * DESCRIPTION:
+ *   Write radiance output data of a single orbit for all the
+ *   specified bands for MODIS as the target instrument.
+ *
+ * PARAMETER:
+ *  - inputArgs : a class object contains all the user input parameter info
+ *  - outputFile : HDF5 id for output file
+ *  - srcFile : HDF5 id for input file
+ *  - trgCellNum : number of target instrument data cells
+ *  - inputMultiVarsMap : To obtain multiple values from a given user input
+ *    directive which allows to have multiple values.
+ *
+ * RETURN:
+ *  - Success: SUCCEED  (defined in AF_common.h)
+ *  - Fail : FAILED  (defined in AF_common.h)
+ */
 int af_GenerateOutputCumulative_ModisAsTrg(AF_InputParmeterFile &inputArgs, hid_t outputFile,hid_t srcFile, int trgCellNum, std::map<std::string, strVec_t> &inputMultiVarsMap)
 {
 	#if DEBUG_TOOL
@@ -253,23 +285,39 @@ int af_GenerateOutputCumulative_ModisAsTrg(AF_InputParmeterFile &inputArgs, hid_
 
 
 
-/*===============================================================================
+/*#############################################################################
  *
  * MODIS as Source instrument, functions to generate radiance data
  *
- *===============================================================================*/
-// TODO: once radiance data becomes all float internally, use float directly without converting via HDF5
-/* T: type of data type of output data
- * T_IN : input data type
- * T_OUT : output data type
+ *############################################################################*/
 
-  \author Hyo-Kyung (Joe) Lee (hyoklee@hdfgroup.org)
-  \date May 18, 2018
-  \note added CF attributes.
-
+/*=====================================================================
+ * DESCRIPTION:
+ *   Write resampled radiance output data of a single orbit of the given
+ *   band for MODIS as the source instrument.
+ *   Only called by af_GenerateOutputCumulative_ModisAsSrc().
+ *
+ * PARAMETER:
+ *  - outputFile : HDF5 id for output file
+ *  - dataTypeH5 : HDF5 id for output datatype
+ *  - fileSpaceH5 : HDF5 id file sapce
+ *  - processedData : resmapled data pointer
+ *  - trgCellNum : number of cells (pixels) in target instrument data
+ *  - outputWidth : cross-track (width) size for output image
+ *  - bandIdx : MODIS band index.
+ *
+ * RETURN:
+ *  - Success: SUCCEED  (defined in AF_common.h)
+ *  - Fail : FAILED  (defined in AF_common.h)
+ *
+ * NOTE:
+ *  - TODO: if radiance data becomes all float internally, use float directly
+ *    without converting via HDF5
  */
+// T_IN : input data type
+// T_OUT : output data type
 template <typename T_IN, typename T_OUT>
-static int af_WriteSingleRadiance_ModisAsSrc(hid_t outputFile, hid_t modisDatatype, hid_t modisFilespace, T_IN* processedData, int trgCellNum, int outputWidth, int bandIdx)
+static int af_WriteSingleRadiance_ModisAsSrc(hid_t outputFile, hid_t dataTypeH5, hid_t fileSpaceH5, T_IN* processedData, int trgCellNum, int outputWidth, int bandIdx)
 {
 #if DEBUG_TOOL
     std::cout << "DBG_TOOL " << __FUNCTION__ << "> BEGIN \n";
@@ -305,7 +353,7 @@ static int af_WriteSingleRadiance_ModisAsSrc(hid_t outputFile, hid_t modisDataty
      * otherwise, open existing one
      */
     if(bandIdx==0) { // means new
-        modis_dataset = H5Dcreate2(outputFile, dsetPath.c_str(), dataTypeOutH5, modisFilespace,H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+        modis_dataset = H5Dcreate2(outputFile, dsetPath.c_str(), dataTypeOutH5, fileSpaceH5,H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
         if(modis_dataset < 0) {
             std::cerr << __FUNCTION__ << ":" << __LINE__ <<  "> Error: H5Dcreate2 target data in output file.\n";
             return FAILED;
@@ -361,17 +409,17 @@ static int af_WriteSingleRadiance_ModisAsSrc(hid_t outputFile, hid_t modisDataty
     countFile[1] = trgCellNum/outputWidth; // y
     countFile[2] = outputWidth;  // x
 
-    status = H5Sselect_hyperslab(modisFilespace, H5S_SELECT_SET, startFile, NULL, countFile, NULL);
+    status = H5Sselect_hyperslab(fileSpaceH5, H5S_SELECT_SET, startFile, NULL, countFile, NULL);
     if(status < 0) {
         std::cerr << __FUNCTION__ << ":" << __LINE__ <<  "> Error: H5Sselect_hyperslab for Modis target .\n";
-        ret = -1;
+        ret = FAILED;
         goto done;
     }
 
-    status = H5Dwrite(modis_dataset, modisDatatype, memspace, modisFilespace, H5P_DEFAULT, processedData);
+    status = H5Dwrite(modis_dataset, dataTypeH5, memspace, fileSpaceH5, H5P_DEFAULT, processedData);
     if(status < 0) {
         std::cerr << __FUNCTION__ << ":" << __LINE__ <<  "> Error: H5Dwrite for Modis target .\n";
-        ret = -1;
+        ret = FAILED;
         goto done;
     }
 
@@ -385,7 +433,26 @@ static int af_WriteSingleRadiance_ModisAsSrc(hid_t outputFile, hid_t modisDataty
 }
 
 
-
+/*=====================================================================
+ * DESCRIPTION:
+ *   Write resampled radiance output data of a single orbit for all the
+ *   specified bands for MODIS as the source instrument.
+ *
+ * PARAMETER:
+ *  - inputArgs : a class object contains all the user input parameter info
+ *  - outputFile : HDF5 id for output file
+ *  - targetNNsrcID : got from nearestNeighborBlockIndex()
+ *  - trgCellNumNoShift : number of target instrument data cells before
+ *    applying shift (if MISR is target)
+ *  - srcFile : HDF5 id for input file
+ *  - srcCellNum : number of source instrument data cells
+ *  - inputMultiVarsMap : To obtain multiple values from a given user input
+ *    directive which allows to have multiple values.
+ *
+ * RETURN:
+ *  - Success: SUCCEED  (defined in AF_common.h)
+ *  - Fail : FAILED  (defined in AF_common.h)
+ */
 int af_GenerateOutputCumulative_ModisAsSrc(AF_InputParmeterFile &inputArgs, hid_t outputFile, int *targetNNsrcID,  int trgCellNumNoShift, hid_t srcFile, int srcCellNum, std::map<std::string, strVec_t> &inputMultiVarsMap)
 {
 	#if DEBUG_TOOL

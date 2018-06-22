@@ -5,6 +5,12 @@
  *
  * DEVELOPERS:
  *  - Jonathan Kim (jkm@illinois.edu)
+ *  - Hyo-Kyung (Joe) Lee (hyoklee@hdfgroup.org)
+      \author Hyo-Kyung (Joe) Lee (hyoklee@hdfgroup.org)
+      \date May 18, 2018
+      \note added CF attributes in af_WriteSingleRadiance_MisrAsTrg().
+      \date May 15, 2018
+      \note added CF attributes in af_WriteSingleRadiance_MisrAsSrc().
  */
 
 #include "AF_output_MISR.h"
@@ -16,23 +22,40 @@
 #include "misrutil.h"
 
 
-/*===============================================================================
+/*#############################################################################
  *
  * MISR as Target instrument, functions to generate radiance data
  *
- *===============================================================================*/
-// TODO: once radiance data becomes all float internally, use float directly without converting via HDF5
-/* T: type of data type of output data
- * T_IN : input data type
- * T_OUT : output data type
+ *############################################################################*/
 
- \author Hyo-Kyung (Joe) Lee (hyoklee@hdfgroup.org)
- \date May 18, 2018
- \note added CF attributes.
-
+/*=========================================================================
+ * DESCRIPTION:
+ *   Write radiance output data of a single orbit of the given band for
+ *   MISR as the target instrument.
+ *   Only called by af_GenerateOutputCumulative_MisrAsTrg().                              
+ *
+ * PARAMETER:
+ *  - outputFile : HDF5 id for output file
+ *  - dataTypeH5 : HDF5 id for output datatype
+ *  - fileSpaceH5 : HDF5 id file sapce
+ *  - misrData : MISR data pointer (not processed)
+ *  - misrDataSize : number of cells (pixels) in MISR data
+ *  - outputWidth : cross-track (width) size for output image
+ *  - cameraIdx : MISR camera index
+ *  - radianceIdx : MISR radiance index
+ *
+ * RETURN:
+ *  - Success: SUCCEED  (defined in AF_common.h)
+ *  - Fail : FAILED  (defined in AF_common.h)
+ *
+ * NOTE:
+ *  - TODO: if radiance data becomes all float internally, use float directly
+ *    without converting via HDF5
  */
+// T_IN : input data type
+// T_OUT : output data type
 template <typename T_IN, typename T_OUT>
-static int af_WriteSingleRadiance_MisrAsTrg(hid_t outputFile, hid_t misrDatatype, hid_t misrFilespace, T_IN* misrData, int misrDataSize, int outputWidth, int cameraIdx, int radianceIdx)
+static int af_WriteSingleRadiance_MisrAsTrg(hid_t outputFile, hid_t dataTypeH5, hid_t fileSpaceH5, T_IN* misrData, int misrDataSize, int outputWidth, int cameraIdx, int radianceIdx)
 {
 	#if DEBUG_TOOL
 	std::cout << "DBG_TOOL " << __FUNCTION__ << "> BEGIN \n";
@@ -70,23 +93,19 @@ static int af_WriteSingleRadiance_MisrAsTrg(hid_t outputFile, hid_t misrDatatype
 	 * otherwise, open existing one
 	 */
 	if( (cameraIdx + radianceIdx) ==0 ) { // means new
-		misr_dataset = H5Dcreate2(outputFile, dsetPath.c_str(), dataTypeOutH5, misrFilespace,H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+		misr_dataset = H5Dcreate2(outputFile, dsetPath.c_str(), dataTypeOutH5, fileSpaceH5,H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
 		if(misr_dataset < 0) {
 			std::cerr << __FUNCTION__ << ":" << __LINE__ <<  "> Error: H5Dcreate2 target data in output file.\n";
 			return FAILED;
 		}
-                else {
-                    char* units = "Watts/m^2/micrometer/steradian";
-                    if(af_write_cf_attributes(misr_dataset,
-                                              units,
-                                              -999.0,
-                                              -999.0) < 0) {
-			std::cerr << __FUNCTION__ << ":" << __LINE__
-                                  <<  "> Error: af_write_cf_attributes"
-                                  << std::endl;                            
-			return FAILED;                        
-                    }
-                }
+		else {
+			// make compatible with CF convention (NetCDF)
+			char* units = "Watts/m^2/micrometer/steradian";
+			if(af_write_cf_attributes(misr_dataset, units, -999.0, -999.0) < 0) {
+				std::cerr << __FUNCTION__ << ":" << __LINE__ <<  "> Error: af_write_cf_attributes" << std::endl;                            
+				return FAILED;                        
+			}
+		}
 	}
 	else {
 		misr_dataset = H5Dopen2(outputFile, dsetPath.c_str(), H5P_DEFAULT);
@@ -128,14 +147,14 @@ static int af_WriteSingleRadiance_MisrAsTrg(hid_t outputFile, hid_t misrDatatype
 	count3dFile[2] = misrDataSize/outputWidth; // y
 	count3dFile[3] = outputWidth;  // x
 
-	status = H5Sselect_hyperslab(misrFilespace, H5S_SELECT_SET, star3dFile, NULL, count3dFile, NULL);
+	status = H5Sselect_hyperslab(fileSpaceH5, H5S_SELECT_SET, star3dFile, NULL, count3dFile, NULL);
 	if(status < 0) {
 		std::cerr << __FUNCTION__ << ":" << __LINE__ <<  "> Error: H5Sselect_hyperslab for Misr target .\n";
 		ret = -1;
 		goto done;
 	}
 
-	status = H5Dwrite(misr_dataset, misrDatatype, memspace, misrFilespace, H5P_DEFAULT, misrData);
+	status = H5Dwrite(misr_dataset, dataTypeH5, memspace, fileSpaceH5, H5P_DEFAULT, misrData);
 	if(status < 0) {
 		std::cerr << __FUNCTION__ << ":" << __LINE__ <<  "> Error: H5Dwrite for Misr target .\n";
 		ret = -1;
@@ -152,6 +171,23 @@ done:
 }
 
 
+/*=========================================================================
+ * DESCRIPTION:
+ *   Write radiance output data of a single orbit for all the
+ *   specified bands for MISR as the target instrument.
+ *
+ * PARAMETER:
+ *  - inputArgs : a class object contains all the user input parameter info
+ *  - outputFile : HDF5 id for output file
+ *  - srcFile : HDF5 id for input file
+ *  - trgCellNumOri : number of target instrument data cells (un-modified)
+ *  - inputMultiVarsMap : To obtain multiple values from a given user input
+ *    directive which allows to have multiple values.
+ *
+ * RETURN:
+ *  - Success: SUCCEED  (defined in AF_common.h)
+ *  - Fail : FAILED  (defined in AF_common.h)
+ */
 int af_GenerateOutputCumulative_MisrAsTrg(AF_InputParmeterFile &inputArgs, hid_t outputFile,hid_t srcFile, int trgCellNumOri, std::map<std::string, strVec_t> &inputMultiVarsMap)
 {
 	#if DEBUG_TOOL
@@ -290,23 +326,40 @@ int af_GenerateOutputCumulative_MisrAsTrg(AF_InputParmeterFile &inputArgs, hid_t
 
 
 
-/*===============================================================================
+/*#############################################################################
  *
  * MISR as Source instrument, functions to generate radiance data
  *
- *===============================================================================*/
-// TODO: once radiance data becomes all float internally, use float directly without converting via HDF5
-/* T: type of data type of output data
- * T_IN : input data type
- * T_OUT : output data type
+ *############################################################################*/
 
- \author Hyo-Kyung (Joe) Lee (hyoklee@hdfgroup.org)
- \date May 15, 2018
- \note added CF attributes.
-
+/*=====================================================================
+ * DESCRIPTION:
+ *   Write resampled radiance output data of a single orbit of the given
+ *   camera & radiance for MISR as the source instrument.
+ *   Only called by af_GenerateOutputCumulative_MisrAsSrc().
+ *
+ * PARAMETER:
+ *  - outputFile : HDF5 id for output file
+ *  - dataTypeH5 : HDF5 id for output datatype
+ *  - fileSpaceH5 : HDF5 id file sapce
+ *  - processedData : resmapled data pointer
+ *  - trgCellNum : number of cells (pixels) in target instrument data
+ *  - outputWidth : cross-track (width) size for output image
+ *  - cameraIdx : MISR camera index
+ *  - radIdx : MISR radiance index
+ *
+ * RETURN:
+ *  - Success: SUCCEED  (defined in AF_common.h)
+ *  - Fail : FAILED  (defined in AF_common.h)
+ *
+ * NOTE:
+ *  - TODO: if radiance data becomes all float internally, use float directly
+ *    without converting via HDF5
  */
+// T_IN : input data type
+// T_OUT : output data type
 template <typename T_IN, typename T_OUT>
-static int af_WriteSingleRadiance_MisrAsSrc(hid_t outputFile, hid_t misrDatatype, hid_t misrFilespace, T_IN* processedData, int trgCellNum, int outputWidth, int cameraIdx, int radIdx)
+static int af_WriteSingleRadiance_MisrAsSrc(hid_t outputFile, hid_t dataTypeH5, hid_t fileSpaceH5, T_IN* processedData, int trgCellNum, int outputWidth, int cameraIdx, int radIdx)
 {
 	#if DEBUG_TOOL
 	std::cout << "DBG_TOOL " << __FUNCTION__ << "> BEGIN \n";
@@ -342,23 +395,19 @@ static int af_WriteSingleRadiance_MisrAsSrc(hid_t outputFile, hid_t misrDatatype
 	 * otherwise, open existing one
 	 */
 	if(cameraIdx==0 && radIdx==0) { // means new
-		misr_dataset = H5Dcreate2(outputFile, dsetPath.c_str(), dataTypeOutH5, misrFilespace,H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+		misr_dataset = H5Dcreate2(outputFile, dsetPath.c_str(), dataTypeOutH5, fileSpaceH5,H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
 		if(misr_dataset < 0) {
 			std::cerr << __FUNCTION__ << ":" << __LINE__ <<  "> Error: H5Dcreate2 target data in output file.\n";
 			return FAILED;
 		}
-                else {
-                    char* units = "Watts/m^2/micrometer/steradian";
-                    if(af_write_cf_attributes(misr_dataset,
-                                              units,
-                                              -999.0,
-                                              -999.0) < 0) {
-			std::cerr << __FUNCTION__ << ":" << __LINE__
-                                  <<  "> Error: af_write_cf_attributes"
-                                  << std::endl;                            
-			return FAILED;                        
-                    }
-                }
+		else {
+			// make compatible with CF convention (NetCDF)
+			char* units = "Watts/m^2/micrometer/steradian";
+			if(af_write_cf_attributes(misr_dataset, units, -999.0, -999.0) < 0) {
+				std::cerr << __FUNCTION__ << ":" << __LINE__ <<  "> Error: af_write_cf_attributes" << std::endl;
+				return FAILED;
+			}
+		}
 	}
 	else {
 		misr_dataset = H5Dopen2(outputFile, dsetPath.c_str(), H5P_DEFAULT);
@@ -400,17 +449,17 @@ static int af_WriteSingleRadiance_MisrAsSrc(hid_t outputFile, hid_t misrDatatype
 	countFile[2] = trgCellNum/outputWidth; // y
 	countFile[3] = outputWidth;  // x
 
-	status = H5Sselect_hyperslab(misrFilespace, H5S_SELECT_SET, startFile, NULL, countFile, NULL);
+	status = H5Sselect_hyperslab(fileSpaceH5, H5S_SELECT_SET, startFile, NULL, countFile, NULL);
 	if(status < 0) {
 		std::cerr << __FUNCTION__ << ":" << __LINE__ <<  "> Error: H5Sselect_hyperslab for Misr target .\n";
-		ret = -1;
+		ret = FAILED;
 		goto done;
 	}
 
-	status = H5Dwrite(misr_dataset, misrDatatype, memspace, misrFilespace, H5P_DEFAULT, processedData);
+	status = H5Dwrite(misr_dataset, dataTypeH5, memspace, fileSpaceH5, H5P_DEFAULT, processedData);
 	if(status < 0) {
 		std::cerr << __FUNCTION__ << ":" << __LINE__ <<  "> Error: H5Dwrite for Misr target .\n";
-		ret = -1;
+		ret = FAILED;
 		goto done;
 	}
         
@@ -425,6 +474,25 @@ done:
 }
 
 
+/*=====================================================================
+ * DESCRIPTION:
+ *   Write resampled radiance output data of a single orbit for all the
+ *   specified cameras and radiances for ASTER as the source instrument.
+ *
+ * PARAMETER:
+ *  - inputArgs : a class object contains all the user input parameter info
+ *  - outputFile : HDF5 id for output file
+ *  - targetNNsrcID : got from nearestNeighborBlockIndex()
+ *  - trgCellNum : number of target instrument data cells
+ *  - srcFile : HDF5 id for input file
+ *  - srcCellNum : number of source instrument data cells
+ *  - inputMultiVarsMap : To obtain multiple values from a given user input
+ *    directive which allows to have multiple values.
+ *
+ * RETURN:
+ *  - Success: SUCCEED  (defined in AF_common.h)
+ *  - Fail : FAILED  (defined in AF_common.h)
+ */
 int af_GenerateOutputCumulative_MisrAsSrc(AF_InputParmeterFile &inputArgs, hid_t outputFile, int *targetNNsrcID,  int trgCellNum, hid_t srcFile, int srcCellNum, std::map<std::string, strVec_t> &inputMultiVarsMap)
 {
 	#if DEBUG_TOOL
