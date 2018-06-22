@@ -70,11 +70,7 @@ bool AF_InputParmeterFile::CompareStrCaseInsensitive(const std::string& s1, cons
 
 
 /*=================================================================
- * Parse input parameters from a input file.
- *
- * What next:
- *  Use Get...  member functions to retrive input parameters.
- *
+ * Parse user input parameters from a input file.
  */
 void AF_InputParmeterFile::ParseByLine()
 {
@@ -578,9 +574,9 @@ void AF_InputParmeterFile::ParseByLine()
 
 
 /* ##########################################################
- *	Functions to check input values
+ *	Framework to check input values
+ *  Add input value checking functions here for each instrument
  */
-
 int AF_InputParmeterFile::CheckParsedValues()
 {
 	bool isValidInput;
@@ -638,8 +634,8 @@ int AF_InputParmeterFile::CheckParsedValues()
  *  - filePath [IN] : BF input file path
  *
  * Return:
- *  - true -  valid
- * -  false - not valid
+ *  - valid - true
+ * -  invalid - false
  */
 
 bool AF_InputParmeterFile::CheckInputBFdataPath(const std::string &filePath)
@@ -661,11 +657,11 @@ bool AF_InputParmeterFile::CheckInputBFdataPath(const std::string &filePath)
  * Check if source instrument is same as target instrument
  *
  * Parameter:
- *  - str [IN] : resolution string
+ *  - none 
  *
  * Return:
- *  - true -  same
- * -  false - not same
+ *  - same : true
+ *  - not same : false
  */
 bool AF_InputParmeterFile::IsSourceTargetInstrumentSame()
 {
@@ -684,15 +680,15 @@ bool AF_InputParmeterFile::IsSourceTargetInstrumentSame()
 
 
 /*=================================================================
- * Check Modis resolution input
+ * Check and Revise Modis resolution input
  *
  * Parameter:
  *  - str [IN/OUT] : resolution string.
  *					 Check and convert it for internal notation.
  *
  * Return:
- *  - true - success
- * -  false - fail
+ *  - success - true
+ *  - fail - false
  */
 bool AF_InputParmeterFile::CheckRevise_MODISresolution(std::string &str)
 {
@@ -728,15 +724,15 @@ bool AF_InputParmeterFile::CheckRevise_MODISresolution(std::string &str)
 
 
 /*=================================================================
- * Check Aster resolution input
+ * Check and Revise Aster resolution input
  *
  * Parameter:
  *  - str [IN/OUT] : resolution string.
  *					 Check and convert it for internal notation.
  *
  * Return:
- *  - true - success
- * -  false - fail
+ *  - success : true
+ *  - fail : false
  */
 bool AF_InputParmeterFile::CheckRevise_ASTERresolution(std::string &str)
 {
@@ -770,7 +766,7 @@ bool AF_InputParmeterFile::CheckRevise_ASTERresolution(std::string &str)
 }
 
 /*=================================================================
- * Check Aster bands input
+ * Check and Revise Aster bands input
  *
  * Parameter:
  *  - str [IN/OUT] : band string.
@@ -858,7 +854,7 @@ bool AF_InputParmeterFile::CheckRevise_ASTERbands(std::vector<std::string> &strV
  */
 
 /*=================================================================
- * Check Aster bands input
+ * Get max-radius which can be passed to nearestNeighborBlockIndex()
  *
  * Parameter:
  *  - instrument : instrumane name string.
@@ -1108,82 +1104,6 @@ std::vector<std::string> & AF_InputParmeterFile::GetMultiVariableNames(std::stri
 }
 
 
-/*=============================================================
- * Debugging purpose. Show multi-value variable map contents
- * for the given instrument.
- *
- * Parameters:
- *  - instrument [IN]: name string of an instrument.
- *  - trgInputMultiVarsMap [IN]: multi-value variable map
- *  - mixType [IN]: "COMBINATION" or "PAIR"  Only support "COMBINATION" for now
- */
-void AF_InputParmeterFile::DBG_displayinputListMap(std::string &instrument, std::map<std::string, strVec_t> &trgInputMultiVarsMap, const std::string &mixType)
-{
-    strVec_t multiVarNames;
-    //--------------------------------------------------------
-    // Use this for Single multi-value Variable case. MODIS
-
-    std::cout << "JKDBG> trgInputMultiVarsMap.size(): " << trgInputMultiVarsMap.size() << "\n";
-    // display strBuf with array index
-	if (instrument == MODIS_STR) {
-        multiVarNames = modis_MultiVars;
-
-        if (trgInputMultiVarsMap.size() != 1) {
-            std::cout << __FUNCTION__ << ":" << __LINE__ <<  "> Error building target input list with MODIS. There must be only one multi-value variable.\n";
-        }
-
-        std::cout << "Display trgInputMultiVarsMap with array index\n";
-        for(int i = 0; i < trgInputMultiVarsMap.size(); ++i)
-        {
-            for(int j = 0; j < trgInputMultiVarsMap[multiVarNames[i]].size(); ++j)
-                std::cout << trgInputMultiVarsMap[multiVarNames[i]][j]  << ", ";
-            std::cout << std::endl;
-        }
-    }
-    //--------------------------------------------------------
-    // Use these for two multi-value Variable case. MISR and ASTER
-	else if (instrument == MISR_STR) {
-        multiVarNames = misr_MultiVars;
-
-        if (trgInputMultiVarsMap.size() != 2) {
-            std::cout << __FUNCTION__ << ":" << __LINE__ <<  "> Error building target input list with MISR. There must be only two multi-value variables.\n";
-        }
-
-        std::string misrCamera;
-        std::string misrRadiance;
-        if(mixType == "PAIR") {
-            std::cout << "\nJKDBG> mixType == PAIR\n";
-            // TODO - Add a function to determine minNumVals among mutiple variables. Assume it's 2 for test purpose
-            int numCameras = trgInputMultiVarsMap[multiVarNames[0]].size();
-            int numRadiances = trgInputMultiVarsMap[multiVarNames[1]].size();
-            std::cout << "JKDBG> var0 num of cameras: " << numCameras << "\n";
-            std::cout << "JKDBG> var1 num of radiances: " << numRadiances << "\n";
-            int minNumVals = (numCameras < numRadiances) ? numCameras : numRadiances;
-            std::cout << "JKDBG> minNumVals: " << minNumVals << "\n";
-            for(int i=0; i<minNumVals ;i++) {
-                //std::cout << "JKDBG trgInputMultiVarsMap[multiVarNames[0]][" << i << "]" <<  trgInputMultiVarsMap[multiVarNames[0]][i] << "\n";
-                //std::cout << "JKDBG trgInputMultiVarsMap[multiVarNames[1]][" << i << "]" <<  trgInputMultiVarsMap[multiVarNames[1]][i] << "\n";
-                // misr camera
-                misrCamera = trgInputMultiVarsMap[multiVarNames[0]][i];
-                // misr rad
-                misrRadiance = trgInputMultiVarsMap[multiVarNames[1]][i];
-                std::cout << misrCamera << " : " << misrRadiance <<  "\n";
-            }
-        }
-        else if(mixType == "COMBINATION") {
-            std::cout << "\nJKDBG> mixType == COMBINATION\n";
-            for(int i=0; i<trgInputMultiVarsMap.size()-1;i++) {
-                for(int j=i; j <trgInputMultiVarsMap[multiVarNames[i]].size(); j++) {
-                    misrCamera = trgInputMultiVarsMap[multiVarNames[i]][j];
-                    for (int k=0; k<trgInputMultiVarsMap[multiVarNames[i+1]].size(); k++) {
-                        misrRadiance = trgInputMultiVarsMap[multiVarNames[i+1]][k];
-                        std::cout << misrCamera << ":" << misrRadiance << "\n";
-                    }
-                }
-            }
-        }
-    }
-}
 
 /*=============================================================================
  * Build multi-value variables map which is generic container among instruments
@@ -1415,4 +1335,82 @@ int AF_InputParmeterFile::BuildMultiValueVariableMap(std::string &instrument, st
 	}
 
 	return 0;
+}
+
+
+/*=============================================================
+ * This is for debugging code purpose only. Not used for tool.
+ * Show multi-value variable map contents for the given instrument.
+ *
+ * Parameters:
+ *  - instrument [IN]: name string of an instrument.
+ *  - trgInputMultiVarsMap [IN]: multi-value variable map
+ *  - mixType [IN]: "COMBINATION" or "PAIR"  Only support "COMBINATION" for now
+ */
+void AF_InputParmeterFile::DBG_displayinputListMap(std::string &instrument, std::map<std::string, strVec_t> &trgInputMultiVarsMap, const std::string &mixType)
+{
+    strVec_t multiVarNames;
+    //--------------------------------------------------------
+    // Use this for Single multi-value Variable case. MODIS
+
+    std::cout << "JKDBG> trgInputMultiVarsMap.size(): " << trgInputMultiVarsMap.size() << "\n";
+    // display strBuf with array index
+	if (instrument == MODIS_STR) {
+        multiVarNames = modis_MultiVars;
+
+        if (trgInputMultiVarsMap.size() != 1) {
+            std::cout << __FUNCTION__ << ":" << __LINE__ <<  "> Error building target input list with MODIS. There must be only one multi-value variable.\n";
+        }
+
+        std::cout << "Display trgInputMultiVarsMap with array index\n";
+        for(int i = 0; i < trgInputMultiVarsMap.size(); ++i)
+        {
+            for(int j = 0; j < trgInputMultiVarsMap[multiVarNames[i]].size(); ++j)
+                std::cout << trgInputMultiVarsMap[multiVarNames[i]][j]  << ", ";
+            std::cout << std::endl;
+        }
+    }
+    //--------------------------------------------------------
+    // Use these for two multi-value Variable case. MISR and ASTER
+	else if (instrument == MISR_STR) {
+        multiVarNames = misr_MultiVars;
+
+        if (trgInputMultiVarsMap.size() != 2) {
+            std::cout << __FUNCTION__ << ":" << __LINE__ <<  "> Error building target input list with MISR. There must be only two multi-value variables.\n";
+        }
+
+        std::string misrCamera;
+        std::string misrRadiance;
+        if(mixType == "PAIR") {
+            std::cout << "\nJKDBG> mixType == PAIR\n";
+            // TODO - Add a function to determine minNumVals among mutiple variables. Assume it's 2 for test purpose
+            int numCameras = trgInputMultiVarsMap[multiVarNames[0]].size();
+            int numRadiances = trgInputMultiVarsMap[multiVarNames[1]].size();
+            std::cout << "JKDBG> var0 num of cameras: " << numCameras << "\n";
+            std::cout << "JKDBG> var1 num of radiances: " << numRadiances << "\n";
+            int minNumVals = (numCameras < numRadiances) ? numCameras : numRadiances;
+            std::cout << "JKDBG> minNumVals: " << minNumVals << "\n";
+            for(int i=0; i<minNumVals ;i++) {
+                //std::cout << "JKDBG trgInputMultiVarsMap[multiVarNames[0]][" << i << "]" <<  trgInputMultiVarsMap[multiVarNames[0]][i] << "\n";
+                //std::cout << "JKDBG trgInputMultiVarsMap[multiVarNames[1]][" << i << "]" <<  trgInputMultiVarsMap[multiVarNames[1]][i] << "\n";
+                // misr camera
+                misrCamera = trgInputMultiVarsMap[multiVarNames[0]][i];
+                // misr rad
+                misrRadiance = trgInputMultiVarsMap[multiVarNames[1]][i];
+                std::cout << misrCamera << " : " << misrRadiance <<  "\n";
+            }
+        }
+        else if(mixType == "COMBINATION") {
+            std::cout << "\nJKDBG> mixType == COMBINATION\n";
+            for(int i=0; i<trgInputMultiVarsMap.size()-1;i++) {
+                for(int j=i; j <trgInputMultiVarsMap[multiVarNames[i]].size(); j++) {
+                    misrCamera = trgInputMultiVarsMap[multiVarNames[i]][j];
+                    for (int k=0; k<trgInputMultiVarsMap[multiVarNames[i+1]].size(); k++) {
+                        misrRadiance = trgInputMultiVarsMap[multiVarNames[i+1]][k];
+                        std::cout << misrCamera << ":" << misrRadiance << "\n";
+                    }
+                }
+            }
+        }
+    }
 }
