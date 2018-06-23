@@ -19,36 +19,17 @@
 /*=====================================
  * Error logging macros.
  *
- * HDF_CHECK:
- *  stmt = statement to evaluate
- *  ret_type = Return type of the statement
- *  err_cond = The error condition. For instance, if function returns 
- *             a negative value on error, you would insert "< 0"
- *             (without quotes) as err_cond.
- * example:
- *      hid_t retval;
- *      HDF_CHECK( retval = H5Fopen( "nowhere", H5F_ACC_RDONLY, H5P_DEFAULT ), 
- *          hid_t, < 0 );
- *
- * FATAL_MSG:
+ * ERR_MSG:
  *  cerr_stream = C++ style err stream statement.
  *
  * example:
- *  FATAL_MSG( "Function returned " << ret_val << std::endl );
+ *  ERR_MSG( "Function returned " << ret_val << std::endl );
  */
 #define ERR_MSG( cerr_stream ) \
     do { \
         std::cerr << "[" << __FILE__ << ":" << __LINE__ << ":" << __FUNCTION__ << "()] ERROR: " << std::endl; \
         std::cerr << cerr_stream ; \
         } while(0)
-
-#define CALL_CHECK( stmt, ret_type, err_cond ) \
-do { \
-    ret_type __ret_val = stmt; \
-    if(__ret_val err_cond ) { \
-        ERR_MSG( "\tOn call: " << #stmt << std::endl << "\treturned: " << __ret_val << std::endl ); \
-    } \
-    } while(0)
 
 
 /*======================================

@@ -3,15 +3,16 @@
  *	- Jonathan Kim (jkm@illinois.edu)
  * 
  * DESCRIPTION:
- *	This is a advance fusion tool that generates resampled data from Terra satellite.
- *	Uses I/O functions and resampling functions.
+ *	This is a Advanced Fusion tool that generates resampled data from a BF (basic fusion)
+ *  file of the Terra satellite data with a given uer input parameters file.
  *
  * INPUT: 
- *	A input text file, which points to a Basic Fusion orbit data file (HDF5 format).
+ *	A text file with lines of user input parameter directives and its values. This
+ *  points to a Basic Fusion orbit data file (HDF5 format).
  *
  * OUTPUT:
- *	A resampled orbit data file as HDF5 format which contains source and target 
- *	instrument data paired with geo location data. 
+ *  A HDF5 file which contains resampled source instrument randiance data and
+ *  target instrument randiance and geolocation (latitude & longitude) data.
  */
 
 #include <iostream>
@@ -47,6 +48,24 @@ void Usage(int &argc, char *argv[])
  *
  *#############################################################*/
 
+/*=============================================================================
+ * DESCRIPTION:
+ *   Get latitude and longitude data of a single orbit from BF data of the
+ *   given instrument.
+ *
+ * PARAMETER:
+ *  - instrument : name of an instrument
+ *  - inputArgs : a class object contains all the user input parameter info
+ *  - inputFile : HDF5 id for input file
+ *  - latitude : retrived latitude data
+ *  - longitude : retrived longitude data
+ *  - cellNum : retrived number of total cells
+ *
+ * RETURN:
+ *  - Success: SUCCEED  (defined in AF_common.h)
+ *  - Fail : FAILED  (defined in AF_common.h)
+ *
+ */
 int AF_GetGeolocationDataFromInstrument(std::string instrument, AF_InputParmeterFile &inputArgs, hid_t inputFile, double **latitude /*OUT*/, double **longitude /*OUT*/, int &cellNum /*OUT*/)
 {
 	#if DEBUG_TOOL
@@ -148,9 +167,21 @@ int AF_GetGeolocationDataFromInstrument(std::string instrument, AF_InputParmeter
 
 
 
-/*##############################################################
+/*=============================================================================
+ * DESCRIPTION:
+ *   Generate Target instrument radiance data to output file
  *
- * Generate Target instrument radiance data to output file
+ * PARAMETER:
+ *  - inputArgs : a class object contains all the user input parameter info
+ *  - outputFile : HDF5 id for output file
+ *  - trgCellNum : number of target instrument data cells
+ *  - srcFile : HDF5 id for input file
+ *  - trgInputMultiVarsMap : user input parameter directives which allows
+ *    multiple values and its multiple values for the target instruement
+ *
+ * RETURN:
+ *  - Success: SUCCEED  (defined in AF_common.h)
+ *  - Fail : FAILED  (defined in AF_common.h)
  *
  */
 int   AF_GenerateTargetRadiancesOutput(AF_InputParmeterFile &inputArgs, hid_t outputFile, int trgCellNum, hid_t srcFile, std::map<std::string, strVec_t> & trgInputMultiVarsMap)
@@ -254,9 +285,22 @@ int   AF_GenerateTargetRadiancesOutput(AF_InputParmeterFile &inputArgs, hid_t ou
 
 
 
-/*##############################################################
+/*=============================================================================
+ * DESCRIPTION:
+ *  Generate Source instrument radiance data to output file
  *
- * Generate Source instrument radiance data to output file
+ * PARAMETER:
+ *  - inputArgs : a class object contains all the user input parameter info
+ *  - outputFile : HDF5 id for output file
+ *  - targetNNsrcID : got from nearestNeighborBlockIndex()
+ *  - trgCellNum : number of total cells of target instrument data
+ *  - srcFile : HDF5 id for input file
+ *  - srcInputMultiVarsMap :  user input parameter directives which allows
+ *    multiple values and its multiple values for the source instruement
+ *
+ * RETURN:
+ *  - Success: SUCCEED  (defined in AF_common.h)
+ *  - Fail : FAILED  (defined in AF_common.h)
  *
  */
 int   AF_GenerateSourceRadiancesOutput(AF_InputParmeterFile &inputArgs, hid_t outputFile, int * targetNNsrcID, int trgCellNum, hid_t srcFile, int srcCellNum, std::map<std::string, strVec_t> & srcInputMultiVarsMap)
@@ -362,14 +406,19 @@ done:
 
 
 
-/*##############################################################
- * Test functions
- *#############################################################*/
-void Test_Parser(std::string headerFile)
+/*=============================================================================
+ * DESCRIPTION:
+ *  Test purpose only. Display parsed values from the given
+ *  user input parameter file.
+ *
+ * PARAMETER:
+ *  - inputParameterFile : user input parameter file
+ */
+void Test_Parser(std::string inputParameterFile)
 {
 	int ret;
     AF_InputParmeterFile inputArgs;
-    inputArgs.headerFileName = headerFile;
+    inputArgs.headerFileName = inputParameterFile;
     inputArgs.ParseByLine();
     ret = inputArgs.CheckParsedValues();
     if (ret < 0) {
