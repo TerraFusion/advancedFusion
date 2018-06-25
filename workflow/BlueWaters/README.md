@@ -60,9 +60,9 @@ Some of the parameters in the script may need to be changed to suit your environ
 
 process.py requires a configuration file that describes the parameters of the run. The parameters given are either consumed directly by the script, or are passed to the AF tool itself. The parameters that the AF tool accepts are described in its documentation. process.py will ignore the keys INPUT_FILE_PATH and OUTPUT_FILE_PATH, instead relying on internal logic for determining the input and output file paths. This is done because it is unreasonable for the user to specify every single input and output path.
 
-The keys that this script accepts are:
+The keys that this script accepts are partitioned into two separate groups: The Advanced Fusion keys, and the Workflow Keys. The AF keys are passed directly to the AF tool, while the Workflow keys modify the behavior of the workflow process.
 
-### COMPARE_IMAGES  
+### COMPARE_IMAGES (workflow)
 
 Provide a list of resampled datasets to compare using a structural similarity index. The template for each instrument is:
 
@@ -96,18 +96,38 @@ COMPARE_IMAGES: ['MISR L AN Red_Radiance', 'MODIS 1KM 4']
 
 NOTE: If this parameter is provided and is non-empty, the script will still generate *all* of the images in the output file.
 
-### COMPARE_THRESHOLD
+### COMPARE_THRESHOLD (workflow)
 
 This parameter describes the threshold for the structural similarity percentage, below which an image comparison will be marked as bad. If this is not provided explicitly, the parameter will default to 0.90. Must be a value between 0 and 1.
 
-### OUTPUT_PREFIX
+An example:
+
+```
+COMPARE_THRESHOLD: 0.95
+```
+
+### OUTPUT_PREFIX (workflow)
 
 This parameter sets the prefix for the output Advanced Fusion files. This is useful (read: EXTERMELY useful) if you are using multiple configuration files during the same process.py run and want to differentiate your files from each other.
 
-### PRINT_ALL_IMG
+Example:
+
+```
+OUTPUT_PREFIX: aster_to_misr_
+```
+
+### PRINT_ALL_IMG (workflow)
 
 Set this parameter to "True"/"yes"/"on" (case-insensitive) to enable printing of all images in the output AF file. The output images will be stored in the output directory given to the script, under "images". 
 
 Note that the COMPARE_IMAGES parameter will create all of the images in the output HDF5 file. Whether or not the script generates all images is simply the result of "if PRINT_ALL_IMG or COMPARE_IMAGES", meaning that if either COMPARE_IMAGES is non-empty or PRINT_ALL_IMAGES = True, all the images will be generated.
 
+Example:
 
+```
+PRINT_ALL_IMG: True
+```
+
+# [AF KEYS]
+
+Any of the keys accepted by the AF tool are also accepted by this script. Please refer to the AF tool documentation for the set of accepted key/values.
