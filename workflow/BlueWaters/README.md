@@ -128,6 +128,6 @@ Example:
 PRINT_ALL_IMG: True
 ```
 
-# [AF KEYS]
+### [AF KEYS]
 
 Any of the keys accepted by the AF tool are also accepted by this script. Please refer to the AF tool documentation for the set of accepted key/values.
