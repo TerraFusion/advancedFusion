@@ -1,0 +1,90 @@
+
+# =======================================
+# Example Makefile for building on Mac
+# Replace this with the Makefile.
+#
+# The gdal2, libomp and hdf5 libraries are required to build AF tool.
+# For this example, homebrew package manager is used to install the libraries on Mac.
+#
+# $ brew install gdal2
+# Add “export PATH="$PATH:/usr/local/opt/gdal2/bin" to  $HOME/.bash_profile
+# $ brew install libomp
+# $ brew install hdf5
+# $ make clean;  make
+# =======================================
+
+
+# gdal and openmp lib path
+GDALDIR=/usr/local/opt/gdal2
+OMPDIR=/usr/local/opt/libomp
+
+CXXFLAGS=-std=c++11 -Wno-write-strings -I/opt/local/include -L/opt/local/lib -lhdf5 -lz
+CXX=g++ -g
+H5CXX=g++ -g $(CXXFLAGS)
+
+all: AFtool test_aster test_aster_allOrbit test_MISR_MODIS test_modis2aster test_Clipping_MISR_MODIS test_userdefinedgrids test_MISR_offset
+
+AFtool.o: AFtool.cpp
+	$(H5CXX) -c $< -o $@
+
+
+test_aster.o: test_aster.cpp
+	$(H5CXX) -c $< -o $@
+
+test_MISR_MODIS.o: test_MISR_MODIS.cpp
+	$(H5CXX) -c $< -o $@
+
+test_modis2aster.o: test_modis2aster.cpp
+	$(H5CXX) -c $< -o $@
+
+test_Clipping_MISR_MODIS.o: test_Clipping_MISR_MODIS.cpp
+	$(H5CXX) -c $< -o $@
+
+test_aster_allOrbit.o: test_aster_allOrbit.cpp
+	$(H5CXX) -c $< -o $@
+
+test_userdefinedgrids.o: test_userdefinedgrids.cpp
+	$(H5CXX) -c $< -o $@
+
+test_MISR_offset.o: test_MISR_offset.cpp
+	$(H5CXX) -c $< -o $@
+
+reproject.o: reproject.cpp
+	$(CXX) -I$(OMPDIR)/include -o $@ -c $<
+
+io.o: io.cpp
+	$(H5CXX) -c $< -o $@
+
+gdalio.o: gdalio.cpp
+	$(CXX) -I. -I$(GDALDIR)/include -I$(OMPDIR)/include -o $@ -c $< 
+
+misrutil.o: misrutil.cpp
+	$(CXX) -c $< -o $@
+
+
+AFtool: AFtool.o reproject.o io.o  misrutil.o gdalio.o AF_InputParmeterFile.o AF_debug.o AF_output_util.o AF_output_MODIS.o AF_output_MISR.o AF_output_ASTER.o
+	$(H5CXX) -o ../$@ $+ -lm -L$(GDALDIR)/lib -lgdal -L$(OMPDIR)/lib -lomp
+
+test_aster: test_aster.o reproject.o io.o
+	$(H5CXX) -o ../$@ $+ -lm
+
+test_MISR_MODIS: test_MISR_MODIS.o reproject.o io.o
+	$(H5CXX) -o ../$@ $+ -lm
+
+test_modis2aster: test_modis2aster.o reproject.o io.o
+	$(H5CXX) -o ../$@ $+ -lm
+
+test_Clipping_MISR_MODIS: test_Clipping_MISR_MODIS.o reproject.o io.o
+	$(H5CXX) -o ../$@ $+ -lm
+
+test_aster_allOrbit: test_aster_allOrbit.o reproject.o io.o
+	$(H5CXX) -o ../$@ $+ -lm
+
+test_userdefinedgrids: test_userdefinedgrids.o reproject.o io.o gdalio.o
+	$(H5CXX) -o ../$@ $+ -lm -L$(GDALDIR)/lib -lgdal -L$(OMPDIR)/lib -lomp
+
+test_MISR_offset: test_MISR_offset.o io.o misrutil.o gdalio.o
+	$(H5CXX) -o ../$@ $+ -lm -L$(GDALDIR)/lib -lgdal -L$(OMPDIR)/lib -lomp
+
+clean:
+	rm *.o ../AFtool ../test_aster ../test_aster_allOrbit ../test_MISR_MODIS ../test_modis2aster ../test_Clipping_MISR_MODIS ../test_userdefinedgrids ../test_MISR_offset
