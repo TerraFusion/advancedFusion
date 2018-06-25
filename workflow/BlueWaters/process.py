@@ -17,6 +17,8 @@ from enum import IntEnum
 import af_image
 from PIL import Image
 import json
+import socket
+import os
 
 #============================================================================
 # The following disables yaml's conversion of certain values into
@@ -58,6 +60,8 @@ class Granule:
         self.images = {}
         self.status = Tags.START
         self.remove_af = False
+
+        self.out_size = 0
 
     def sim_above_thresh( self ):
         """
@@ -612,7 +616,7 @@ def worker( data ):
         data_str = class_attr_string( data )
 
         logger.info("Received data: \n{}".format( data_str ))
-        
+        logger.info("hostname: {}".format(socket.gethostname()))
         logger.info("Creating config file: {}".format(data.get_af_config_file()))
         # First need to create the config file
         with open( data.get_af_config_file(), 'w' ) as f:
@@ -622,7 +626,7 @@ def worker( data ):
 
         # Create the yyyy.mm dir in the output file path
         try:
-            os.makedirs( os.path.dirname( data.get_af_config()[out_file_key] ))
+            os.makedirs( os.path.dirname( data.get_output_path() ))
         except OSError as e:
             if e.errno != errno.EEXIST:
                 raise
@@ -638,6 +642,7 @@ def worker( data ):
             logger.info("Calling the AFtool")
             try:
                 do_af(data)
+                data.out_size = os.stat( data.get_output_path() ).st_size
             except:
                 logger.exception("Encountered exception when processing AF \
         granule: {}.\nSee: {}\nfor more details.".format(
@@ -650,7 +655,7 @@ def worker( data ):
                 return data
 
             data.set_status( Tags.SUCCEED_AF )
-        
+       
         #===============
         # h5dump
         #
@@ -922,8 +927,9 @@ def main(pool):
 
     # Set file handler for master
     log_file = os.path.join( out_dirs['af_log'], 'master.log')
-    logger.addFileHandler( log_file )
+    logger.addFileHandler( log_file, mode='w' )
 
+    logger.info("hostname: {}".format(socket.gethostname()))
     # Print out command-line args
     logger.info( " ".join(sys.argv) )
 
