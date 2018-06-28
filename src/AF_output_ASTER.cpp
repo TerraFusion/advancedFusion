@@ -1,17 +1,17 @@
 
 /*********************************************************************
  * DESCRIPTION:
- *  Generate radiance data output to HDF5 for ASTER
+ *	Generate radiance data output to HDF5 for ASTER
  *
  *
  * DEVELOPERS:
- *  - Jonathan Kim (jkm@illinois.edu)
- *  - Hyo-Kyung (Joe) Lee (hyoklee@hdfgroup.org)
-     \author Hyo-Kyung (Joe) Lee (hyoklee@hdfgroup.org)
-     \date May 18, 2018
-     \note removed _FillValue attribute for ASTER_Count in af_WriteSingleRadiance_AsterAsSrc().
-     \date May 17, 2018
-     \note added CF attributes and cleaned up indentation in in af_WriteSingleRadiance_AsterAsSrc().
+ *	- Jonathan Kim (jkm@illinois.edu)
+ *	- Hyo-Kyung (Joe) Lee (hyoklee@hdfgroup.org)
+	 \author Hyo-Kyung (Joe) Lee (hyoklee@hdfgroup.org)
+	 \date May 18, 2018
+	 \note removed _FillValue attribute for ASTER_Count in af_WriteSingleRadiance_AsterAsSrc().
+	 \date May 17, 2018
+	 \note added CF attributes and cleaned up indentation in in af_WriteSingleRadiance_AsterAsSrc().
  */
 
 #include "AF_output_ASTER.h"
@@ -32,27 +32,27 @@
 
 /*=====================================================================
  * DESCRIPTION:
- *   Write resampled radiance output data of a single orbit of the given
- *   band for ASTER as the source instrument.
- *   Only called by af_GenerateOutputCumulative_AsterAsSrc().
+ *	 Write resampled radiance output data of a single orbit of the given
+ *	 band for ASTER as the source instrument.
+ *	 Only called by af_GenerateOutputCumulative_AsterAsSrc().
  *
  * PARAMETER:
- *  - outputFile : HDF5 id for output file
- *  - outputDsetName : HDF5 output dset name
- *  - dataTypeH5 : HDF5 id for output datatype 
- *  - fileSpaceH5 : HDF5 id file sapce 
- *  - processedData : resmapled data pointer
- *  - trgCellNum : number of cells (pixels) in target instrument data
- *  - outputWidth : cross-track (width) size for output image
- *  - bandIdx : ASTER band index.
+ *	- outputFile : HDF5 id for output file
+ *	- outputDsetName : HDF5 output dset name
+ *	- dataTypeH5 : HDF5 id for output datatype 
+ *	- fileSpaceH5 : HDF5 id file sapce 
+ *	- processedData : resmapled data pointer
+ *	- trgCellNum : number of cells (pixels) in target instrument data
+ *	- outputWidth : cross-track (width) size for output image
+ *	- bandIdx : ASTER band index.
  * 
  * RETURN:
- *  - Success: SUCCEED  (defined in AF_common.h)
- *  - Fail : FAILED  (defined in AF_common.h)
+ *	- Success: SUCCEED	(defined in AF_common.h)
+ *	- Fail : FAILED  (defined in AF_common.h)
  *
  * NOTE:
- *  - TODO: if radiance data becomes all float internally, use float directly
- *    without converting via HDF5 
+ *	- TODO: if radiance data becomes all float internally, use float directly
+ *	  without converting via HDF5 
  */
 // T_IN : input data type
 // T_OUT : output data type
@@ -60,146 +60,143 @@ template <typename T_IN, typename T_OUT>
 static int af_WriteSingleRadiance_AsterAsSrc(hid_t outputFile, std::string outputDsetName, hid_t dataTypeH5, hid_t fileSpaceH5, T_IN* processedData, int trgCellNum, int outputWidth, int bandIdx)
 {
 #if DEBUG_TOOL
-    std::cout << "DBG_TOOL " << __FUNCTION__ << "> BEGIN \n";
+	std::cout << "DBG_TOOL " << __FUNCTION__ << "> BEGIN \n";
 #endif
 
-    int ret = SUCCEED;
-    herr_t status;
-    hid_t aster_dataset;
-    std::string dsetPath = SRC_DATA_GROUP + "/" + outputDsetName;
+	int ret = SUCCEED;
+	herr_t status;
+	hid_t aster_dataset;
+	std::string dsetPath = SRC_DATA_GROUP + "/" + outputDsetName;
 
-    /*-------------------------------------
-     * set output data type
-     */
-    hid_t dataTypeOutH5;
-    if (std::is_same<T_OUT, float>::value) {
-        dataTypeOutH5 = H5T_IEEE_F32LE;
-    }
-    else if (std::is_same<T_OUT, double>::value) {
-        dataTypeOutH5 = H5T_IEEE_F64LE;
-    }
-    else if (std::is_same<T_OUT, int>::value) {
-        dataTypeOutH5 = H5T_NATIVE_INT;
-    }
-    else {
-        std::cerr << __FUNCTION__ << ":" << __LINE__ <<  "> Error: invlid output data type T_OUT specified." << std::endl;
-        return FAILED;
-    }
+	/*-------------------------------------
+	 * set output data type
+	 */
+	hid_t dataTypeOutH5;
+	if (std::is_same<T_OUT, float>::value) {
+		dataTypeOutH5 = H5T_IEEE_F32LE;
+	}
+	else if (std::is_same<T_OUT, double>::value) {
+		dataTypeOutH5 = H5T_IEEE_F64LE;
+	}
+	else if (std::is_same<T_OUT, int>::value) {
+		dataTypeOutH5 = H5T_NATIVE_INT;
+	}
+	else {
+		std::cerr << __FUNCTION__ << ":" << __LINE__ <<  "> Error: invlid output data type T_OUT specified." << std::endl;
+		return FAILED;
+	}
 
-    /*-------------------------------------
-     * if first time, create dataset
-     * otherwise, open existing one
-     */
-    if(bandIdx==0) { // means new
-        aster_dataset = H5Dcreate2(outputFile, dsetPath.c_str(), dataTypeOutH5, fileSpaceH5,H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-        if(aster_dataset < 0) {
-            std::cerr << __FUNCTION__ << ":" << __LINE__ <<  "> Error: H5Dcreate2 target data in output file.\n";
-            return FAILED;
-        }
-        else {
-            // Change units based on dset name.
-            char* units = NULL;
-            float _FillValue = -999.0;
-            if (outputDsetName == "ASTER_Radiance") {
-                units = "Watts/m^2/micrometer/steradian";
-            }
-            if (outputDsetName == "ASTER_Count") {
-                _FillValue = 0;
-            }
-            // Don't add valid_min attribute by making valid_min argument
-            // same as _FillValue.
-            if(af_write_cf_attributes(aster_dataset, units, _FillValue,
-                                      _FillValue)
-               < 0) {
-                std::cerr
-                    << __FUNCTION__ << ":" << __LINE__
-                    <<  "> Error: af_write_cf_attributes"
-                    << std::endl;
-            }
-            
-        }
-    }
-    else {
-        aster_dataset = H5Dopen2(outputFile, dsetPath.c_str(), H5P_DEFAULT);
-        if(aster_dataset < 0) {
-            std::cerr <<  __FUNCTION__ << ":" << __LINE__ <<  "> Error: H5Dopen2 target data in output file.\n";
-            return FAILED;
-        }
-    }
+	/*-------------------------------------
+	 * if first time, create dataset
+	 * otherwise, open existing one
+	 */
+	if(bandIdx==0) { // means new
+		aster_dataset = H5Dcreate2(outputFile, dsetPath.c_str(), dataTypeOutH5, fileSpaceH5,H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+		if(aster_dataset < 0) {
+			std::cerr << __FUNCTION__ << ":" << __LINE__ <<  "> Error: H5Dcreate2 target data in output file.\n";
+			return FAILED;
+		}
+		else {
+			/*
+			 * make compatible with CF convention (NetCDF)
+			 */
+			// Change units based on dset name.
+			char* units = NULL;
+			float _FillValue = -999.0;
+			if (outputDsetName == "ASTER_Radiance") {
+				units = "Watts/m^2/micrometer/steradian";
+			}
+			if (outputDsetName == "ASTER_Count") {
+				_FillValue = 0;
+			}
+			// Don't add valid_min attribute by making valid_min argument
+			// same as _FillValue.
+			if(af_write_cf_attributes(aster_dataset, units, _FillValue, _FillValue) < 0) {
+				std::cerr << __FUNCTION__ << ":" << __LINE__ <<	"> Error: af_write_cf_attributes" << std::endl;
+			}
+		}
+	}
+	else {
+		aster_dataset = H5Dopen2(outputFile, dsetPath.c_str(), H5P_DEFAULT);
+		if(aster_dataset < 0) {
+			std::cerr <<  __FUNCTION__ << ":" << __LINE__ <<  "> Error: H5Dopen2 target data in output file.\n";
+			return FAILED;
+		}
+	}
 
 
-    //------------------------------
-    // select memory space
-    int ranksMem=2;
-    hsize_t dim2dMem[ranksMem];
-    hsize_t start2dMem[ranksMem];
-    hsize_t count2dMem[ranksMem];
-    dim2dMem[0] = trgCellNum/outputWidth; // y
-    dim2dMem[1] = outputWidth; // x
-    hid_t memSpaceH5 = H5Screate_simple(ranksMem, dim2dMem, NULL);
+	//------------------------------
+	// select memory space
+	int ranksMem=2;
+	hsize_t dim2dMem[ranksMem];
+	hsize_t start2dMem[ranksMem];
+	hsize_t count2dMem[ranksMem];
+	dim2dMem[0] = trgCellNum/outputWidth; // y
+	dim2dMem[1] = outputWidth; // x
+	hid_t memSpaceH5 = H5Screate_simple(ranksMem, dim2dMem, NULL);
 
-    start2dMem[0] = 0; // y
-    start2dMem[1] = 0; // x
-    count2dMem[0] = trgCellNum/outputWidth; // y
-    count2dMem[1] = outputWidth; // x
+	start2dMem[0] = 0; // y
+	start2dMem[1] = 0; // x
+	count2dMem[0] = trgCellNum/outputWidth; // y
+	count2dMem[1] = outputWidth; // x
 
-    status = H5Sselect_hyperslab(memSpaceH5, H5S_SELECT_SET, start2dMem, NULL, count2dMem, NULL);
+	status = H5Sselect_hyperslab(memSpaceH5, H5S_SELECT_SET, start2dMem, NULL, count2dMem, NULL);
 
-    //------------------------------
-    // select filespace for aster
-    const int ranksFile=3; // [bands][y][x]
-    hsize_t startFile[ranksFile];
-    hsize_t countFile[ranksFile];
-    startFile[0] = bandIdx;
-    startFile[1] = 0; // y
-    startFile[2] = 0; // x
-    countFile[0] = 1;
-    countFile[1] = trgCellNum/outputWidth; // y
-    countFile[2] = outputWidth;  // x
+	//------------------------------
+	// select filespace for aster
+	const int ranksFile=3; // [bands][y][x]
+	hsize_t startFile[ranksFile];
+	hsize_t countFile[ranksFile];
+	startFile[0] = bandIdx;
+	startFile[1] = 0; // y
+	startFile[2] = 0; // x
+	countFile[0] = 1;
+	countFile[1] = trgCellNum/outputWidth; // y
+	countFile[2] = outputWidth;  // x
 
-    status = H5Sselect_hyperslab(fileSpaceH5, H5S_SELECT_SET, startFile, NULL, countFile, NULL);
-    if(status < 0) {
-        std::cerr << __FUNCTION__ << ":" << __LINE__ <<  "> Error: H5Sselect_hyperslab for Aster target .\n";
-        ret = FAILED;
-        goto done;
-    }
+	status = H5Sselect_hyperslab(fileSpaceH5, H5S_SELECT_SET, startFile, NULL, countFile, NULL);
+	if(status < 0) {
+		std::cerr << __FUNCTION__ << ":" << __LINE__ <<  "> Error: H5Sselect_hyperslab for Aster target .\n";
+		ret = FAILED;
+		goto done;
+	}
 
-    status = H5Dwrite(aster_dataset, dataTypeH5, memSpaceH5, fileSpaceH5, H5P_DEFAULT, processedData);
-    if(status < 0) {
-        std::cerr << __FUNCTION__ << ":" << __LINE__ <<  "> Error: H5Dwrite for Aster target .\n";
-        ret = FAILED;
-        goto done;
-    }
+	status = H5Dwrite(aster_dataset, dataTypeH5, memSpaceH5, fileSpaceH5, H5P_DEFAULT, processedData);
+	if(status < 0) {
+		std::cerr << __FUNCTION__ << ":" << __LINE__ <<  "> Error: H5Dwrite for Aster target .\n";
+		ret = FAILED;
+		goto done;
+	}
 
  done:
-    H5Dclose(aster_dataset);
+	H5Dclose(aster_dataset);
 
 #if DEBUG_TOOL
-    std::cout << "DBG_TOOL " << __FUNCTION__ << "> END \n";
+	std::cout << "DBG_TOOL " << __FUNCTION__ << "> END \n";
 #endif
-    return ret;
+	return ret;
 }
 
 
 /*=====================================================================
  * DESCRIPTION:
- *   Write resampled radiance output data of a single orbit for all the 
- *   specified bands for ASTER as the source instrument.
+ *	 Write resampled radiance output data of a single orbit for all the 
+ *	 specified bands for ASTER as the source instrument.
  *
  * PARAMETER:
- *  - inputArgs : a class object contains all the user input parameter info
- *  - outputFile : HDF5 id for output file
- *  - targetNNsrcID : got from nearestNeighborBlockIndex()
- *  - trgCellNumNoShift : number of target instrument data cells before
- *    applying shift (if MISR is target)
- *  - srcFile : HDF5 id for input file
- *  - srcCellNum : number of source instrument data cells
- *  - inputMultiVarsMap : To obtain multiple values from a given user input
- *    directive which allows to have multiple values.
+ *	- inputArgs : a class object contains all the user input parameter info
+ *	- outputFile : HDF5 id for output file
+ *	- targetNNsrcID : got from nearestNeighborBlockIndex()
+ *	- trgCellNumNoShift : number of target instrument data cells before
+ *	  applying shift (if MISR is target)
+ *	- srcFile : HDF5 id for input file
+ *	- srcCellNum : number of source instrument data cells
+ *	- inputMultiVarsMap : To obtain multiple values from a given user input
+ *	  directive which allows to have multiple values.
  * 
  * RETURN:
- *  - Success: SUCCEED  (defined in AF_common.h)
- *  - Fail : FAILED  (defined in AF_common.h)
+ *	- Success: SUCCEED	(defined in AF_common.h)
+ *	- Fail : FAILED  (defined in AF_common.h)
  */
 int af_GenerateOutputCumulative_AsterAsSrc(AF_InputParmeterFile &inputArgs, hid_t outputFile, int *targetNNsrcID,  int trgCellNumNoShift, hid_t srcFile, int srcCellNum, std::map<std::string, strVec_t> &inputMultiVarsMap)
 {
@@ -235,7 +232,7 @@ int af_GenerateOutputCumulative_AsterAsSrc(AF_InputParmeterFile &inputArgs, hid_
 	/*------------------------------------------
 	 * create space for aster
 	 */
-	const int rankSpace=3;  // [bands][y][x]
+	const int rankSpace=3;	// [bands][y][x]
 	hsize_t asterDims[rankSpace];
 	/* handle different data width and height, also misr-trg shift case
 	 */
@@ -246,7 +243,7 @@ int af_GenerateOutputCumulative_AsterAsSrc(AF_InputParmeterFile &inputArgs, hid_
 	if(ret < 0) {
 		return FAILED;
 	}
-    int srcOutputWidth = widthShifted;
+	int srcOutputWidth = widthShifted;
 	if(inputArgs.GetMISR_Shift() == "ON" && inputArgs.GetTargetInstrument() == MISR_STR) {
 		trgCellNum = widthShifted * heightShifted;
 	}
@@ -410,7 +407,7 @@ int af_GenerateOutputCumulative_AsterAsSrc(AF_InputParmeterFile &inputArgs, hid_
 		}
 
 		// output pixels count dset
-		ret = af_WriteSingleRadiance_AsterAsSrc<int, int>(outputFile, ASTER_COUNT_DSET, dataTypeIntH5, asterDataspace,  srcPixelCountDataPtr, numCells /*processed size*/, srcOutputWidth, i /*bandIdx*/);
+		ret = af_WriteSingleRadiance_AsterAsSrc<int, int>(outputFile, ASTER_COUNT_DSET, dataTypeIntH5, asterDataspace,	srcPixelCountDataPtr, numCells /*processed size*/, srcOutputWidth, i /*bandIdx*/);
 		if (ret == FAILED) {
 			std::cerr << __FUNCTION__ << "> Error: returned fail.\n";
 		}
