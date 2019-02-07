@@ -79,7 +79,7 @@ double* get_misr_rad(hid_t file, char* camera_angle, char* resolution, char* rad
 	/*Dimensions - 180 blocks, 512 x 2048 ordered in 1D Array*/
 	//Retrieve radiance dataset and dataspace
 	double* data = af_read(file, rad_dataset_name);
-	*size = dim_sum(af_read_size(file, rad_dataset_name), 3);
+	*size = dim_sum_free(af_read_size(file, rad_dataset_name), 3);
 	
 	if(data == NULL){
 		return NULL;
@@ -125,9 +125,11 @@ double* get_misr_rad(hid_t file, char* camera_angle, char* resolution, char* rad
 			}
 		}
 		free(data);
+        free(dims);
 		printf("Downsampling done\n");
 	}
 	
+	free(rad_dataset_name);
 	if(down_sampling == 1){
 		#if DEBUG_IO
 		printf("DBG_IO %s:%d> rad_data: %f\n", __FUNCTION__, __LINE__, down_data[0]);
@@ -140,7 +142,7 @@ double* get_misr_rad(hid_t file, char* camera_angle, char* resolution, char* rad
 		#endif
 		return data;	
 	}
-	
+    
 }
 
 /*
@@ -187,8 +189,9 @@ double* get_misr_lat(hid_t file, char* resolution, int* size)
 	if(lat_data == NULL){
 		return NULL;
 	}
-	*size = dim_sum(af_read_size(file, lat_dataset_name), 3);
+	*size = dim_sum_free(af_read_size(file, lat_dataset_name), 3);
 	//printf("lat_data: %f\n", lat_data[0]);
+	free(lat_dataset_name);
 	return lat_data;
 }
 
@@ -233,10 +236,11 @@ double* get_misr_long(hid_t file, char* resolution, int* size)
 	printf("Retrieveing longitude data for MISR\n");
 	//Retrieve longitude dataset and dataspace
 	double* long_data = af_read(file, long_dataset_name);
-	*size = dim_sum(af_read_size(file, long_dataset_name), 3);
+	*size = dim_sum_free(af_read_size(file, long_dataset_name), 3);
 	if(long_data == NULL){
 		return NULL;
 	}
+    free(long_dataset_name);
 	//printf("long_data: %f\n", long_data[0]);
 	return long_data;
 }
@@ -448,6 +452,7 @@ double* get_modis_rad(hid_t file, char* resolution, std::vector<std::string> &ba
 		int file_size;
 		double * MODIS_rad = get_modis_rad_by_band(file, resolution, dnames[n], &band_indices[n], &file_size);
 		memcpy(&result_data[start_point], MODIS_rad, file_size*sizeof(double));
+        free(MODIS_rad);
 		start_point += file_size;
 	}
 	
@@ -737,14 +742,14 @@ double* get_modis_lat(hid_t file, char* resolution, int* size)
 		concat_by_sep(&lat_dataset_name, lat_arr, "/", strlen(instrument) + strlen(name) + strlen(resolution) + strlen(location) + strlen(lat), 5);
 		
 		if(read_first < 0){
-			curr_lat_size = dim_sum(af_read_size(file, lat_dataset_name), 2);
+			curr_lat_size = dim_sum_free(af_read_size(file, lat_dataset_name), 2);
 			lat_data = af_read(file, lat_dataset_name);
 			read_first = 1;
 		}
 		else{
 			//retrieve next set of data and its dimension
 			double* adding_lat = af_read(file, lat_dataset_name);
-			double new_lat_size = dim_sum(af_read_size(file, lat_dataset_name), 2);
+			double new_lat_size = dim_sum_free(af_read_size(file, lat_dataset_name), 2);
 			
 			//Reallocating arrays of data
 			lat_data = (double*)realloc(lat_data, sizeof(double)*(curr_lat_size + new_lat_size));
@@ -853,14 +858,14 @@ double* get_modis_long(hid_t file, char* resolution, int* size)
 		concat_by_sep(&long_dataset_name, long_arr, "/", strlen(instrument) + strlen(name) + strlen(resolution) + strlen(location) + strlen(longitude), 5);
 		
 		if(read_first < 0){
-			curr_long_size = dim_sum(af_read_size(file, long_dataset_name), 2);
+			curr_long_size = dim_sum_free(af_read_size(file, long_dataset_name), 2);
 			long_data = af_read(file, long_dataset_name);
 			read_first = 1;
 		}
 		else{
 			//retrieve next set of data and its dimension
 			double* adding_long = af_read(file, long_dataset_name);
-			double new_long_size = dim_sum(af_read_size(file, long_dataset_name), 2);
+			double new_long_size = dim_sum_free(af_read_size(file, long_dataset_name), 2);
 			
 			//Reallocating arrays of data
 			long_data = (double*)realloc(long_data, sizeof(double)*(curr_long_size + new_long_size));
@@ -1134,7 +1139,7 @@ double* get_ceres_rad(hid_t file, char* camera, char* d_name, int* size)
 			if(data == NULL){
 				continue;
 			}
-			curr_size = dim_sum(af_read_size(file, dataset_name), 1); 
+			curr_size = dim_sum_free(af_read_size(file, dataset_name), 1); 
 			read_first = 1;
 		}
 		else{
@@ -1143,7 +1148,7 @@ double* get_ceres_rad(hid_t file, char* camera, char* d_name, int* size)
 			if(adding_data == NULL){
 				continue;
 			}
-			double new_d_size = dim_sum(af_read_size(file, dataset_name), 1);
+			double new_d_size = dim_sum_free(af_read_size(file, dataset_name), 1);
 			//Reallocating arrays of data
 			data = (double*)realloc(data, sizeof(double)*(curr_size + new_d_size));
 			memcpy(&data[(int)curr_size], adding_data, sizeof(double)*new_d_size);
@@ -1235,14 +1240,14 @@ double* get_ceres_lat(hid_t file, char* camera, char* d_name, int* size)
 		concat_by_sep(&lat_dataset_name, lat_arr, "/", strlen(instrument) + strlen(name) + strlen(camera) + strlen(tp) + strlen(lat) + 5, 5);
 		
 		if(read_first < 0){
-			curr_lat_size = dim_sum(af_read_size(file, lat_dataset_name), 1);
+			curr_lat_size = dim_sum_free(af_read_size(file, lat_dataset_name), 1);
 			lat_data = af_read(file, lat_dataset_name);
 			read_first = 1;
 		}
 		else{
 			//retrieve next set of data and its dimension
 			double* adding_lat = af_read(file, lat_dataset_name);
-			double new_lat_size = dim_sum(af_read_size(file, lat_dataset_name), 1);
+			double new_lat_size = dim_sum_free(af_read_size(file, lat_dataset_name), 1);
 			
 			//Reallocating arrays of data
 			lat_data = (double*)realloc(lat_data, sizeof(double)*(curr_lat_size + new_lat_size));
@@ -1334,14 +1339,14 @@ double* get_ceres_long(hid_t file, char* camera, char* d_name, int* size)
 		concat_by_sep(&long_dataset_name, long_arr, "/", strlen(instrument) + strlen(name) + strlen(camera) + strlen(tp) + strlen(longitude) + 5, 5);
 		
 		if(read_first < 0){
-			curr_long_size = dim_sum(af_read_size(file, long_dataset_name), 1);
+			curr_long_size = dim_sum_free(af_read_size(file, long_dataset_name), 1);
 			long_data = af_read(file, long_dataset_name);
 			read_first = 1;
 		}
 		else{
 			//retrieve next set of data and its dimension
 			double* adding_long = af_read(file, long_dataset_name);
-			double new_long_size = dim_sum(af_read_size(file, long_dataset_name), 1);
+			double new_long_size = dim_sum_free(af_read_size(file, long_dataset_name), 1);
 			//Reallocating arrays of data
 			long_data = (double*)realloc(long_data, sizeof(double)*(curr_long_size + new_long_size));
 			memcpy(&long_data[(int)curr_long_size], adding_long, sizeof(double)*new_long_size);
@@ -1421,7 +1426,7 @@ double* get_mop_rad(hid_t file, int* size)
 			if(data == NULL){
 				continue;
 			}
-			curr_size = dim_sum(af_read_size(file, dataset_name), 5); 
+			curr_size = dim_sum_free(af_read_size(file, dataset_name), 5); 
 			read_first = 1;
 		}
 		else{
@@ -1430,7 +1435,7 @@ double* get_mop_rad(hid_t file, int* size)
 			if(adding_data == NULL){
 				continue;
 			}
-			double new_d_size = dim_sum(af_read_size(file, dataset_name), 1);
+			double new_d_size = dim_sum_free(af_read_size(file, dataset_name), 1);
 			//Reallocating arrays of data
 			data = (double*)realloc(data, sizeof(double)*(curr_size + new_d_size));
 			memcpy(&data[(int)curr_size], adding_data, sizeof(double)*new_d_size);
@@ -1522,14 +1527,14 @@ double* get_mop_lat(hid_t file, int* size)
 		concat_by_sep(&lat_dataset_name, lat_arr, "/", strlen(instrument) + strlen(name) + strlen(location) + strlen(lat) + 4, 4);
 		
 		if(read_first < 0){
-			curr_lat_size = dim_sum(af_read_size(file, lat_dataset_name), 3);
+			curr_lat_size = dim_sum_free(af_read_size(file, lat_dataset_name), 3);
 			lat_data = af_read(file, lat_dataset_name);
 			read_first = 1;
 		}
 		else{
 			//retrieve next set of data and its dimension
 			double* adding_lat = af_read(file, lat_dataset_name);
-			double new_lat_size = dim_sum(af_read_size(file, lat_dataset_name), 3);
+			double new_lat_size = dim_sum_free(af_read_size(file, lat_dataset_name), 3);
 			//Reallocating arrays of data
 			lat_data = (double*)realloc(lat_data, sizeof(double)*(curr_lat_size + new_lat_size));
 			memcpy(&lat_data[(int)curr_lat_size], adding_lat, sizeof(double)*new_lat_size);
@@ -1621,14 +1626,14 @@ double* get_mop_long(hid_t file, int* size)
 		concat_by_sep(&long_dataset_name, long_arr, "/", strlen(instrument) + strlen(name) + strlen(location) + strlen(longitude) + 4, 4);
 		
 		if(read_first < 0){
-			curr_long_size = dim_sum(af_read_size(file, long_dataset_name), 3);
+			curr_long_size = dim_sum_free(af_read_size(file, long_dataset_name), 3);
 			long_data = af_read(file, long_dataset_name);
 			read_first = 1;
 		}
 		else{
 			//retrieve next set of data and its dimension
 			double* adding_long = af_read(file, long_dataset_name);
-			double new_long_size = dim_sum(af_read_size(file, long_dataset_name), 3);
+			double new_long_size = dim_sum_free(af_read_size(file, long_dataset_name), 3);
 			//Reallocating arrays of data
 			long_data = (double*)realloc(long_data, sizeof(double)*(curr_long_size + new_long_size));
 			memcpy(&long_data[(int)curr_long_size], adding_long, sizeof(double)*new_long_size);
@@ -1716,6 +1721,7 @@ double* get_ast_rad(hid_t file, char* subsystem, char* d_name, int*size)
 			#endif
 		}
 		free(name);
+        free(rad_group_name);
 	}
 	
 	//Get total data size
@@ -1738,6 +1744,7 @@ double* get_ast_rad(hid_t file, char* subsystem, char* d_name, int*size)
 		}
 		total_size += curr_dim[0]*curr_dim[1];
 		free(curr_dim);
+        free(dataset_name);
 	}
 	#if DEBUG_IO
 	printf("DBG_IO %s:%d> Get total_size: %d\n", __FUNCTION__, __LINE__, total_size);
@@ -1778,6 +1785,7 @@ double* get_ast_rad(hid_t file, char* subsystem, char* d_name, int*size)
 		curr_size += gran_size;
 		free(data);
 		free(curr_dim);
+        free(dataset_name);
 	}
 	*size = curr_size;
 	
@@ -1854,6 +1862,8 @@ double* get_ast_lat(hid_t file, char* subsystem, char* d_name, int*size)
 			#endif
 		}
 		free(name);
+        // Fix memory leaking
+        free(rad_group_name);
 	}
 
 	//Get total data size
@@ -1892,6 +1902,7 @@ double* get_ast_lat(hid_t file, char* subsystem, char* d_name, int*size)
 			printf("\nError: Failed to continue reading ASTER latitude data due to the 2 billion pixel limit.\n");
 			return NULL;
 		}
+        free(dataset_name);
 	}
 	#if DEBUG_IO
 	printf("DBG_IO %s:%d> Get total_size: %d\n", __FUNCTION__, __LINE__, total_size);
@@ -1932,6 +1943,7 @@ double* get_ast_lat(hid_t file, char* subsystem, char* d_name, int*size)
 		curr_lat_size += gran_size;
 		free(data);
 		free(curr_dim);
+        free(lat_dataset_name);
 	}
 	*size = curr_lat_size;
 
@@ -2008,6 +2020,7 @@ double* get_ast_long(hid_t file, char* subsystem, char* d_name, int* size)
 			#endif
 		}
 		free(name);
+        free(rad_group_name);
 	}
 	
 	//Get total data size
@@ -2048,6 +2061,7 @@ double* get_ast_long(hid_t file, char* subsystem, char* d_name, int* size)
 			printf("\nError: Failed to continue reading ASTER longitude data due to the 2 billion pixel limit.\n");
 			return NULL;
 		}
+        free(dataset_name);
 	}
 	#if DEBUG_IO
 	printf("DBG_IO %s:%d> Get total_size: %d\n", __FUNCTION__, __LINE__, total_size);
@@ -2087,6 +2101,7 @@ double* get_ast_long(hid_t file, char* subsystem, char* d_name, int* size)
 		curr_long_size += gran_size;
 		free(data);
 		free(curr_dim);
+        free(long_dataset_name);
 	}
 	*size = curr_long_size;
 	
@@ -2328,14 +2343,17 @@ double* af_read(hid_t file, char* dataset_name)
 	
 	const int ndims = H5Sget_simple_extent_ndims(dataspace);
 	hsize_t dims[ndims];
+    // Need to add error checking
 	H5Sget_simple_extent_dims(dataspace, dims, NULL);
-	hid_t memspace = H5Screate_simple(ndims,dims,NULL);
+
+	//hid_t memspace = H5Screate_simple(ndims,dims,NULL);
 	hid_t dtype = H5Dget_type(dataset);
 	hid_t ndtype = H5Tget_native_type(dtype, H5T_DIR_DESCEND);
 	if(strstr(dataset_name, "ASTER") != NULL && strstr(dataset_name, "Geolocation") != NULL){
 		//Special case for ASTER geolocation because they are 64bit floating point numbers
 		double* data = (double*)calloc ( dim_sum(dims, sizeof(dims)/sizeof(hsize_t)) , sizeof(double) );
-		herr_t status = H5Dread(dataset, ndtype, memspace, memspace, H5P_DEFAULT, data);
+		herr_t status = H5Dread(dataset, ndtype, H5S_ALL, H5S_ALL, H5P_DEFAULT, data);
+		//herr_t status = H5Dread(dataset, ndtype, memspace, memspace, H5P_DEFAULT, data);
 		H5Dclose(dataset);	
 		H5Sclose(dataspace);
 		H5Tclose(dtype);
@@ -2348,7 +2366,8 @@ double* af_read(hid_t file, char* dataset_name)
 	else{
 		float* data = (float*)calloc ( dim_sum(dims, sizeof(dims)/sizeof(hsize_t)) , sizeof(ndtype) );
 		double* converted_data = (double*)calloc ( dim_sum(dims, sizeof(dims)/sizeof(hsize_t)) , sizeof(double) );
-		herr_t status = H5Dread(dataset, ndtype, memspace, memspace, H5P_DEFAULT, data);
+		//herr_t status = H5Dread(dataset, ndtype, memspace, memspace, H5P_DEFAULT, data);
+		herr_t status = H5Dread(dataset, ndtype, H5S_ALL, H5S_ALL, H5P_DEFAULT, data);
 		int i;
 		for(i=0;i < dim_sum(dims, sizeof(dims)/sizeof(hsize_t)); i++){
 			converted_data[i] = (double) data[i];
@@ -3000,6 +3019,28 @@ void concat_by_sep(char** source, const char** w, char* sep, size_t length, int 
 
 
 //Summing up dimensions
+double dim_sum_free(hsize_t* dims, int arr_len)
+{
+	double sum = 0.0;
+	int i;
+	for(i = 0; i < arr_len; i++){
+		if(i == 0){
+			sum = (double)dims[i];
+		}
+		else{
+			sum *= (double)dims[i];
+		}
+	}
+    
+    // Fix memory leaking
+//#if 0
+    if(dims != NULL)
+        free(dims);
+//#endif
+	return sum;
+}
+
+//Summing up dimensions
 double dim_sum(hsize_t* dims, int arr_len)
 {
 	double sum = 0.0;
@@ -3012,6 +3053,12 @@ double dim_sum(hsize_t* dims, int arr_len)
 			sum *= (double)dims[i];
 		}
 	}
+    
+    // Fix memory leaking
+#if 0
+    if(dims != NULL)
+        free(dims);
+#endif
 	return sum;
 }
 

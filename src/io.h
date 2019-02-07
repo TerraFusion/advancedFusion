@@ -60,5 +60,6 @@ double* get_ast_long_by_gran(hid_t file, char* subsystem, char* d_name, char* gr
 //Helper functions
 void concat_by_sep(char** source, const char** w, char* sep, size_t length, int arr_size);
 double dim_sum(hsize_t* dims, int arr_len);
+double dim_sum_free(hsize_t* dims, int arr_len);
 double float_to_double(float f);
 double misr_averaging(double window[16]);
