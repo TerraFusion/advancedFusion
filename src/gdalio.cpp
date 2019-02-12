@@ -123,6 +123,11 @@ int getCellCenterLatLon(int outputEPSG, double xMin, double yMin, double xMax, d
 			OCTTransform(cTransform, nPointsThread, x + start, y + start, NULL);		
 
 			OCTDestroyCoordinateTransformation(cTransform);
+
+            // Forgot destroy sourceSRS and targetSRS-memory leaking. destroy here
+            OSRDestroySpatialReference(sourceSRS);
+            OSRDestroySpatialReference(targetSRS);
+
 		//	printf("%d of %d: %d - %d\n", threadID, nThreads, start, nPointsThread);
 
 		}
