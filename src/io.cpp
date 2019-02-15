@@ -125,7 +125,7 @@ double* get_misr_rad(hid_t file, char* camera_angle, char* resolution, char* rad
 			}
 		}
 		free(data);
-        free(dims);
+		free(dims);
 		printf("Downsampling done\n");
 	}
 	
@@ -240,7 +240,7 @@ double* get_misr_long(hid_t file, char* resolution, int* size)
 	if(long_data == NULL){
 		return NULL;
 	}
-    free(long_dataset_name);
+	free(long_dataset_name);
 	//printf("long_data: %f\n", long_data[0]);
 	return long_data;
 }
@@ -452,7 +452,7 @@ double* get_modis_rad(hid_t file, char* resolution, std::vector<std::string> &ba
 		int file_size;
 		double * MODIS_rad = get_modis_rad_by_band(file, resolution, dnames[n], &band_indices[n], &file_size);
 		memcpy(&result_data[start_point], MODIS_rad, file_size*sizeof(double));
-        free(MODIS_rad);
+		free(MODIS_rad);
 		start_point += file_size;
 	}
 	
@@ -499,6 +499,7 @@ double* get_modis_rad_by_band(hid_t file, char* resolution, char* d_name, int* b
 	#endif
 	char* instrument = "MODIS";
 	char* d_fields = "Data_Fields";
+
 	//Get all granule file names
 	#if DEBUG_IO
 	printf("DBG_IO %s:%d> Retrieving granule group names\n", __FUNCTION__, __LINE__);
@@ -1699,8 +1700,8 @@ double* get_ast_rad(hid_t file, char* subsystem, char* d_name, int*size)
 		concat_by_sep(&rad_group_name, d_arr, "/", strlen(name) + strlen(subsystem) + strlen(d_name), 3);
 		memmove(&rad_group_name[0], &rad_group_name[1], strlen(rad_group_name));
 
-    	H5E_auto2_t old_func;
-    	void *old_client_data;
+		H5E_auto2_t old_func;
+		void *old_client_data;
 		// Save HDF5 internal error stack
 		H5Eget_auto(H5E_DEFAULT, &old_func, &old_client_data);
 		// We only need to check return value of H5Lexists.
@@ -1721,7 +1722,7 @@ double* get_ast_rad(hid_t file, char* subsystem, char* d_name, int*size)
 			#endif
 		}
 		free(name);
-        free(rad_group_name);
+		free(rad_group_name);
 	}
 	
 	//Get total data size
@@ -1744,7 +1745,7 @@ double* get_ast_rad(hid_t file, char* subsystem, char* d_name, int*size)
 		}
 		total_size += curr_dim[0]*curr_dim[1];
 		free(curr_dim);
-        free(dataset_name);
+		free(dataset_name);
 	}
 	#if DEBUG_IO
 	printf("DBG_IO %s:%d> Get total_size: %d\n", __FUNCTION__, __LINE__, total_size);
@@ -1785,7 +1786,7 @@ double* get_ast_rad(hid_t file, char* subsystem, char* d_name, int*size)
 		curr_size += gran_size;
 		free(data);
 		free(curr_dim);
-        free(dataset_name);
+		free(dataset_name);
 	}
 	*size = curr_size;
 	
@@ -1840,8 +1841,8 @@ double* get_ast_lat(hid_t file, char* subsystem, char* d_name, int*size)
 		concat_by_sep(&rad_group_name, d_arr, "/", strlen(name) + strlen(subsystem) + strlen(d_name), 3);
 		memmove(&rad_group_name[0], &rad_group_name[1], strlen(rad_group_name));
 
-    	H5E_auto2_t old_func;
-    	void *old_client_data;
+		H5E_auto2_t old_func;
+		void *old_client_data;
 		// Save HDF5 internal error stack
 		H5Eget_auto(H5E_DEFAULT, &old_func, &old_client_data);
 		// We only need to check return value of H5Lexists.
@@ -1862,8 +1863,8 @@ double* get_ast_lat(hid_t file, char* subsystem, char* d_name, int*size)
 			#endif
 		}
 		free(name);
-        // Fix memory leaking
-        free(rad_group_name);
+		// Fix memory leaking
+		free(rad_group_name);
 	}
 
 	//Get total data size
@@ -1902,7 +1903,7 @@ double* get_ast_lat(hid_t file, char* subsystem, char* d_name, int*size)
 			printf("\nError: Failed to continue reading ASTER latitude data due to the 2 billion pixel limit.\n");
 			return NULL;
 		}
-        free(dataset_name);
+		free(dataset_name);
 	}
 	#if DEBUG_IO
 	printf("DBG_IO %s:%d> Get total_size: %d\n", __FUNCTION__, __LINE__, total_size);
@@ -1943,7 +1944,7 @@ double* get_ast_lat(hid_t file, char* subsystem, char* d_name, int*size)
 		curr_lat_size += gran_size;
 		free(data);
 		free(curr_dim);
-        free(lat_dataset_name);
+		free(lat_dataset_name);
 	}
 	*size = curr_lat_size;
 
@@ -1998,8 +1999,8 @@ double* get_ast_long(hid_t file, char* subsystem, char* d_name, int* size)
 		concat_by_sep(&rad_group_name, d_arr, "/", strlen(name) + strlen(subsystem) + strlen(d_name), 3);
 		memmove(&rad_group_name[0], &rad_group_name[1], strlen(rad_group_name));
 
-    	H5E_auto2_t old_func;
-    	void *old_client_data;
+	    	H5E_auto2_t old_func;
+		void *old_client_data;
 		// Save HDF5 internal error stack
 		H5Eget_auto(H5E_DEFAULT, &old_func, &old_client_data);
 		// We only need to check return value of H5Lexists.
@@ -2020,7 +2021,7 @@ double* get_ast_long(hid_t file, char* subsystem, char* d_name, int* size)
 			#endif
 		}
 		free(name);
-        free(rad_group_name);
+		free(rad_group_name);
 	}
 	
 	//Get total data size
@@ -2061,7 +2062,7 @@ double* get_ast_long(hid_t file, char* subsystem, char* d_name, int* size)
 			printf("\nError: Failed to continue reading ASTER longitude data due to the 2 billion pixel limit.\n");
 			return NULL;
 		}
-        free(dataset_name);
+		free(dataset_name);
 	}
 	#if DEBUG_IO
 	printf("DBG_IO %s:%d> Get total_size: %d\n", __FUNCTION__, __LINE__, total_size);
@@ -2087,7 +2088,7 @@ double* get_ast_long(hid_t file, char* subsystem, char* d_name, int* size)
 			#if DEBUG_IO
 			printf("DBG_IO %s:%d> Warn: data is NULL of long_dataset_name: %s\n", __FUNCTION__, __LINE__, long_dataset_name);
 			#endif
-				continue;
+			continue;
 		}
 		hsize_t* curr_dim = af_read_size(file, long_dataset_name);
 		#if DEBUG_IO
@@ -2101,7 +2102,7 @@ double* get_ast_long(hid_t file, char* subsystem, char* d_name, int* size)
 		curr_long_size += gran_size;
 		free(data);
 		free(curr_dim);
-        free(long_dataset_name);
+		free(long_dataset_name);
 	}
 	*size = curr_long_size;
 	
@@ -2254,7 +2255,7 @@ double* get_ast_long_by_gran(hid_t file, char* subsystem, char* d_name, char* gr
 	double* result_data = (double*)calloc(curr_dim[0]*curr_dim[1], sizeof(double));
 	double* data = af_read(file, long_dataset_name);
 	if(data == NULL){
-			return NULL;
+		return NULL;
 	}
 	memcpy(&result_data[0], data, sizeof(double)*(curr_dim[0]*curr_dim[1]));
 	free(data);
@@ -2271,10 +2272,10 @@ double* get_ast_long_by_gran(hid_t file, char* subsystem, char* d_name, char* gr
 /*
 						af_read_size
 	DESCRIPTION:	
-		A HDF5 API wrapper for advancedFusion to read the dimension of a dataset.
+		An HDF5 API wrapper for advancedFusion to read the dimension of a dataset.
 		
 	ARGUMENTS:
-		0. file -- A hdf file variable that points to the BasicFusion file
+		0. file -- An hdf file variable that points to the BasicFusion file
 		1. dataset_name -- A string variable that specifies the dataset name
 		
 	EFFECT:
@@ -2296,12 +2297,35 @@ hsize_t* af_read_size(hid_t file, char* dataset_name)
 	}
 	hid_t dataspace = H5Dget_space(dataset);
 	if(dataspace < 0){
+		H5Dclose(dataset);
 		printf("Dataspace open error\n");
 		return NULL;	
 	}
 	const int ndims = H5Sget_simple_extent_ndims(dataspace);
+	if(ndims <= 0){ 
+		H5Sclose(dataspace);
+		H5Dclose(dataset);
+		if(ndims<0) 
+			printf("Dataspace obtain number of dimensions  error\n");
+		else
+			printf("Currently doesn't support 0 dimension dataset.\n");
+		return NULL;	
+	}
 	hsize_t* dims = (hsize_t*)malloc(sizeof(hsize_t) * ndims);
-	H5Sget_simple_extent_dims(dataspace, dims, NULL);
+	if(dims == NULL) {
+		H5Sclose(dataspace);
+		H5Dclose(dataset);
+		printf("Unable to allocate memory for dims.\n");
+		return NULL;
+	}
+
+	if(H5Sget_simple_extent_dims(dataspace, dims, NULL)<0){
+		H5Sclose(dataspace);
+		H5Dclose(dataset);
+		free(dims);
+		printf("Unable to retrieve dimensions\n");
+		return NULL;
+	}
 	H5Dclose(dataset);	
 	H5Sclose(dataspace);
 	return dims;
