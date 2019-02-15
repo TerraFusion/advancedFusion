@@ -80,8 +80,14 @@ double* get_misr_rad(hid_t file, char* camera_angle, char* resolution, char* rad
 	//Retrieve radiance dataset and dataspace
 	double* data = af_read(file, rad_dataset_name);
 	*size = dim_sum_free(af_read_size(file, rad_dataset_name), 3);
+
+	if(*size == 0){
+		printf("Cannot read HDF5 dataset %s \n",rad_dataset_name);
+		return NULL;
+        }
 	
 	if(data == NULL){
+		printf("Cannot read HDF5 dataset %s \n",rad_dataset_name);
 		return NULL;
 	}
 	printf("Reading successful\n");
@@ -90,6 +96,11 @@ double* get_misr_rad(hid_t file, char* camera_angle, char* resolution, char* rad
 	if(down_sampling == 1){
 		printf("Undergoing downsampling\n");
 		hsize_t* dims = af_read_size(file, rad_dataset_name);
+		if(dims == NULL){
+			printf("Cannot read HDF5 dataset %s \n",rad_dataset_name);
+			return NULL;
+ 		}
+			
 		*size = dims[0] * (dims[1]/4) * (dims[2]/4);
 		down_data = (double*) malloc(dims[0] * (dims[1]/4) * (dims[2]/4) * sizeof(double));
 		int i, j, k;
@@ -427,11 +438,22 @@ double* get_modis_rad(hid_t file, char* resolution, std::vector<std::string> &ba
 			
 //				printf("Create a placeholder: %s\n", dataset_name); 
 				curr_dim = af_read_size(file, dataset_name);
+				if(curr_dim == NULL) {
+					printf("Cannot read the HDF5 dataset %s\n",dataset_name);
+					free(dataset_name);
+					return NULL;
+				}
 				total_size += curr_dim[0]*curr_dim[1];
 //				printf("%s: %d\n", dataset_name, curr_dim[0]*curr_dim[1]); 
 			}
 			else {
 				curr_dim = af_read_size(file, dataset_name);
+				if(curr_dim == NULL) {
+					printf("Cannot read the HDF5 dataset %s\n",dataset_name);
+					free(dataset_name);
+					return NULL;
+				}
+	
 				total_size += curr_dim[1]*curr_dim[2];
 //				printf("%s: %d\n", dataset_name, curr_dim[1]*curr_dim[2]); 
 			}
@@ -558,11 +580,21 @@ double* get_modis_rad_by_band(hid_t file, char* resolution, char* d_name, int* b
 			
 //			printf("Create a placeholder: %s\n", dataset_name); 
 			curr_dim = af_read_size(file, dataset_name);
+			if(curr_dim == NULL) {
+				printf("Cannot read the HDF5 dataset %s\n",dataset_name);
+				free(dataset_name);
+				return NULL;
+			}
 			total_size += curr_dim[0]*curr_dim[1];
 //			printf("%s: %d\n", dataset_name, curr_dim[0]*curr_dim[1]); 
 		}
 		else {
 			curr_dim = af_read_size(file, dataset_name);
+			if(curr_dim == NULL) {
+				printf("Cannot read the HDF5 dataset %s\n",dataset_name);
+				free(dataset_name);
+				return NULL;
+			}
 			total_size += curr_dim[1]*curr_dim[2];
 //			printf("%s: %d\n", dataset_name, curr_dim[1]*curr_dim[2]); 
 		}
@@ -608,6 +640,12 @@ double* get_modis_rad_by_band(hid_t file, char* resolution, char* d_name, int* b
 //			printf("Create a placeholder: %s\n", dataset_name); 
 			
 			curr_dim = af_read_size(file, dataset_name);
+			if(curr_dim == NULL) {
+				printf("Cannot read the HDF5 dataset %s\n",dataset_name);
+				free(dataset_name);
+				return NULL;
+			}
+			
 			band_length = curr_dim[0] * curr_dim[1];
 
 			for(i = curr_size; i < curr_size + band_length; i++) {
@@ -616,6 +654,12 @@ double* get_modis_rad_by_band(hid_t file, char* resolution, char* d_name, int* b
 		}
 		else {
 			curr_dim = af_read_size(file, dataset_name);
+			if(curr_dim == NULL) {
+				printf("Cannot read the HDF5 dataset %s\n",dataset_name);
+				free(dataset_name);
+				return NULL;
+			}
+	
 			band_length = curr_dim[1] * curr_dim[2];
 
 			data = af_read(file, dataset_name);
@@ -2361,23 +2405,62 @@ double* af_read(hid_t file, char* dataset_name)
 	}
 	hid_t dataspace = H5Dget_space(dataset);
 	if(dataspace < 0){
+		H5Dclose(dataset);
 		printf("Dataspace open error\n");
 		return NULL;	
 	}
 	
 	const int ndims = H5Sget_simple_extent_ndims(dataspace);
-	hsize_t dims[ndims];
-    // Need to add error checking
-	H5Sget_simple_extent_dims(dataspace, dims, NULL);
 
-	//hid_t memspace = H5Screate_simple(ndims,dims,NULL);
+	// Need to add error checking
+	if(ndims == 0) {
+		H5Dclose(dataset);
+		H5Sclose(dataspace);
+		printf("Number of dimension should not be 0.\n");
+		return NULL;
+        }
+	else if(ndims <0) {
+		H5Dclose(dataset);
+		H5Sclose(dataspace);
+		printf("H5Sget_simple_extent_ndims failed\n");
+		return NULL;
+	}
+
+	hsize_t dims[ndims];
+	if(H5Sget_simple_extent_dims(dataspace, dims, NULL)<0) {
+		H5Dclose(dataset);
+		H5Sclose(dataspace);
+		printf("H5Sget_simple_extent_dims failed\n");
+		return NULL;
+	}
+
 	hid_t dtype = H5Dget_type(dataset);
+	if(dtype <0) {
+		H5Dclose(dataset);
+		H5Sclose(dataspace);
+		printf("H5Dget_type failed\n");
+		return NULL;
+	}
 	hid_t ndtype = H5Tget_native_type(dtype, H5T_DIR_DESCEND);
+	if(ndtype <0) {
+		H5Dclose(dataset);
+		H5Sclose(dataspace);
+		H5Tclose(dtype);
+		printf("H5Dget_native_type failed\n");
+		return NULL;
+	}
 	if(strstr(dataset_name, "ASTER") != NULL && strstr(dataset_name, "Geolocation") != NULL){
 		//Special case for ASTER geolocation because they are 64bit floating point numbers
 		double* data = (double*)calloc ( dim_sum(dims, sizeof(dims)/sizeof(hsize_t)) , sizeof(double) );
+		if(data == NULL) {
+			H5Dclose(dataset);
+			H5Sclose(dataspace);
+			H5Tclose(dtype);
+			H5Tclose(ndtype);
+			printf("Allocate memory failed\n");
+			return NULL;
+		}
 		herr_t status = H5Dread(dataset, ndtype, H5S_ALL, H5S_ALL, H5P_DEFAULT, data);
-		//herr_t status = H5Dread(dataset, ndtype, memspace, memspace, H5P_DEFAULT, data);
 		H5Dclose(dataset);	
 		H5Sclose(dataspace);
 		H5Tclose(dtype);
@@ -2389,8 +2472,23 @@ double* af_read(hid_t file, char* dataset_name)
 	}
 	else{
 		float* data = (float*)calloc ( dim_sum(dims, sizeof(dims)/sizeof(hsize_t)) , sizeof(ndtype) );
+		if(data == NULL) {
+			H5Dclose(dataset);
+			H5Sclose(dataspace);
+			H5Tclose(dtype);
+			H5Tclose(ndtype);
+			printf("Allocate memory failed\n");
+			return NULL;
+		}
 		double* converted_data = (double*)calloc ( dim_sum(dims, sizeof(dims)/sizeof(hsize_t)) , sizeof(double) );
-		//herr_t status = H5Dread(dataset, ndtype, memspace, memspace, H5P_DEFAULT, data);
+		if(converted_data == NULL) {
+			H5Dclose(dataset);
+			H5Sclose(dataspace);
+			H5Tclose(dtype);
+			H5Tclose(ndtype);
+			printf("Allocate memory failed\n");
+			return NULL;
+		}
 		herr_t status = H5Dread(dataset, ndtype, H5S_ALL, H5S_ALL, H5P_DEFAULT, data);
 		int i;
 		for(i=0;i < dim_sum(dims, sizeof(dims)/sizeof(hsize_t)); i++){
@@ -3045,8 +3143,11 @@ void concat_by_sep(char** source, const char** w, char* sep, size_t length, int 
 //Summing up dimensions
 double dim_sum_free(hsize_t* dims, int arr_len)
 {
+          
 	double sum = 0.0;
 	int i;
+        if(dims == NULL)
+           return sum;
 	for(i = 0; i < arr_len; i++){
 		if(i == 0){
 			sum = (double)dims[i];
@@ -3057,10 +3158,8 @@ double dim_sum_free(hsize_t* dims, int arr_len)
 	}
     
     // Fix memory leaking
-//#if 0
-    if(dims != NULL)
-        free(dims);
-//#endif
+        if(dims != NULL)
+            free(dims);
 	return sum;
 }
 
@@ -3069,6 +3168,8 @@ double dim_sum(hsize_t* dims, int arr_len)
 {
 	double sum = 0.0;
 	int i;
+        if(dims == NULL)
+            return sum;
 	for(i = 0; i < arr_len; i++){
 		if(i == 0){
 			sum = (double)dims[i];

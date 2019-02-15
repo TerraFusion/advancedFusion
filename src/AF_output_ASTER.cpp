@@ -429,10 +429,10 @@ int af_GenerateOutputCumulative_AsterAsSrc(AF_InputParmeterFile &inputArgs, hid_
 			delete [] srcPixelCount;
 		if(srcRadianceDataShifted)
 			delete [] srcRadianceDataShifted;
-        if(srcPixelCountDataShifted)
-            delete [] srcPixelCountDataShifted;
-        if(srcSDDataShifted)
-            delete [] srcSDDataShifted;
+		if(srcPixelCountDataShifted)
+			delete [] srcPixelCountDataShifted;
+		if(srcSDDataShifted)
+			delete [] srcSDDataShifted;
 	} // i loop
 
 	H5Tclose(dataTypeDoubleH5);
