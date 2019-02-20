@@ -22,8 +22,10 @@
 #include "io.h"
 #include "reproject.h"
 #include "misrutil.h"
+#include <algorithm>
 
-
+//const char* ref_band_list[22] = {"1","2","3", "4", "5", "6", "7","8", "9", "10", "11", "12", "13L", "13H", "14L", "14H", "15", "16", "17", "18", "19", "26"};
+strVec_t ref_band_list = {"1","2","3", "4", "5", "6", "7","8", "9", "10", "11", "12", "13L", "13H", "14L", "14H", "15", "16", "17", "18", "19", "26"};
 /*#############################################################################
  *
  * MODIS as Target instrument, functions to generate radiance data
@@ -56,7 +58,7 @@
 // T_IN : input data type
 // T_OUT : output data type
 template <typename T_IN, typename T_OUT>
-static int af_WriteSingleRadiance_ModisAsTrg(hid_t outputFile, hid_t dataTypeH5, hid_t fileSpaceH5, T_IN* modisData, int modisDataSize, int outputWidth, int bandIdx)
+static int af_WriteSingleRadiance_ModisAsTrg(hid_t outputFile, hid_t dataTypeH5, hid_t fileSpaceH5, T_IN* modisData, int modisDataSize, int outputWidth, int bandIdx,bool has_refsb)
 {
 	#if DEBUG_TOOL
 	std::cout << "DBG_TOOL " << __FUNCTION__ << "> BEGIN \n";
@@ -87,7 +89,7 @@ static int af_WriteSingleRadiance_ModisAsTrg(hid_t outputFile, hid_t dataTypeH5,
 		return FAILED;
 	}
 
-
+	
 	/*-------------------------------------
 	 * if first time, create dataset
 	 * otherwise, open existing one
@@ -99,9 +101,16 @@ static int af_WriteSingleRadiance_ModisAsTrg(hid_t outputFile, hid_t dataTypeH5,
 			return FAILED;
 		}
 		else {
-			// make compatible with CF convention (NetCDF)
+			// make compatible with CF convention (NetCDF)/
 			char* units = "Watts/m^2/micrometer/steradian";
-			if(af_write_cf_attributes(modis_dataset, units, -999.0, 0.0) < 0) {
+			float valid_min = 0;
+			float valid_max = 100.0;
+ 			float _FillValue = -999.0;
+			if(true == has_refsb)
+                                valid_max = 900.0;
+
+			
+			if(af_write_cf_attributes(modis_dataset, units, _FillValue,valid_min,valid_max,0) < 0) {
 				std::cerr << __FUNCTION__ << ":" << __LINE__ <<  "> Error: af_write_cf_attributes" << std::endl;
 			}
 		}
@@ -193,7 +202,16 @@ int af_GenerateOutputCumulative_ModisAsTrg(AF_InputParmeterFile &inputArgs, hid_
 	std::string modisResolution = inputArgs.GetMODIS_Resolution();
 	// get multi-value variable for modis
 	strVec_t bands = inputMultiVarsMap[MODIS_BANDS];
+        bool has_refsb = false;
 
+        for (int temp_i= 0; temp_i < bands.size(); temp_i++) {
+        	has_refsb = (std::find(std::begin(ref_band_list),std::end(ref_band_list),bands[temp_i])!=std::end(ref_band_list));
+		if(true == has_refsb)
+			break;
+	}
+        
+
+        
 	// data type
 	hid_t modisDatatype = H5Tcopy(H5T_NATIVE_DOUBLE);
 	herr_t	status = H5Tset_order(modisDatatype, H5T_ORDER_LE);
@@ -264,7 +282,7 @@ int af_GenerateOutputCumulative_ModisAsTrg(AF_InputParmeterFile &inputArgs, hid_
 		#if DEBUG_ELAPSE_TIME
 		StartElapseTime();
 		#endif
-		af_WriteSingleRadiance_ModisAsTrg<double,float>(outputFile, modisDatatype, modisDataspace,	modisSingleData, numCells, targetOutputWidth, i);
+		af_WriteSingleRadiance_ModisAsTrg<double,float>(outputFile, modisDatatype, modisDataspace,modisSingleData, numCells, targetOutputWidth, i,has_refsb);
 		#if DEBUG_ELAPSE_TIME
 		StopElapseTimeAndShow("DBG_TIME> Write target MODIS single band data  DONE.");
 		#endif
@@ -317,7 +335,7 @@ int af_GenerateOutputCumulative_ModisAsTrg(AF_InputParmeterFile &inputArgs, hid_
 // T_IN : input data type
 // T_OUT : output data type
 template <typename T_IN, typename T_OUT>
-static int af_WriteSingleRadiance_ModisAsSrc(hid_t outputFile, hid_t dataTypeH5, hid_t fileSpaceH5, T_IN* processedData, int trgCellNum, int outputWidth, int bandIdx)
+static int af_WriteSingleRadiance_ModisAsSrc(hid_t outputFile, hid_t dataTypeH5, hid_t fileSpaceH5, T_IN* processedData, int trgCellNum, int outputWidth, int bandIdx,bool has_refsb)
 {
 #if DEBUG_TOOL
 	std::cout << "DBG_TOOL " << __FUNCTION__ << "> BEGIN \n";
@@ -361,7 +379,13 @@ static int af_WriteSingleRadiance_ModisAsSrc(hid_t outputFile, hid_t dataTypeH5,
 		else {
 			// make compatible with CF convention (NetCDF)
 			char* units = "Watts/m^2/micrometer/steradian";
-			if(af_write_cf_attributes(modis_dataset, units, -999.0, 0.0) < 0) {
+			float valid_min = 0;
+			float valid_max = 100.0;
+			float _FillValue = -999.0;
+			if(true == has_refsb)
+				valid_max = 900.0;
+			
+			if(af_write_cf_attributes(modis_dataset, units, _FillValue,valid_min,valid_max,0) < 0) {
 				std::cerr << __FUNCTION__ << ":" << __LINE__ <<	"> Error: af_write_cf_attributes" << std::endl;
 			}
 		}
@@ -461,7 +485,13 @@ int af_GenerateOutputCumulative_ModisAsSrc(AF_InputParmeterFile &inputArgs, hid_
 
 	// two multi-value variables are expected as this point
 	strVec_t bands = inputMultiVarsMap[MODIS_BANDS];
+        bool has_refsb = false;
 
+        for (int temp_i= 0; temp_i < bands.size(); temp_i++) {
+        	has_refsb = (std::find(std::begin(ref_band_list),std::end(ref_band_list),bands[temp_i])!=std::end(ref_band_list));
+		if(true == has_refsb)
+			break;
+	}
 	// data type
 	hid_t modisDatatype = H5Tcopy(H5T_NATIVE_DOUBLE);
 	herr_t	status = H5Tset_order(modisDatatype, H5T_ORDER_LE);
@@ -594,7 +624,7 @@ int af_GenerateOutputCumulative_ModisAsSrc(AF_InputParmeterFile &inputArgs, hid_
 		#if DEBUG_ELAPSE_TIME
 		StartElapseTime();
 		#endif
-		ret = af_WriteSingleRadiance_ModisAsSrc<double, float>(outputFile, modisDatatype, modisDataspace,  srcProcessedDataPtr, numCells /*processed size*/, srcOutputWidth, i /*bandIdx*/);
+		ret = af_WriteSingleRadiance_ModisAsSrc<double, float>(outputFile, modisDatatype, modisDataspace,  srcProcessedDataPtr, numCells /*processed size*/, srcOutputWidth, i /*bandIdx*/,has_refsb/*radiance has refSB*/);
 		if (ret == FAILED) {
 			std::cerr << __FUNCTION__ << "> Error: returned fail.\n";
 		}

@@ -103,15 +103,20 @@ static int af_WriteSingleRadiance_AsterAsSrc(hid_t outputFile, std::string outpu
 			// Change units based on dset name.
 			char* units = NULL;
 			float _FillValue = -999.0;
+			float valid_min = 0.;
+			float valid_max = 0.;
+			unsigned short handle_flag = 0;
 			if (outputDsetName == "ASTER_Radiance") {
 				units = "Watts/m^2/micrometer/steradian";
+				valid_min = 0.;
+				valid_max = 569.0;
 			}
 			if (outputDsetName == "ASTER_Count") {
-				_FillValue = 0;
+				handle_flag = 1;
 			}
 			// Don't add valid_min attribute by making valid_min argument
 			// same as _FillValue.
-			if(af_write_cf_attributes(aster_dataset, units, _FillValue, _FillValue) < 0) {
+			if(af_write_cf_attributes(aster_dataset, units, _FillValue, valid_min,valid_max,handle_flag) < 0) {
 				std::cerr << __FUNCTION__ << ":" << __LINE__ <<	"> Error: af_write_cf_attributes" << std::endl;
 			}
 		}

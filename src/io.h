@@ -31,7 +31,7 @@ int af_write_mm_geo(hid_t output_file, int geo_flag, double* geo_data, int geo_s
 int af_write_attr_float(hid_t dset, char* name, float val);
 int af_write_attr_str(hid_t dset, char* name, char* val);
 int af_write_cf_attributes(hid_t dset, char* units, float _FillValue,
-                           float valid_min);
+                           float valid_min,float valid_max, unsigned short handle_flag);
     
 //Instrument data retrieval functions
 double* get_misr_rad(hid_t file, char* camera_angle, char* resolution, char* radiance, int* size);

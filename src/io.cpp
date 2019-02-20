@@ -2541,27 +2541,27 @@ int af_write_misr_on_modis(hid_t output_file, double* misr_out, double* modis, i
 	modis_dim[1] = (modis_size)/modis_band_size/1354;
 	hid_t modis_dataspace = H5Screate_simple(3, modis_dim, NULL);
 	hid_t	modis_datatype = H5Tcopy(H5T_NATIVE_DOUBLE);
-    herr_t  modis_status = H5Tset_order(modis_datatype, H5T_ORDER_LE);  
-    hid_t modis_dataset = H5Dcreate2(output_file, "/Data_Fields/modis_rad", modis_datatype, modis_dataspace,H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-    modis_status = H5Dwrite(modis_dataset, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, modis);
-    H5Sclose(modis_dataspace);
+	herr_t  modis_status = H5Tset_order(modis_datatype, H5T_ORDER_LE);  
+	hid_t modis_dataset = H5Dcreate2(output_file, "/Data_Fields/modis_rad", modis_datatype, modis_dataspace,H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+	modis_status = H5Dwrite(modis_dataset, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, modis);
+	H5Sclose(modis_dataspace);
 	H5Tclose(modis_datatype);
 	H5Dclose(modis_dataset);
-    if(modis_status < 0){
-    	printf("MODIS write error\n");
-    	return -1;
+	if(modis_status < 0){
+    		printf("MODIS write error\n");
+    		return -1;
 	}
     
-    //Write 
-    hsize_t misr_dim[2];
+    	//Write MISR second
+	hsize_t misr_dim[2];
 	misr_dim[0] = (misr_size) / 1354;
 	misr_dim[1] = 1354;
 	hid_t misr_dataspace = H5Screate_simple(2, misr_dim, NULL);
 	hid_t misr_datatype = H5Tcopy(H5T_NATIVE_DOUBLE);
-    herr_t misr_status = H5Tset_order(misr_datatype, H5T_ORDER_LE);  
-    hid_t misr_dataset = H5Dcreate2(output_file, "/Data_Fields/misr_out", misr_datatype, misr_dataspace,H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-    misr_status = H5Dwrite(misr_dataset, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, misr_out);
-    H5Sclose(misr_dataspace);
+	herr_t misr_status = H5Tset_order(misr_datatype, H5T_ORDER_LE);  
+	hid_t misr_dataset = H5Dcreate2(output_file, "/Data_Fields/misr_out", misr_datatype, misr_dataspace,H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+	misr_status = H5Dwrite(misr_dataset, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, misr_out);
+	H5Sclose(misr_dataspace);
 	H5Tclose(misr_datatype);
 	H5Dclose(misr_dataset);
 	if(misr_status < 0){
@@ -2606,15 +2606,15 @@ int af_write_mm_geo(hid_t output_file, int geo_flag, double* geo_data, int geo_s
 	htri_t status = H5Lexists(output_file, "Geolocation", H5P_DEFAULT);
 	if(status <= 0){
 		hid_t group_id = H5Gcreate2(output_file, "/Geolocation", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-        if(group_id < 0) {
-            printf("Error af_write_mm_geo: H5Gcreate2 in output file.\n");
-            return -1;
-        }
-        herr_t grp_status = H5Gclose(group_id);
-        if(grp_status < 0) {
-            printf("Error af_write_mm_geo: H5Gclose in output file.\n");
-            return -1;
-        }
+	       	if(group_id < 0) {
+			printf("Error af_write_mm_geo: H5Gcreate2 in output file.\n");
+			return -1;
+		}
+		herr_t grp_status = H5Gclose(group_id);
+		if(grp_status < 0) {
+			printf("Error af_write_mm_geo: H5Gclose in output file.\n");
+			return -1;
+		}
 	}
 	char* d_name;
 	char* a_value;        
@@ -2630,23 +2630,50 @@ int af_write_mm_geo(hid_t output_file, int geo_flag, double* geo_data, int geo_s
 	geo_dim[0] = (geo_size) / outputWidth;
 	geo_dim[1] = outputWidth;
 	hid_t geo_dataspace = H5Screate_simple(2, geo_dim, NULL);
+	if(geo_dataspace < 0) {
+		printf("Cannot create H5 dataspace. \n");
+		return -1;
+	}
 	hid_t geo_datatype = H5Tcopy(H5T_NATIVE_DOUBLE);
+	if(geo_datatype < 0) {
+                H5Sclose(geo_dataspace);
+		printf("Cannot generate HDF5 datatype. \n");
+		return -1;
+	}
         herr_t geo_status = H5Tset_order(geo_datatype, H5T_ORDER_LE);  
+	if(geo_status < 0) {
+		H5Sclose(geo_dataspace);
+		H5Tclose(geo_datatype);
+                printf("Cannot set the order of an HDF5 datatype. \n");
+                return -1;
+        }
         hid_t geo_dataset = H5Dcreate2(output_file, d_name, geo_datatype, geo_dataspace,H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-        status = H5Dwrite(geo_dataset, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, geo_data);
-        
-        if(af_write_attr_str(geo_dataset, "units", a_value) < 0) {
-            printf("Error af_write_attr_str: writing units=%s\n", a_value);
+	if(geo_dataset < 0) {
+		H5Sclose(geo_dataspace);
+                H5Tclose(geo_datatype);
+                printf("Cannot create the HDF5 dataset. \n");
+                return -1;
+	}
+        if(H5Dwrite(geo_dataset, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, geo_data)<0) {
+		H5Sclose(geo_dataspace);
+                H5Tclose(geo_datatype);
+		H5Dclose(geo_dataset);
+                printf("Cannot write the HDF5 dataset. \n");
+                return -1;
+	}
+ 
+	if(af_write_attr_str(geo_dataset, "units", a_value) < 0) {
+		printf("Error af_write_attr_str: writing units=%s\n", a_value);
+		H5Sclose(geo_dataspace);
+                H5Tclose(geo_datatype);
+		H5Dclose(geo_dataset);
+                return -1;
         }
         
         H5Sclose(geo_dataspace);
 	H5Tclose(geo_datatype);
 	H5Dclose(geo_dataset);
 	
-	if(geo_status < 0){
-		printf("Geo Data write error\n");
-		return -1;
-	}
 	return 1;
 }
 
@@ -2666,21 +2693,28 @@ int af_write_mm_geo(hid_t output_file, int geo_flag, double* geo_data, int geo_s
  */
 int af_write_attr_float(hid_t dset, char* name, float val)
 {
-    hid_t floatType = H5Tcopy(H5T_NATIVE_FLOAT);
     hid_t floatSpace= H5Screate(H5S_SCALAR);
-    hid_t attr= H5Acreate(dset, name, floatType, floatSpace, 
+    if(floatSpace <0) {
+        printf("Cannot create HDF5 data space. \n");
+        return -1;
+
+    }
+    hid_t attr= H5Acreate(dset, name, H5T_NATIVE_FLOAT, floatSpace, 
             H5P_DEFAULT, H5P_DEFAULT);
-    herr_t status= H5Awrite(attr, floatType, &val);
+    if(attr <0) {
+        printf("Cannot create HDF5 attribute. \n");
+        H5Sclose(floatSpace);
+        return -1;
+    }
+    herr_t status= H5Awrite(attr, H5T_NATIVE_FLOAT, &val);
     if(status < 0){
         printf("Writing %s attribute with value %f failed.\n", name, val);
+        H5Sclose(floatSpace);
+        H5Aclose(attr);
         return -1;
     }
     H5Sclose(floatSpace);    
-    status = H5Aclose(attr);
-    if(status < 0){
-        printf("Closing %s attribute with value %f failed.\n", name, val);
-        return -1;
-    }    
+    H5Aclose(attr);
     return 1;
 }
 
@@ -2702,20 +2736,48 @@ int af_write_attr_float(hid_t dset, char* name, float val)
 int af_write_attr_str(hid_t dset, char* name, char* val)
 {
     hid_t stringType = H5Tcopy(H5T_C_S1);
+    if(stringType <0) {
+        printf("Fail to create an HDF5 datatype.\n");
+        return -1;
+    }
+    herr_t status = H5Tset_size(stringType, (hsize_t) (strlen(val)+1));
+    if(status < 0) {
+        printf("Fail to set datatype size. \n");
+        H5Tclose(stringType);
+        return -1;
+ 
+    }
+    if(H5Tset_strpad(stringType,H5T_STR_NULLTERM) <0) {
+        printf("Fail to set datatype pad. \n");
+        H5Tclose(stringType);
+        return -1;
+    }
     hid_t stringSpace = H5Screate(H5S_SCALAR);        
-    herr_t status = H5Tset_size(stringType, (hsize_t) strlen(val));
+    if(stringSpace < 0) {
+        printf("Fail to create data space. \n");
+        H5Tclose(stringType);
+        return -1;
+    }
     hid_t attr= H5Acreate(dset, name, stringType, stringSpace, 
                           H5P_DEFAULT, H5P_DEFAULT);
+
+    if(attr < 0) {
+        printf("Fail to create an attribute. \n");
+        H5Tclose(stringType);
+        H5Sclose(stringSpace);
+        return -1;
+    }
     status = H5Awrite(attr, stringType, val);
     if(status < 0){
         printf("Writing %s attribute with value %s failed.\n", name, val);
+        H5Tclose(stringType);
+        H5Sclose(stringSpace);
+        H5Aclose(attr);
         return -1;
     }
-    status = H5Aclose(attr);
-    if(status < 0){
-        printf("Closing %s attribute with value %s failed.\n", name, val);
-        return -1;
-    }    
+    H5Tclose(stringType);
+    H5Sclose(stringSpace);
+    H5Aclose(attr);
     return 1;
 }
 
@@ -2755,7 +2817,8 @@ int af_write_attr_str(hid_t dset, char* name, char* val)
 
  */
 int af_write_cf_attributes(hid_t dset, char* units, float _FillValue,
-                           float valid_min)
+                           float valid_min, float valid_max, 
+                           unsigned short handle_flag)
 {
     int result = 0;
     char* coordinates = "/Geolocation/Longitude /Geolocation/Latitude";
@@ -2777,6 +2840,28 @@ int af_write_cf_attributes(hid_t dset, char* units, float _FillValue,
         result = -1;
     }
     
+    // Add _FillValue,valid_min,valid_max etc.
+    if(handle_flag == 0) {
+        if(af_write_attr_float(dset, "_FillValue",
+                               _FillValue) < 0) {
+            printf("Error af_write_attr_float:");
+            printf("writing _FillValue=%f\n", _FillValue);
+            result = -1;
+        }        
+        if(af_write_attr_float(dset, "valid_min",
+                               valid_min) < 0) {
+            printf("Error af_write_attr_float:");
+            printf("writing valid_min=%f\n", valid_min);
+            result = -1;
+        }        
+        if(af_write_attr_float(dset, "valid_max",
+                               valid_max) < 0) {
+            printf("Error af_write_attr_float:");
+            printf("writing valid_max=%f\n", valid_max);
+            result = -1;
+        }        
+    }
+#if 0
     if(_FillValue != 0.0 &&
        af_write_attr_float(dset, "_FillValue",
                            _FillValue) < 0) {
@@ -2792,6 +2877,7 @@ int af_write_cf_attributes(hid_t dset, char* units, float _FillValue,
             result = -1;
         }        
     }
+#endif
     return result;
 }
 

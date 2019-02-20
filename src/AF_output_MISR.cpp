@@ -101,7 +101,10 @@ static int af_WriteSingleRadiance_MisrAsTrg(hid_t outputFile, hid_t dataTypeH5, 
 		else {
 			// make compatible with CF convention (NetCDF)
 			char* units = "Watts/m^2/micrometer/steradian";
-			if(af_write_cf_attributes(misr_dataset, units, -999.0, -999.0) < 0) {
+			float valid_min = 0;
+                        float valid_max = 800.0;
+                        float _FillValue = -999.0;
+			if(af_write_cf_attributes(misr_dataset, units, _FillValue, valid_min,valid_max,0) < 0) {
 				std::cerr << __FUNCTION__ << ":" << __LINE__ <<  "> Error: af_write_cf_attributes" << std::endl;                            
 				return FAILED;                        
 			}
@@ -403,7 +406,10 @@ static int af_WriteSingleRadiance_MisrAsSrc(hid_t outputFile, hid_t dataTypeH5, 
 		else {
 			// make compatible with CF convention (NetCDF)
 			char* units = "Watts/m^2/micrometer/steradian";
-			if(af_write_cf_attributes(misr_dataset, units, -999.0, -999.0) < 0) {
+                        float valid_min = 0;
+                        float valid_max = 800.0;
+                        float _FillValue = -999.0;
+			if(af_write_cf_attributes(misr_dataset, units, _FillValue, valid_min,valid_max,0) < 0) {
 				std::cerr << __FUNCTION__ << ":" << __LINE__ <<  "> Error: af_write_cf_attributes" << std::endl;
 				return FAILED;
 			}
