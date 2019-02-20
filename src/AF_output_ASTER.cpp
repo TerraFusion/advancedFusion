@@ -111,7 +111,7 @@ static int af_WriteSingleRadiance_AsterAsSrc(hid_t outputFile, std::string outpu
 				valid_min = 0.;
 				valid_max = 569.0;
 			}
-			if (outputDsetName == "ASTER_Count") {
+			if (outputDsetName == "ASTER_Count" || outputDsetName == "ASTER_SD") {
 				handle_flag = 1;
 			}
 			// Don't add valid_min attribute by making valid_min argument
