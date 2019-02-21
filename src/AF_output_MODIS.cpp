@@ -107,8 +107,7 @@ static int af_WriteSingleRadiance_ModisAsTrg(hid_t outputFile, hid_t dataTypeH5,
 			float valid_max = 100.0;
  			float _FillValue = -999.0;
 			if(true == has_refsb)
-                                valid_max = 900.0;
-
+				valid_max = 900.0;
 			
 			if(af_write_cf_attributes(modis_dataset, units, _FillValue,valid_min,valid_max,0) < 0) {
 				std::cerr << __FUNCTION__ << ":" << __LINE__ <<  "> Error: af_write_cf_attributes" << std::endl;
