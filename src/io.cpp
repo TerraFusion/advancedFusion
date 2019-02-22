@@ -2540,9 +2540,30 @@ int af_write_misr_on_modis(hid_t output_file, double* misr_out, double* modis, i
 	modis_dim[2] = 1354;
 	modis_dim[1] = (modis_size)/modis_band_size/1354;
 	hid_t modis_dataspace = H5Screate_simple(3, modis_dim, NULL);
+	if(modis_dataspace < 0) {
+		printf("Cannot create modis_dataspace successfully.\n");
+		return -1;
+	}
 	hid_t	modis_datatype = H5Tcopy(H5T_NATIVE_DOUBLE);
+	if(modis_datatype < 0) {
+		H5Sclose(modis_dataspace);
+		printf("Cannot create modis_dataspace successfully.\n");
+		return -1;
+	}
 	herr_t  modis_status = H5Tset_order(modis_datatype, H5T_ORDER_LE);  
+	if(modis_status < 0) {
+		H5Sclose(modis_dataspace);
+		H5Tclose(modis_datatype);
+		printf("Cannot create modis_dataspace successfully.\n");
+		return -1;
+	}
 	hid_t modis_dataset = H5Dcreate2(output_file, "/Data_Fields/modis_rad", modis_datatype, modis_dataspace,H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+	if(modis_dataset < 0) {
+		H5Sclose(modis_dataspace);
+		H5Tclose(modis_datatype);
+		printf("Cannot create modis_dataspace successfully.\n");
+		return -1;
+	}
 	modis_status = H5Dwrite(modis_dataset, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, modis);
 	H5Sclose(modis_dataspace);
 	H5Tclose(modis_datatype);
