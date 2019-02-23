@@ -1,14 +1,22 @@
 
-CXXFLAGS=-std=c++11 -Wno-write-strings -fopenmp
+CXXFLAGS=-std=c++11 -Wno-write-strings -I/mnt/wrk/myang6/terra-fusion/af/hdf5-1.8.16/hdf5/include -L/mnt/wrk/myang6/terra-fusion/af/hdf5-1.8.16/hdf5/lib -lhdf5 -lhdf5_hl -lz
+#CXXFLAGS=-std=c++11 -Wno-write-strings -fopenmp
+#CC=/mnt/wrk/myang6/terra-fusion/af/hdf5-1.8.16/hdf5/bin/h5cc
 
 # Use this on BW
-CXX=CC ${CXXFLAGS}
-H5CXX=CC ${CXXFLAGS}
-GDALDIR = /projects/sciteam/jq0/TerraFusion/gdal
+#CXX=CC ${CXXFLAGS}
+#H5CXX=CC ${CXXFLAGS}
 
 # Use this set for local build
 #CXX=g++
 #H5CXX=HDF5_CC=/usr/bin/g++ h5cc $(CXXFLAGS)
+#H5CXX=HDF5_CC=/usr/bin/g++ /mnt/wrk/myang6/terra-fusion/af/hdf5-1.8.16/hdf5/bin/h5cc $(CXXFLAGS)
+#GDALDIR = /mnt/wrk/myang6/kent-tools/gdalbin
+CXX=g++ -g -std=c++11 -Wno-write-strings
+
+GDALDIR = /mnt/wrk/myang6/terra-fusion/af/gdalbin
+H5CXX=g++ -g $(CXXFLAGS)
+
 
 #all: testRepro testRepro2 testRepro3 testReproHDF5
 all: AFtool test_aster test_aster_allOrbit test_read_area test_MISR_MODIS test_modis2aster test_Clipping_MISR_MODIS test_userdefinedgrids test_MISR_offset
@@ -80,7 +88,7 @@ misrutil.o: misrutil.cpp
 #	$(H5CXX) -o ../$@ $+ -lm
 
 AFtool: AFtool.o reproject.o io.o  misrutil.o gdalio.o AF_InputParmeterFile.o AF_debug.o AF_output_util.o AF_output_MODIS.o AF_output_MISR.o AF_output_ASTER.o
-	$(H5CXX) -o ../$@ $+ -lm -L$(GDALDIR)/lib -lgdal
+	$(H5CXX) -o ../$@ $+ -lm -L$(GDALDIR)/lib -lgdal -fopenmp
 
 test_read_area: test_read_area.o reproject.o io.o
 	$(H5CXX) -o ../$@ $+ -lm
@@ -104,10 +112,10 @@ test_aster_allOrbit: test_aster_allOrbit.o reproject.o io.o
 	$(H5CXX) -o ../$@ $+ -lm
 
 test_userdefinedgrids: test_userdefinedgrids.o reproject.o io.o gdalio.o
-	$(H5CXX) -o ../$@ $+ -lm -L$(GDALDIR)/lib -lgdal
+	$(H5CXX) -o ../$@ $+ -lm -L$(GDALDIR)/lib -lgdal -fopenmp
 
 test_MISR_offset: test_MISR_offset.o io.o misrutil.o gdalio.o
-	$(H5CXX) -o ../$@ $+ -lm -L$(GDALDIR)/lib -lgdal
+	$(H5CXX) -o ../$@ $+ -lm -L$(GDALDIR)/lib -lgdal -fopenmp
 
 clean:
 	rm *.o ../AFtool ../test_read_area ../test_aster ../test_aster_allOrbit ../test_MISR_MODIS ../test_modis2aster ../test_Clipping_MISR_MODIS ../test_userdefinedgrids ../test_MISR_offset
