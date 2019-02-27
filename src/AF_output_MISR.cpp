@@ -191,7 +191,7 @@ done:
  *  - Success: SUCCEED  (defined in AF_common.h)
  *  - Fail : FAILED  (defined in AF_common.h)
  */
-int af_GenerateOutputCumulative_MisrAsTrg(AF_InputParmeterFile &inputArgs, hid_t outputFile,hid_t srcFile, int trgCellNumOri, std::map<std::string, strVec_t> &inputMultiVarsMap)
+int af_GenerateOutputCumulative_MisrAsTrg(AF_InputParmeterFile &inputArgs, hid_t outputFile,hid_t srcFile, int trgCellNumOri, std::map<std::string, strVec_t> &inputMultiVarsMap,hid_t ctrackDset, hid_t atrackDset)
 {
 	#if DEBUG_TOOL
 	std::cout << "DBG_TOOL " << __FUNCTION__ << "> BEGIN \n";
@@ -499,7 +499,7 @@ done:
  *  - Success: SUCCEED  (defined in AF_common.h)
  *  - Fail : FAILED  (defined in AF_common.h)
  */
-int af_GenerateOutputCumulative_MisrAsSrc(AF_InputParmeterFile &inputArgs, hid_t outputFile, int *targetNNsrcID,  int trgCellNum, hid_t srcFile, int srcCellNum, std::map<std::string, strVec_t> &inputMultiVarsMap)
+int af_GenerateOutputCumulative_MisrAsSrc(AF_InputParmeterFile &inputArgs, hid_t outputFile, int *targetNNsrcID,  int trgCellNum, hid_t srcFile, int srcCellNum, std::map<std::string, strVec_t> &inputMultiVarsMap,hid_t ctrackDset, hid_t atrackDset)
 {
 	#if DEBUG_TOOL
 	std::cout << "DBG_TOOL " << __FUNCTION__ << "> BEGIN \n";

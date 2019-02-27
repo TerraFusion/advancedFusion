@@ -15,7 +15,7 @@
  * DEBUG Options
  */
 // set to 1 to show extra info for debugging for the AF tool code
-#define DEBUG_TOOL  0
+#define DEBUG_TOOL  1
 // set to 1 to show extra info for debugging for the AF tool code
 #define DEBUG_TOOL_PARSER  0
 // set to 1 to show elapsed time or performance debugging info for the AF tool code

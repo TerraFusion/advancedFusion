@@ -192,7 +192,7 @@ done:
  *	- Success: SUCCEED	(defined in AF_common.h)
  *	- Fail : FAILED  (defined in AF_common.h)
  */
-int af_GenerateOutputCumulative_ModisAsTrg(AF_InputParmeterFile &inputArgs, hid_t outputFile,hid_t srcFile, int trgCellNum, std::map<std::string, strVec_t> &inputMultiVarsMap)
+int af_GenerateOutputCumulative_ModisAsTrg(AF_InputParmeterFile &inputArgs, hid_t outputFile,hid_t srcFile, int trgCellNum, std::map<std::string, strVec_t> &inputMultiVarsMap,hid_t ctrackDset, hid_t atrackDset)
 {
 	#if DEBUG_TOOL
 	std::cout << "DBG_TOOL " << __FUNCTION__ << "> BEGIN \n";
@@ -471,7 +471,7 @@ static int af_WriteSingleRadiance_ModisAsSrc(hid_t outputFile, hid_t dataTypeH5,
  *	- Success: SUCCEED	(defined in AF_common.h)
  *	- Fail : FAILED  (defined in AF_common.h)
  */
-int af_GenerateOutputCumulative_ModisAsSrc(AF_InputParmeterFile &inputArgs, hid_t outputFile, int *targetNNsrcID,  int trgCellNumNoShift, hid_t srcFile, int srcCellNum, std::map<std::string, strVec_t> &inputMultiVarsMap)
+int af_GenerateOutputCumulative_ModisAsSrc(AF_InputParmeterFile &inputArgs, hid_t outputFile, int *targetNNsrcID,  int trgCellNumNoShift, hid_t srcFile, int srcCellNum, std::map<std::string, strVec_t> &inputMultiVarsMap,hid_t ctrackDset, hid_t atrackDset)
 {
 	#if DEBUG_TOOL
 	std::cout << "DBG_TOOL " << __FUNCTION__ << "> BEGIN \n";

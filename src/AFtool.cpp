@@ -184,7 +184,7 @@ int AF_GetGeolocationDataFromInstrument(std::string instrument, AF_InputParmeter
  *  - Fail : FAILED  (defined in AF_common.h)
  *
  */
-int   AF_GenerateTargetRadiancesOutput(AF_InputParmeterFile &inputArgs, hid_t outputFile, int trgCellNum, hid_t srcFile, std::map<std::string, strVec_t> & trgInputMultiVarsMap)
+int   AF_GenerateTargetRadiancesOutput(AF_InputParmeterFile &inputArgs, hid_t outputFile, int trgCellNum, hid_t srcFile, std::map<std::string, strVec_t> & trgInputMultiVarsMap,hid_t ctrackDset,hid_t atrackDset)
 {
 	#if DEBUG_TOOL
 	std::cout << "DBG_TOOL " << __FUNCTION__ << "> BEGIN \n";
@@ -245,7 +245,7 @@ int   AF_GenerateTargetRadiancesOutput(AF_InputParmeterFile &inputArgs, hid_t ou
 
 		// TODO_LATER - decide for loop inside or loop outside
 		#if 1 // case for looping inside
-		ret = af_GenerateOutputCumulative_ModisAsTrg(inputArgs, outputFile, srcFile, trgCellNum, trgInputMultiVarsMap);
+		ret = af_GenerateOutputCumulative_ModisAsTrg(inputArgs, outputFile, srcFile, trgCellNum, trgInputMultiVarsMap,ctrackDset,atrackDset);
 		if(ret == FAILED) {
 			std::cerr << __FUNCTION__ <<  "> Error: Generating MODIS target output.\n";
 			return FAILED;
@@ -269,7 +269,7 @@ int   AF_GenerateTargetRadiancesOutput(AF_InputParmeterFile &inputArgs, hid_t ou
 			return FAILED;
 		}
 
-		ret = af_GenerateOutputCumulative_MisrAsTrg(inputArgs, outputFile, srcFile, trgCellNum, trgInputMultiVarsMap);
+		ret = af_GenerateOutputCumulative_MisrAsTrg(inputArgs, outputFile, srcFile, trgCellNum, trgInputMultiVarsMap,ctrackDset,atrackDset);
 		if(ret == FAILED) {
 			std::cerr << __FUNCTION__ <<  "> Error: Generating MISR target output.\n";
 			return FAILED;
@@ -303,7 +303,7 @@ int   AF_GenerateTargetRadiancesOutput(AF_InputParmeterFile &inputArgs, hid_t ou
  *  - Fail : FAILED  (defined in AF_common.h)
  *
  */
-int   AF_GenerateSourceRadiancesOutput(AF_InputParmeterFile &inputArgs, hid_t outputFile, int * targetNNsrcID, int trgCellNum, hid_t srcFile, int srcCellNum, std::map<std::string, strVec_t> & srcInputMultiVarsMap)
+int   AF_GenerateSourceRadiancesOutput(AF_InputParmeterFile &inputArgs, hid_t outputFile, int * targetNNsrcID, int trgCellNum, hid_t srcFile, int srcCellNum, std::map<std::string, strVec_t> & srcInputMultiVarsMap,hid_t ctrackDset,hid_t atrackDset)
 {
 	#if DEBUG_TOOL
 	std::cout << "DBG_TOOL " << __FUNCTION__ << "> BEGIN \n";
@@ -354,7 +354,7 @@ int   AF_GenerateSourceRadiancesOutput(AF_InputParmeterFile &inputArgs, hid_t ou
 			return FAILED;
 		}
 
-		ret = af_GenerateOutputCumulative_ModisAsSrc(inputArgs, outputFile, targetNNsrcID,  trgCellNum, srcFile, srcCellNum, srcInputMultiVarsMap);
+		ret = af_GenerateOutputCumulative_ModisAsSrc(inputArgs, outputFile, targetNNsrcID,  trgCellNum, srcFile, srcCellNum, srcInputMultiVarsMap,ctrackDset,atrackDset);
 		if (ret == FAILED) {
 			std::cout << __FUNCTION__ << ":" << __LINE__ <<  "> failed generating output for MODIS.\n";
 			ret = FAILED;
@@ -372,7 +372,7 @@ int   AF_GenerateSourceRadiancesOutput(AF_InputParmeterFile &inputArgs, hid_t ou
 			goto done;
 		}
 
-		ret = af_GenerateOutputCumulative_MisrAsSrc(inputArgs, outputFile, targetNNsrcID,  trgCellNum, srcFile, srcCellNum, srcInputMultiVarsMap);
+		ret = af_GenerateOutputCumulative_MisrAsSrc(inputArgs, outputFile, targetNNsrcID,  trgCellNum, srcFile, srcCellNum, srcInputMultiVarsMap,ctrackDset,atrackDset);
 		if (ret == FAILED) {
 			std::cout << __FUNCTION__ << ":" << __LINE__ <<  "> failed generating output for MISR.\n";
 			ret = FAILED;
@@ -389,7 +389,7 @@ int   AF_GenerateSourceRadiancesOutput(AF_InputParmeterFile &inputArgs, hid_t ou
 			return FAILED;
 		}
 
-		ret = af_GenerateOutputCumulative_AsterAsSrc(inputArgs, outputFile, targetNNsrcID,  trgCellNum, srcFile, srcCellNum, srcInputMultiVarsMap);
+		ret = af_GenerateOutputCumulative_AsterAsSrc(inputArgs, outputFile, targetNNsrcID,  trgCellNum, srcFile, srcCellNum, srcInputMultiVarsMap,ctrackDset,atrackDset);
 		if (ret == FAILED) {
 			std::cout << __FUNCTION__ << ":" << __LINE__ <<  "> failed generating output for ASTER.\n";
 			ret = FAILED;
@@ -687,6 +687,15 @@ int main(int argc, char *argv[])
 		trgCellNumNew = trgCellNumNoShift;
 	}
 	
+	// Create along track and cross track dimensions.
+	hid_t ctrackDset = -1;
+	hid_t atrackDset = -1;
+
+    hsize_t ctrackDim[1],atrackDim[1];
+	ctrackDim[0] = (hsize_t)trgOutputWidth;
+	atrackDim[0] = (hsize_t)(trgCellNumNew/trgOutputWidth);
+	// STOP
+	// H5LTmake_dataset_int ( hid_t loc_id, const char *dset_name, int rank, const hsize_t *dims, const int *buffer )
 
 	#if DEBUG_TOOL
 	std::cout << "DBG_TOOL main> trgOutputWidth: " <<  trgOutputWidth << "\n";
@@ -787,7 +796,6 @@ int main(int argc, char *argv[])
 		free(targetLongitude);
 	
 
-
 	/*======================================================
 	 * Target instrument: Generate radiance to output file
 	 */
@@ -801,7 +809,7 @@ int main(int argc, char *argv[])
 	}
 	// write target instrument radiances to output file
 	// Note: pass not-shifted-trgCellNum as it will internally replace if condition met
-	ret = AF_GenerateTargetRadiancesOutput(inputArgs, output_file, trgCellNumNoShift, inputFile, trgInputMultiVarsMap);
+	ret = AF_GenerateTargetRadiancesOutput(inputArgs, output_file, trgCellNumNoShift, inputFile, trgInputMultiVarsMap,ctrackDset,atrackDset);
 	if (ret < 0) {
 		std::cerr << "Error: generate target radiance output.\n";
 		return FAILED;
@@ -823,7 +831,7 @@ int main(int argc, char *argv[])
 	}
 	// write source instrument radiances to output file
 	// Note: pass not-shifted-trgCellNum as it will internally replace if condition met
-	ret = AF_GenerateSourceRadiancesOutput(inputArgs, output_file, targetNNsrcID, trgCellNumNoShift, inputFile, srcCellNum, srcInputMultiVarsMap);
+	ret = AF_GenerateSourceRadiancesOutput(inputArgs, output_file, targetNNsrcID, trgCellNumNoShift, inputFile, srcCellNum, srcInputMultiVarsMap,ctrackDset,atrackDset);
 	if (ret < 0) {
 		std::cerr << "Error: generate source radiance output.\n";
 		return FAILED;

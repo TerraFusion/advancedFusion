@@ -57,10 +57,16 @@
 // T_IN : input data type
 // T_OUT : output data type
 template <typename T_IN, typename T_OUT>
-static int af_WriteSingleRadiance_AsterAsSrc(hid_t outputFile, std::string outputDsetName, hid_t dataTypeH5, hid_t fileSpaceH5, T_IN* processedData, int trgCellNum, int outputWidth, int bandIdx)
+static int af_WriteSingleRadiance_AsterAsSrc(hid_t outputFile, std::string outputDsetName, hid_t dataTypeH5, hid_t fileSpaceH5, T_IN* processedData, int trgCellNum, int outputWidth, int bandIdx,const strVec_t bands, hid_t ctrackDset,hid_t atrackDset,hid_t bandDset)
 {
 #if DEBUG_TOOL
 	std::cout << "DBG_TOOL " << __FUNCTION__ << "> BEGIN \n";
+    std::cout << "ASTER bands: ";
+        for(int i=0; i < bands.size(); i++) {
+            std::cout << bands[i] << " ";
+        }
+    std::cout << endl;
+
 #endif
 
 	int ret = SUCCEED;
@@ -203,7 +209,7 @@ static int af_WriteSingleRadiance_AsterAsSrc(hid_t outputFile, std::string outpu
  *	- Success: SUCCEED	(defined in AF_common.h)
  *	- Fail : FAILED  (defined in AF_common.h)
  */
-int af_GenerateOutputCumulative_AsterAsSrc(AF_InputParmeterFile &inputArgs, hid_t outputFile, int *targetNNsrcID,  int trgCellNumNoShift, hid_t srcFile, int srcCellNum, std::map<std::string, strVec_t> &inputMultiVarsMap)
+int af_GenerateOutputCumulative_AsterAsSrc(AF_InputParmeterFile &inputArgs, hid_t outputFile, int *targetNNsrcID,  int trgCellNumNoShift, hid_t srcFile, int srcCellNum, std::map<std::string, strVec_t> &inputMultiVarsMap,hid_t ctrackDset,hid_t atrackDset)
 {
 	#if DEBUG_TOOL
 	std::cout << "DBG_TOOL " << __FUNCTION__ << "> BEGIN \n";
@@ -217,6 +223,9 @@ int af_GenerateOutputCumulative_AsterAsSrc(AF_InputParmeterFile &inputArgs, hid_
 	// two multi-value variables are expected as this point
 	strVec_t bands = inputMultiVarsMap[ASTER_BANDS];
 
+    // ToDo: Create band dimension 
+    hid_t bandDset = -1;
+    
 	//-----------------------------------
 	// define data types for hdf5 data
 	hid_t dataTypeDoubleH5 = H5Tcopy(H5T_NATIVE_DOUBLE);
@@ -400,19 +409,19 @@ int af_GenerateOutputCumulative_AsterAsSrc(AF_InputParmeterFile &inputArgs, hid_
 		StartElapseTime();
 		#endif
 		// output radiance dset
-		ret = af_WriteSingleRadiance_AsterAsSrc<double, float>(outputFile, ASTER_RADIANCE_DSET, dataTypeDoubleH5, asterDataspace,  srcRadianceDataPtr, numCells /*processed size*/, srcOutputWidth, i /*bandIdx*/);
+		ret = af_WriteSingleRadiance_AsterAsSrc<double, float>(outputFile, ASTER_RADIANCE_DSET, dataTypeDoubleH5, asterDataspace,  srcRadianceDataPtr, numCells /*processed size*/, srcOutputWidth, i /*bandIdx*/,bands,ctrackDset,atrackDset,bandDset);
 		if (ret == FAILED) {
 			std::cerr << __FUNCTION__ << "> Error: returned fail.\n";
 		}
 
 		// output standard deviation dset
-		ret = af_WriteSingleRadiance_AsterAsSrc<double, float>(outputFile, ASTER_SD_DSET, dataTypeDoubleH5, asterDataspace,  srcSDDataPtr, numCells /*processed size*/, srcOutputWidth, i /*bandIdx*/);
+		ret = af_WriteSingleRadiance_AsterAsSrc<double, float>(outputFile, ASTER_SD_DSET, dataTypeDoubleH5, asterDataspace,  srcSDDataPtr, numCells /*processed size*/, srcOutputWidth, i /*bandIdx*/,bands,ctrackDset,atrackDset,bandDset);
 		if (ret == FAILED) {
 			std::cerr << __FUNCTION__ << "> Error: returned fail.\n";
 		}
 
 		// output pixels count dset
-		ret = af_WriteSingleRadiance_AsterAsSrc<int, int>(outputFile, ASTER_COUNT_DSET, dataTypeIntH5, asterDataspace,	srcPixelCountDataPtr, numCells /*processed size*/, srcOutputWidth, i /*bandIdx*/);
+		ret = af_WriteSingleRadiance_AsterAsSrc<int, int>(outputFile, ASTER_COUNT_DSET, dataTypeIntH5, asterDataspace,	srcPixelCountDataPtr, numCells /*processed size*/, srcOutputWidth, i /*bandIdx*/,bands,ctrackDset,atrackDset,bandDset);
 		if (ret == FAILED) {
 			std::cerr << __FUNCTION__ << "> Error: returned fail.\n";
 		}
