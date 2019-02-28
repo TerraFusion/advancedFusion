@@ -44,8 +44,8 @@ int main(int argc, char ** argv)
 
 	//The af_write_mm_geo function is not good here. It is used temporarily since it is the best we have at this stage. 
 	// There is no way that ASTER pixels can be written as a 2D block since the size of each granule is different. 	
-	int lat_status =  af_write_mm_geo(output_file, 0, dest_lat, nCelldest, nCelldest);
-	int long_status = af_write_mm_geo(output_file, 1, dest_long, nCelldest, nCelldest);
+	int lat_status =  af_write_mm_geo(output_file, 0, dest_lat, nCelldest, nCelldest,-1,-1);
+	int long_status = af_write_mm_geo(output_file, 1, dest_long, nCelldest, nCelldest,-1,-1);
 	if(lat_status < 0 || long_status < 0){
 		printf("Writing dest geolocation - error\n");
 		return -1;

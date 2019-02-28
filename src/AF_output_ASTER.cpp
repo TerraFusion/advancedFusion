@@ -61,11 +61,11 @@ static int af_WriteSingleRadiance_AsterAsSrc(hid_t outputFile, std::string outpu
 {
 #if DEBUG_TOOL
 	std::cout << "DBG_TOOL " << __FUNCTION__ << "> BEGIN \n";
-    std::cout << "ASTER bands: ";
-        for(int i=0; i < bands.size(); i++) {
-            std::cout << bands[i] << " ";
-        }
-    std::cout << endl;
+	std::cout << "ASTER bands: ";
+	for(int i=0; i < bands.size(); i++) {
+		std::cout << bands[i] << " ";
+	}
+	std::cout << std::endl;
 
 #endif
 
@@ -106,6 +106,29 @@ static int af_WriteSingleRadiance_AsterAsSrc(hid_t outputFile, std::string outpu
 			/*
 			 * make compatible with CF convention (NetCDF)
 			 */
+
+			// Attach dimension scales.
+			// cross track
+			if(H5DSattach_scale(aster_dataset,ctrackDset,2)<0) {
+				H5Dclose(aster_dataset);
+				std::cerr << __FUNCTION__ << ":" << __LINE__ <<  "> Error: H5DSattach_scale failed for ASTER cross-track dimension.\n";
+				return FAILED;
+			}
+
+			// along track
+			if(H5DSattach_scale(aster_dataset,atrackDset,1)<0) {
+				H5Dclose(aster_dataset);
+				std::cerr << __FUNCTION__ << ":" << __LINE__ <<  "> Error: H5DSattach_scale failed for ASTER along-track dimension.\n";
+				return FAILED;
+			}
+
+			// band
+			if(H5DSattach_scale(aster_dataset,bandDset,0)<0) {
+				H5Dclose(aster_dataset);
+				std::cerr << __FUNCTION__ << ":" << __LINE__ <<  "> Error: H5DSattach_scale failed for ASTER band dimension.\n";
+				return FAILED;
+			}
+		
 			// Change units based on dset name.
 			char* units = NULL;
 			float _FillValue = -999.0;
@@ -223,8 +246,12 @@ int af_GenerateOutputCumulative_AsterAsSrc(AF_InputParmeterFile &inputArgs, hid_
 	// two multi-value variables are expected as this point
 	strVec_t bands = inputMultiVarsMap[ASTER_BANDS];
 
-    // ToDo: Create band dimension 
-    hid_t bandDset = -1;
+    // Create band dimension 
+	hid_t bandDset = create_pure_dim_dataset(outputFile,(hsize_t)(bands.size()),"Band_Aster");
+	if(bandDset < 0) {
+		printf("create_pure_dim_dataset for ASTER band failed.\n");
+		return FAILED;
+	}
     
 	//-----------------------------------
 	// define data types for hdf5 data
@@ -451,6 +478,7 @@ int af_GenerateOutputCumulative_AsterAsSrc(AF_InputParmeterFile &inputArgs, hid_
 
 	H5Tclose(dataTypeDoubleH5);
 	H5Sclose(asterDataspace);
+	H5Dclose(bandDset);
 
 	#if DEBUG_TOOL
 	std::cout << "DBG_TOOL " << __FUNCTION__ << "> END \n";

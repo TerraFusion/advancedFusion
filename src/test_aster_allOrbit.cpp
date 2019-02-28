@@ -41,8 +41,8 @@ int main(int argc, char ** argv)
 	
 	printf("writing dest geo\n");
 	// modis 1KM output width is '1354'
-	int lat_status =  af_write_mm_geo(output_file, 0, dest_lat, nCelldest, 1354);
-	int long_status = af_write_mm_geo(output_file, 1, dest_long, nCelldest, 1354);
+	int lat_status =  af_write_mm_geo(output_file, 0, dest_lat, nCelldest, 1354,-1,-1);
+	int long_status = af_write_mm_geo(output_file, 1, dest_long, nCelldest, 1354,-1,-1);
 	if(lat_status < 0 || long_status < 0){
 		printf("Writing dest geolocation - error\n");
 		return -1;

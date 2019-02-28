@@ -2621,7 +2621,7 @@ int af_write_misr_on_modis(hid_t output_file, double* misr_out, double* modis, i
 */
 
 
-int af_write_mm_geo(hid_t output_file, int geo_flag, double* geo_data, int geo_size, int outputWidth)
+int af_write_mm_geo(hid_t output_file, int geo_flag, double* geo_data, int geo_size, int outputWidth,hid_t ctrackDset, hid_t atrackDset)
 {
 	//Check if geolocation group exists --- TODO - change it to H5Lexists
 	htri_t status = H5Lexists(output_file, "Geolocation", H5P_DEFAULT);
@@ -2661,38 +2661,56 @@ int af_write_mm_geo(hid_t output_file, int geo_flag, double* geo_data, int geo_s
 		printf("Cannot generate HDF5 datatype. \n");
 		return -1;
 	}
-        herr_t geo_status = H5Tset_order(geo_datatype, H5T_ORDER_LE);  
+	herr_t geo_status = H5Tset_order(geo_datatype, H5T_ORDER_LE);  
 	if(geo_status < 0) {
 		H5Sclose(geo_dataspace);
 		H5Tclose(geo_datatype);
-                printf("Cannot set the order of an HDF5 datatype. \n");
-                return -1;
-        }
-        hid_t geo_dataset = H5Dcreate2(output_file, d_name, geo_datatype, geo_dataspace,H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+		printf("Cannot set the order of an HDF5 datatype. \n");
+		return -1;
+	}
+	hid_t geo_dataset = H5Dcreate2(output_file, d_name, geo_datatype, geo_dataspace,H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
 	if(geo_dataset < 0) {
 		H5Sclose(geo_dataspace);
-                H5Tclose(geo_datatype);
-                printf("Cannot create the HDF5 dataset. \n");
-                return -1;
+		H5Tclose(geo_datatype);
+		printf("Cannot create the HDF5 dataset. \n");
+		return -1;
 	}
-        if(H5Dwrite(geo_dataset, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, geo_data)<0) {
+	if(H5Dwrite(geo_dataset, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, geo_data)<0) {
 		H5Sclose(geo_dataspace);
-                H5Tclose(geo_datatype);
+		H5Tclose(geo_datatype);
 		H5Dclose(geo_dataset);
-                printf("Cannot write the HDF5 dataset. \n");
-                return -1;
+		printf("Cannot write the HDF5 dataset. \n");
+		return -1;
 	}
  
 	if(af_write_attr_str(geo_dataset, "units", a_value) < 0) {
 		printf("Error af_write_attr_str: writing units=%s\n", a_value);
 		H5Sclose(geo_dataspace);
-                H5Tclose(geo_datatype);
+		H5Tclose(geo_datatype);
 		H5Dclose(geo_dataset);
-                return -1;
-        }
-        
-        H5Sclose(geo_dataspace);
+		return -1;
+	}
+	H5Sclose(geo_dataspace);
 	H5Tclose(geo_datatype);
+       
+	// Attach dimension scales.
+	// cross track
+	if(ctrackDset != -1 && atrackDset != -1){ 
+		if(H5DSattach_scale(geo_dataset,ctrackDset,1)<0) {
+			H5Dclose(geo_dataset);
+			std::cerr << __FUNCTION__ << ":" << __LINE__ <<  "> Error: H5DSattach_scale failed for ASTER cross-track dimension.\n";
+			return -1;
+		}
+
+// along track
+		if(H5DSattach_scale(geo_dataset,atrackDset,0)<0) {
+			H5Dclose(geo_dataset);
+			std::cerr << __FUNCTION__ << ":" << __LINE__ <<  "> Error: H5DSattach_scale failed for ASTER along-track dimension.\n";
+			return -1;
+		}
+	}
+
+
 	H5Dclose(geo_dataset);
 	
 	return 1;
@@ -3328,4 +3346,41 @@ double misr_averaging(double window[16])
 		}
 	}
 	return sum/count;
+}
+
+// created dataset ID needs to be closed by the application.
+hid_t create_pure_dim_dataset(hid_t loc_id, hsize_t dim_size,char* dim_name) {
+
+    hsize_t dims[1];
+	dims[0] = dim_size;
+	hid_t dim_space = H5Screate_simple(1,dims,NULL);	
+	if(dim_space < 0) {
+		printf("Cannot create data space.\n");
+		return -1;
+	}
+	hid_t dim_dset = H5Dcreate2(loc_id,dim_name,H5T_NATIVE_INT,dim_space,H5P_DEFAULT,H5P_DEFAULT,H5P_DEFAULT);
+	if(dim_dset <0) {
+		H5Sclose(dim_space);
+		return -1;
+	}
+	H5Sclose(dim_space);
+	if(H5DSset_scale(dim_dset,dim_name)<0){
+		H5Dclose(dim_dset);
+		printf("Cannot set pure dimension scale \n");
+		return -1;
+	}
+	
+	if(H5Adelete(dim_dset,"NAME")<0) {
+		H5Dclose(dim_dset);
+		printf("Cannot delete the NAME attribute created by H5DSset_scale.\n");
+		return -1;
+	}
+
+	char* attr_value = "This is a netCDF dimension but not a netCDF variable.";
+	if(H5LTset_attribute_string(loc_id,dim_name,"NAME",attr_value)<0) {
+		H5Dclose(dim_dset);
+		printf("Cannot write attribute NAME.\n");
+		return -1;
+    }
+    return dim_dset;
 }

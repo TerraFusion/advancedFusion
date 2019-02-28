@@ -14,6 +14,7 @@
 #include <string>
 
 #include <hdf5.h>
+#include <hdf5_hl.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <strings.h>
@@ -27,7 +28,7 @@ double* af_read(hid_t file, char* dataset_name);
 double* af_read_hyperslab(hid_t file, char*dataset_name, int x_offset, int y_offset, int z_offset);
 hsize_t* af_read_size(hid_t file, char* dataset_name);
 int af_write_misr_on_modis(hid_t output_file, double* misr_out, double* modis, int modis_size, int modis_band_size, int misr_size);
-int af_write_mm_geo(hid_t output_file, int geo_flag, double* geo_data, int geo_size, int outputWidth);
+int af_write_mm_geo(hid_t output_file, int geo_flag, double* geo_data, int geo_size, int outputWidth,hid_t ctrackDset,hid_t atrackDset);
 int af_write_attr_float(hid_t dset, char* name, float val);
 int af_write_attr_str(hid_t dset, char* name, char* val);
 int af_write_cf_attributes(hid_t dset, char* units, float _FillValue,
@@ -63,3 +64,4 @@ double dim_sum(hsize_t* dims, int arr_len);
 double dim_sum_free(hsize_t* dims, int arr_len);
 double float_to_double(float f);
 double misr_averaging(double window[16]);
+hid_t  create_pure_dim_dataset(hid_t loc_id, hsize_t dim_size,char* dim_name);

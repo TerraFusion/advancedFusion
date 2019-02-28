@@ -688,14 +688,35 @@ int main(int argc, char *argv[])
 	}
 	
 	// Create along track and cross track dimensions.
-	hid_t ctrackDset = -1;
-	hid_t atrackDset = -1;
 
-    hsize_t ctrackDim[1],atrackDim[1];
-	ctrackDim[0] = (hsize_t)trgOutputWidth;
-	atrackDim[0] = (hsize_t)(trgCellNumNew/trgOutputWidth);
-	// STOP
-	// H5LTmake_dataset_int ( hid_t loc_id, const char *dset_name, int rank, const hsize_t *dims, const int *buffer )
+	hid_t ctrackDset = create_pure_dim_dataset(output_file,(hsize_t)trgOutputWidth,"crossTrack");
+	if(ctrackDset <0) {
+		printf("create_pure_dim_dataset failed. \n");
+		H5Fclose(inputFile);
+		H5Fclose(output_file);
+		if(targetLatitudeShifted)
+			free(targetLatitudeShifted);
+		if(srcLatitude)
+			free(srcLatitude);
+		if(targetLatitude)
+			free(targetLatitude);
+        return FAILED;
+	}
+	hid_t atrackDset = create_pure_dim_dataset(output_file,(hsize_t)(trgCellNumNew/trgOutputWidth),"alongTrack");
+	if(atrackDset <0) {
+		printf("create_pure_dim_dataset failed. \n");
+		H5Dclose(ctrackDset);
+		H5Fclose(inputFile);
+		H5Fclose(output_file);
+		if(targetLatitudeShifted)
+			free(targetLatitudeShifted);
+		if(srcLatitude)
+			free(srcLatitude);
+		if(targetLatitude)
+			free(targetLatitude);
+        return FAILED;
+	}
+
 
 	#if DEBUG_TOOL
 	std::cout << "DBG_TOOL main> trgOutputWidth: " <<  trgOutputWidth << "\n";
@@ -705,7 +726,7 @@ int main(int argc, char *argv[])
 	#if DEBUG_ELAPSE_TIME
 	StartElapseTime();
 	#endif
-	int lat_status =  af_write_mm_geo(output_file, 0, targetLatitudePtr, trgCellNumNew, trgOutputWidth);
+	int lat_status =  af_write_mm_geo(output_file, 0, targetLatitudePtr, trgCellNumNew, trgOutputWidth,ctrackDset,atrackDset);
 	if(lat_status < 0) {
 		std::cerr << "Error: writing latitude geolocation.\n";
 		return FAILED;
@@ -743,7 +764,7 @@ int main(int argc, char *argv[])
 	#if DEBUG_ELAPSE_TIME
 	StartElapseTime();
 	#endif
-	int long_status = af_write_mm_geo(output_file, 1, targetLongitudePtr, trgCellNumNew, trgOutputWidth);
+	int long_status = af_write_mm_geo(output_file, 1, targetLongitudePtr, trgCellNumNew, trgOutputWidth,ctrackDset,atrackDset);
 	if(long_status < 0) {
 		std::cerr << "Error: writing longitude geolocation.\n";
 		return FAILED;
@@ -841,7 +862,8 @@ int main(int argc, char *argv[])
 	if (targetNNsrcID)
 		delete [] targetNNsrcID;
 
-
+	H5Dclose(ctrackDset);
+	H5Dclose(atrackDset);
 
 	//==========================================
 	// Closing data file

@@ -12,6 +12,7 @@
 
 #include "AF_InputParmeterFile.h"
 #include <hdf5.h>
+#include <hdf5_hl.h>
 
 //  MODIS as Target instrument, generate radiance data
 int af_GenerateOutputCumulative_MisrAsTrg(AF_InputParmeterFile &inputArgs, hid_t outputFile,hid_t srcFile, int trgCellNumOri, std::map<std::string, strVec_t> &inputMultiVarsMap,hid_t ctrackDset,hid_t atrackDset);

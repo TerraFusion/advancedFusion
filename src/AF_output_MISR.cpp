@@ -55,11 +55,23 @@
 // T_IN : input data type
 // T_OUT : output data type
 template <typename T_IN, typename T_OUT>
-static int af_WriteSingleRadiance_MisrAsTrg(hid_t outputFile, hid_t dataTypeH5, hid_t fileSpaceH5, T_IN* misrData, int misrDataSize, int outputWidth, int cameraIdx, int radianceIdx)
+static int af_WriteSingleRadiance_MisrAsTrg(hid_t outputFile, hid_t dataTypeH5, hid_t fileSpaceH5, T_IN* misrData, int misrDataSize, int outputWidth, int cameraIdx, int radianceIdx,const strVec_t cameras,const strVec_t radiances, hid_t ctrackDset,hid_t atrackDset,hid_t cameraDset,hid_t bandDset)
 {
-	#if DEBUG_TOOL
+#if DEBUG_TOOL
 	std::cout << "DBG_TOOL " << __FUNCTION__ << "> BEGIN \n";
-	#endif
+    std::cout << "MISR radiance bands: ";
+	for(int i=0; i < radiances.size(); i++) {
+		std::cout << radiances[i] << " ";
+	}
+	std::cout << std::endl;
+
+    std::cout << "MISR cameras: ";
+	for(int i=0; i < cameras.size(); i++) {
+		std::cout << cameras[i] << " ";
+	}
+	std::cout << std::endl;
+
+#endif
 
 	int ret = SUCCEED;
 
@@ -100,6 +112,36 @@ static int af_WriteSingleRadiance_MisrAsTrg(hid_t outputFile, hid_t dataTypeH5, 
 		}
 		else {
 			// make compatible with CF convention (NetCDF)
+			// attach dimensions
+			
+			// cross track
+			if(H5DSattach_scale(misr_dataset,ctrackDset,3)<0) {
+				H5Dclose(misr_dataset);
+				std::cerr << __FUNCTION__ << ":" << __LINE__ <<  "> Error: H5DSattach_scale failed for MISR cross-track dimension.\n";
+				return FAILED;
+			}
+
+			// along track
+			if(H5DSattach_scale(misr_dataset,atrackDset,2)<0) {
+				H5Dclose(misr_dataset);
+				std::cerr << __FUNCTION__ << ":" << __LINE__ <<  "> Error: H5DSattach_scale failed for MISR along-track dimension.\n";
+				return FAILED;
+			}
+
+			// band
+			if(H5DSattach_scale(misr_dataset,bandDset,1)<0) {
+				H5Dclose(misr_dataset);
+				std::cerr << __FUNCTION__ << ":" << __LINE__ <<  "> Error: H5DSattach_scale failed for MISR band dimension.\n";
+				return FAILED;
+			}
+
+			//cameras
+			if(H5DSattach_scale(misr_dataset,cameraDset,0)<0) {
+				H5Dclose(misr_dataset);
+				std::cerr << __FUNCTION__ << ":" << __LINE__ <<  "> Error: H5DSattach_scale failed for MISR cameras dimension.\n";
+				return FAILED;
+			}
+
 			char* units = "Watts/m^2/micrometer/steradian";
 			float valid_min = 0;
                         float valid_max = 800.0;
@@ -213,6 +255,17 @@ int af_GenerateOutputCumulative_MisrAsTrg(AF_InputParmeterFile &inputArgs, hid_t
 	strVec_t cameras = inputMultiVarsMap[MISR_CAMERA_ANGLE];
 	strVec_t radiances = inputMultiVarsMap[MISR_RADIANCE];
 
+	// Create band and camera dimensions
+	hid_t bandDset = create_pure_dim_dataset(outputFile,(hsize_t)(radiances.size()),"Band_Misr");
+	if(bandDset < 0) {
+		printf("create_pure_dim_dataset for MISR band failed.\n");
+		return FAILED;
+	}
+	hid_t cameraDset = create_pure_dim_dataset(outputFile,(hsize_t)(cameras.size()),"Camera");
+	if(bandDset < 0) {
+		printf("create_pure_dim_dataset for MISR Camera failed.\n");
+		return FAILED;
+	}
 
 	/*----------------------------
 	 * create data space
@@ -303,7 +356,7 @@ int af_GenerateOutputCumulative_MisrAsTrg(AF_InputParmeterFile &inputArgs, hid_t
 			#if DEBUG_ELAPSE_TIME
 			StartElapseTime();
 			#endif
-			af_WriteSingleRadiance_MisrAsTrg<double, float>(outputFile, misrDatatype, misrDataspace,  misrSingleDataPtr, numCells, targetOutputWidth, i, j);
+			af_WriteSingleRadiance_MisrAsTrg<double, float>(outputFile, misrDatatype, misrDataspace,  misrSingleDataPtr, numCells, targetOutputWidth, i, j,cameras,radiances,ctrackDset,atrackDset,cameraDset,bandDset);
 			#if DEBUG_ELAPSE_TIME
 			StopElapseTimeAndShow("DBG_TIME> Write target MISR single band data  DONE.");
 			#endif
@@ -317,6 +370,8 @@ int af_GenerateOutputCumulative_MisrAsTrg(AF_InputParmeterFile &inputArgs, hid_t
 		}
 	}
 
+	H5Dclose(cameraDset);
+	H5Dclose(bandDset);
 	H5Tclose(misrDatatype);
 	H5Sclose(misrDataspace);
 
@@ -362,7 +417,7 @@ int af_GenerateOutputCumulative_MisrAsTrg(AF_InputParmeterFile &inputArgs, hid_t
 // T_IN : input data type
 // T_OUT : output data type
 template <typename T_IN, typename T_OUT>
-static int af_WriteSingleRadiance_MisrAsSrc(hid_t outputFile, hid_t dataTypeH5, hid_t fileSpaceH5, T_IN* processedData, int trgCellNum, int outputWidth, int cameraIdx, int radIdx)
+static int af_WriteSingleRadiance_MisrAsSrc(hid_t outputFile, hid_t dataTypeH5, hid_t fileSpaceH5, T_IN* processedData, int trgCellNum, int outputWidth, int cameraIdx, int radIdx, const strVec_t cameras,const strVec_t radiances, hid_t ctrackDset,hid_t atrackDset,hid_t cameraDset,hid_t bandDset)
 {
 	#if DEBUG_TOOL
 	std::cout << "DBG_TOOL " << __FUNCTION__ << "> BEGIN \n";
@@ -405,6 +460,37 @@ static int af_WriteSingleRadiance_MisrAsSrc(hid_t outputFile, hid_t dataTypeH5, 
 		}
 		else {
 			// make compatible with CF convention (NetCDF)
+			// attach dimensions
+			
+			// cross track
+			if(H5DSattach_scale(misr_dataset,ctrackDset,3)<0) {
+				H5Dclose(misr_dataset);
+				std::cerr << __FUNCTION__ << ":" << __LINE__ <<  "> Error: H5DSattach_scale failed for MISR cross-track dimension.\n";
+				return FAILED;
+			}
+
+			// along track
+			if(H5DSattach_scale(misr_dataset,atrackDset,2)<0) {
+				H5Dclose(misr_dataset);
+				std::cerr << __FUNCTION__ << ":" << __LINE__ <<  "> Error: H5DSattach_scale failed for MISR along-track dimension.\n";
+				return FAILED;
+			}
+
+			// band
+			if(H5DSattach_scale(misr_dataset,bandDset,1)<0) {
+				H5Dclose(misr_dataset);
+				std::cerr << __FUNCTION__ << ":" << __LINE__ <<  "> Error: H5DSattach_scale failed for MISR band dimension.\n";
+				return FAILED;
+			}
+
+			//cameras
+			if(H5DSattach_scale(misr_dataset,cameraDset,0)<0) {
+				H5Dclose(misr_dataset);
+				std::cerr << __FUNCTION__ << ":" << __LINE__ <<  "> Error: H5DSattach_scale failed for MISR cameras dimension.\n";
+				return FAILED;
+			}
+
+			
 			char* units = "Watts/m^2/micrometer/steradian";
                         float valid_min = 0;
                         float valid_max = 800.0;
@@ -514,7 +600,19 @@ int af_GenerateOutputCumulative_MisrAsSrc(AF_InputParmeterFile &inputArgs, hid_t
 	strVec_t cameras = inputMultiVarsMap[MISR_CAMERA_ANGLE];
 	strVec_t radiances = inputMultiVarsMap[MISR_RADIANCE];
 
-	// data type
+	// Create band and camera dimensions
+	hid_t bandDset = create_pure_dim_dataset(outputFile,(hsize_t)(radiances.size()),"Band_Misr");
+	if(bandDset < 0) {
+		printf("create_pure_dim_dataset for MISR band failed.\n");
+		return FAILED;
+	}
+	hid_t cameraDset = create_pure_dim_dataset(outputFile,(hsize_t)(cameras.size()),"Camera");
+	if(bandDset < 0) {
+		printf("create_pure_dim_dataset for MISR Camera failed.\n");
+		return FAILED;
+	}
+
+// data type
 	hid_t misrDatatype = H5Tcopy(H5T_NATIVE_DOUBLE);
 	herr_t	status = H5Tset_order(misrDatatype, H5T_ORDER_LE);
 	if(status < 0) {
@@ -622,7 +720,7 @@ int af_GenerateOutputCumulative_MisrAsSrc(AF_InputParmeterFile &inputArgs, hid_t
 			#if DEBUG_ELAPSE_TIME
 			StartElapseTime();
 			#endif
-			ret = af_WriteSingleRadiance_MisrAsSrc<double,float>(outputFile, misrDatatype, misrDataspace,  srcProcessedData, trgCellNum /*processed size*/, srcOutputWidth, j /*cameraIdx*/, i /*radIdx*/);
+			ret = af_WriteSingleRadiance_MisrAsSrc<double,float>(outputFile, misrDatatype, misrDataspace,  srcProcessedData, trgCellNum /*processed size*/, srcOutputWidth, j /*cameraIdx*/, i /*radIdx*/,cameras,radiances,ctrackDset,atrackDset,cameraDset,bandDset);
 			if (ret == FAILED) {
 				std::cerr << __FUNCTION__ << "> Error: returned fail.\n";
 			}
@@ -642,6 +740,8 @@ int af_GenerateOutputCumulative_MisrAsSrc(AF_InputParmeterFile &inputArgs, hid_t
 		} // i loop
 	} // j loop
 
+	H5Dclose(cameraDset);
+	H5Dclose(bandDset);
 	H5Tclose(misrDatatype);
 	H5Sclose(misrDataspace);
 

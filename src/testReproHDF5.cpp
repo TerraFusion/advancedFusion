@@ -59,8 +59,8 @@ int main(int argc, char ** argv)
 
 	printf("writing modis geo\n");
 	// modis 1KM output width is '1354'
-	int lat_status =  af_write_mm_geo(output_file, 0, MODIS_Lat, nCellMODIS, 1354);
-	int long_status = af_write_mm_geo(output_file, 1, MODIS_Lon, nCellMODIS, 1354);
+	int lat_status =  af_write_mm_geo(output_file, 0, MODIS_Lat, nCellMODIS, 1354,-1,-1);
+	int long_status = af_write_mm_geo(output_file, 1, MODIS_Lon, nCellMODIS, 1354,-1,-1);
 
 	free(MODIS_Lat);
 	free(MODIS_Lon);

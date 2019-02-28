@@ -12,6 +12,7 @@
 
 #include "AF_InputParmeterFile.h"
 #include <hdf5.h>
+#include <hdf5_hl.h>
 
 //  ASTER as Target instrument, generate radiance data
 //  TBD

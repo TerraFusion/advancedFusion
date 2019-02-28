@@ -54,8 +54,8 @@ int main(int argc, char ** argv) {
 
     printf("writing dest geo\n");
 	// calculate width from user define input value
-    int lat_status =  af_write_mm_geo(output_file, 0, targetY, nPoints, crossTrack);
-    int long_status = af_write_mm_geo(output_file, 1, targetX, nPoints, crossTrack);
+    int lat_status =  af_write_mm_geo(output_file, 0, targetY, nPoints, crossTrack,-1,-1);
+    int long_status = af_write_mm_geo(output_file, 1, targetX, nPoints, crossTrack,-1,-1);
     if(lat_status < 0 || long_status < 0){
         printf("Writing dest geolocation - error\n");
         return -1;
