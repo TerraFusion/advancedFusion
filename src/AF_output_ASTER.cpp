@@ -246,8 +246,8 @@ int af_GenerateOutputCumulative_AsterAsSrc(AF_InputParmeterFile &inputArgs, hid_
 	// two multi-value variables are expected as this point
 	strVec_t bands = inputMultiVarsMap[ASTER_BANDS];
 
-    // Create band dimension 
-	hid_t bandDset = create_pure_dim_dataset(outputFile,(hsize_t)(bands.size()),"Band_Aster");
+	// Create band dimension 
+	hid_t bandDset = create_pure_dim_dataset(outputFile,(hsize_t)(bands.size()),"Band_ASTER");
 	if(bandDset < 0) {
 		printf("create_pure_dim_dataset for ASTER band failed.\n");
 		return FAILED;

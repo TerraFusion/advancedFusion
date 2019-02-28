@@ -256,7 +256,7 @@ int af_GenerateOutputCumulative_MisrAsTrg(AF_InputParmeterFile &inputArgs, hid_t
 	strVec_t radiances = inputMultiVarsMap[MISR_RADIANCE];
 
 	// Create band and camera dimensions
-	hid_t bandDset = create_pure_dim_dataset(outputFile,(hsize_t)(radiances.size()),"Band_Misr");
+	hid_t bandDset = create_pure_dim_dataset(outputFile,(hsize_t)(radiances.size()),"Band_MISR");
 	if(bandDset < 0) {
 		printf("create_pure_dim_dataset for MISR band failed.\n");
 		return FAILED;
