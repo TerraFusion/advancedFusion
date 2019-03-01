@@ -143,6 +143,10 @@ int AF_GetGeolocationDataFromInstrument(std::string instrument, AF_InputParmeter
 	    double userRsolution = inputArgs.GetUSER_Resolution();
 		cellNum = getCellCenterLatLon(userOuputEPSG, userXmin, userYmin, userXmax, userYmax, userRsolution, longitude, latitude);
 
+		if(cellNum == -1) {
+			std::cerr<<"Error: failed to get User-defined latitude and longitude.\n";
+			return FAILED;
+		}
 		#if DEBUG_TOOL
 		double *lonPtr = (double*)*longitude;
 		double *latPtr = (double*)*latitude;
@@ -614,6 +618,7 @@ int main(int argc, char *argv[])
 	StartElapseTime();
 	#endif
 	ret = AF_GetGeolocationDataFromInstrument(srcInstrument, inputArgs, inputFile, &srcLatitude /*OUT*/, &srcLongitude /*OUT*/, srcCellNum /*OUT*/);
+	// TODO: error handling: release the allocated memory srcLatitude....
 	if (ret == FAILED) {
 		std::cerr << __FUNCTION__ << "> Error getting geolocation data from source instrument - " << srcInstrument << ".\n";
 		return FAILED;

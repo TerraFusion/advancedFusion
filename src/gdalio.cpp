@@ -45,6 +45,9 @@ void gdalIORegister()
 int getCellCenterLatLon(int outputEPSG, double xMin, double yMin, double xMax, double yMax, double cellSize, double ** px, double ** py) 
 {
 
+	if(yMax <=yMin || xMax <=xMin || cellSize <0)
+		return -1;
+
 	int nRow = ceil((yMax - yMin) / cellSize);
 	int nCol = ceil((xMax - xMin) / cellSize);
 
@@ -57,14 +60,14 @@ int getCellCenterLatLon(int outputEPSG, double xMin, double yMin, double xMax, d
 	{
 		printf("ERROR: Out of memory at line %d in file %s\n", __LINE__, __FILE__);
 		printf("The number of output cells : %d\n may be too large\n", nPoints);
-		exit(1);	
+		return -1;
 	}
 	
 	if(NULL == (*py = (double *)malloc(sizeof(double) * nPoints))) 
 	{
 		printf("ERROR: Out of memory at line %d in file %s\n", __LINE__, __FILE__);
 		printf("The number of output cells : %d\n may be too large\n", nPoints);
-		exit(1);	
+		return -1;	
 	}
 
 	double * x = *px;
@@ -108,6 +111,8 @@ int getCellCenterLatLon(int outputEPSG, double xMin, double yMin, double xMax, d
 			{
 				nPointsThread = nPoints - start;
 			}
+
+			//TODO: Need to check error handling
 
 			OGRSpatialReferenceH sourceSRS, targetSRS;
 			OGRCoordinateTransformationH cTransform;
