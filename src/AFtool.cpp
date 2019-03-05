@@ -66,7 +66,8 @@ void Usage(int &argc, char *argv[])
  *  - Fail : FAILED  (defined in AF_common.h)
  *
  */
-int AF_GetGeolocationDataFromInstrument(std::string instrument, AF_InputParmeterFile &inputArgs, hid_t inputFile, double **latitude /*OUT*/, double **longitude /*OUT*/, int &cellNum /*OUT*/)
+//int AF_GetGeolocationDataFromInstrument(std::string instrument, AF_InputParmeterFile &inputArgs, hid_t inputFile, double **latitude /*OUT*/, double **longitude /*OUT*/, int &cellNum /*OUT*/)
+int AF_GetGeolocationDataFromInstrument(std::string instrument, AF_InputParmeterFile &inputArgs, hid_t inputFile, double **latitude /*OUT*/, double **longitude /*OUT*/, uint64_t &cellNum /*OUT*/)
 {
 	#if DEBUG_TOOL
 	std::cout << "DBG_TOOL " << __FUNCTION__ << "> BEGIN \n";
@@ -188,7 +189,8 @@ int AF_GetGeolocationDataFromInstrument(std::string instrument, AF_InputParmeter
  *  - Fail : FAILED  (defined in AF_common.h)
  *
  */
-int   AF_GenerateTargetRadiancesOutput(AF_InputParmeterFile &inputArgs, hid_t outputFile, int trgCellNum, hid_t srcFile, std::map<std::string, strVec_t> & trgInputMultiVarsMap,hid_t ctrackDset,hid_t atrackDset)
+int   AF_GenerateTargetRadiancesOutput(AF_InputParmeterFile &inputArgs, hid_t outputFile, uint64_t trgCellNum, hid_t srcFile, std::map<std::string, strVec_t> & trgInputMultiVarsMap,hid_t ctrackDset,hid_t atrackDset)
+//int   AF_GenerateTargetRadiancesOutput(AF_InputParmeterFile &inputArgs, hid_t outputFile, int trgCellNum, hid_t srcFile, std::map<std::string, strVec_t> & trgInputMultiVarsMap,hid_t ctrackDset,hid_t atrackDset)
 {
 	#if DEBUG_TOOL
 	std::cout << "DBG_TOOL " << __FUNCTION__ << "> BEGIN \n";
@@ -611,7 +613,8 @@ int main(int argc, char *argv[])
 	 * Get Source instrument latitude and longitude
 	 */
 	std::cout << "\nGetting source instrument latitude & longitude data...\n";
-	int srcCellNum;
+	//int srcCellNum;
+	uint64_t srcCellNum;
 	double* srcLatitude = NULL;
 	double* srcLongitude = NULL;
 	#if DEBUG_ELAPSE_TIME
@@ -636,7 +639,8 @@ int main(int argc, char *argv[])
 	 * Get Target instrument latitude and longitude
 	 */
 	std::cout << "\nGetting target instrument latitude & longitude data...\n";
-	int trgCellNumNoShift;
+	//int trgCellNumNoShift;
+	uint64_t trgCellNumNoShift;
 	double* targetLatitude = NULL;
 	double* targetLongitude = NULL;
 	#if DEBUG_ELAPSE_TIME
@@ -659,7 +663,8 @@ int main(int argc, char *argv[])
 	/* ===================================================
 	 * Output Target instrument latitude and longitude
 	 */
-	int trgCellNumNew;
+	//int trgCellNumNew;
+	uint64_t trgCellNumNew;
 	int trgOutputWidth;
 	double * targetLatitudePtr = NULL;
 	int widthShifted;
