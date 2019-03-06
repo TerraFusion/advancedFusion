@@ -54,7 +54,8 @@ char* kme_1_list[16] = {"20", "21", "22", "23", "24", "25", "27", "28", "29", "3
 		
 */
 
-double* get_misr_rad(hid_t file, char* camera_angle, char* resolution, char* radiance, int* size)
+//double* get_misr_rad(hid_t file, char* camera_angle, char* resolution, char* radiance, int* size)
+double* get_misr_rad(hid_t file, char* camera_angle, char* resolution, char* radiance, uint64_t* size)
 {
 	//Path to dataset proccessing 
 	int down_sampling = 0;
@@ -176,7 +177,8 @@ double* get_misr_rad(hid_t file, char* camera_angle, char* resolution, char* rad
 */
 
 
-double* get_misr_lat(hid_t file, char* resolution, int* size)
+//double* get_misr_lat(hid_t file, char* resolution, int* size)
+double* get_misr_lat(hid_t file, char* resolution, uint64_t* size)
 {
 	//Path to dataset proccessing 
 	char* instrument = "MISR";
@@ -226,7 +228,8 @@ double* get_misr_lat(hid_t file, char* resolution, int* size)
 */
 
 
-double* get_misr_long(hid_t file, char* resolution, int* size)
+//double* get_misr_long(hid_t file, char* resolution, int* size)
+double* get_misr_long(hid_t file, char* resolution, uint64_t * size)
 {
 	//Path to dataset proccessing 
 	char* instrument = "MISR";
@@ -349,7 +352,8 @@ void* get_misr_attr(hid_t file, char* camera_angle, char* resolution, char* radi
 		Returns result_data upon sucessful retrieval 
 		Returns NULL upon error
 */
-double* get_modis_rad(hid_t file, char* resolution, std::vector<std::string> &bands, int band_size, int* size)
+//double* get_modis_rad(hid_t file, char* resolution, std::vector<std::string> &bands, int band_size, int* size)
+double* get_modis_rad(hid_t file, char* resolution, std::vector<std::string> &bands, int band_size, uint64_t* size)
 {
 	printf("Reading MODIS rad\n");
 	
@@ -420,7 +424,8 @@ double* get_modis_rad(hid_t file, char* resolution, std::vector<std::string> &ba
 	//Get total data size
 	int k;
 	int m;
-	int total_size = 0;
+	//int total_size = 0;
+	uint64_t total_size = 0;
 	for(m = 0; m < band_size; m++){
 		for(k = 0; k < store_count; k++){
 			char* name = names[k];
@@ -466,12 +471,14 @@ double* get_modis_rad(hid_t file, char* resolution, std::vector<std::string> &ba
 	#endif
 	
 	double* result_data = (double*) calloc(total_size, sizeof(double));
-	int start_point = 0;
+	//int start_point = 0;
+	uint64_t start_point = 0;
 	
 	//Start reading data
 	int n;
 	for(n = 0; n < band_size; n++){
-		int file_size;
+		//int file_size;
+		uint64_t file_size;
 		double * MODIS_rad = get_modis_rad_by_band(file, resolution, dnames[n], &band_indices[n], &file_size);
 		memcpy(&result_data[start_point], MODIS_rad, file_size*sizeof(double));
 		free(MODIS_rad);
@@ -513,8 +520,8 @@ double* get_modis_rad(hid_t file, char* resolution, std::vector<std::string> &ba
 		
 */
 
-
-double* get_modis_rad_by_band(hid_t file, char* resolution, char* d_name, int* band_index, int* size)
+//double* get_modis_rad_by_band(hid_t file, char* resolution, char* d_name, int* band_index, int* size)
+double* get_modis_rad_by_band(hid_t file, char* resolution, char* d_name, int* band_index, uint64_t* size)
 {
 	#if DEBUG_IO
 	printf("DBG_IO %s:%d> Reading MODIS rad by band\n", __FUNCTION__, __LINE__);
@@ -564,7 +571,8 @@ double* get_modis_rad_by_band(hid_t file, char* resolution, char* d_name, int* b
 	
 	//Get total data size
 	int k;
-	int total_size = 0;
+	//int total_size = 0;
+	uint64_t  total_size = 0;
 	for(k = 0; k < store_count; k++){
 		char* name = names[k];
 		const char* d_arr[] = {instrument, name, resolution, d_fields, d_name};
@@ -613,7 +621,10 @@ double* get_modis_rad_by_band(hid_t file, char* resolution, char* d_name, int* b
 	
 	//Retreving data
 	int h;
-	int curr_size = 0;
+
+    // Why calculate the curr_size again?
+	//int curr_size = 0;
+	uint64_t curr_size = 0;
 	int read_first = -1;
 	for(h = 0; h < store_count; h++){
 		double* data;
@@ -628,7 +639,8 @@ double* get_modis_rad_by_band(hid_t file, char* resolution, char* d_name, int* b
 
 
 		hsize_t* curr_dim;
-		int band_length;
+		//int band_length;
+		uint64_t band_length;
 
 		htri_t status = H5Lexists(file, dataset_name, H5P_DEFAULT);
 
@@ -648,7 +660,7 @@ double* get_modis_rad_by_band(hid_t file, char* resolution, char* d_name, int* b
 			
 			band_length = curr_dim[0] * curr_dim[1];
 
-			for(i = curr_size; i < curr_size + band_length; i++) {
+			for(uint64_t li = curr_size; li < curr_size + band_length; li++) {
 				result_data[i] = -999;
 			}
 		}
@@ -721,7 +733,8 @@ double* get_modis_rad_by_band(hid_t file, char* resolution, char* d_name, int* b
 		
 */
 
-double* get_modis_lat(hid_t file, char* resolution, int* size)
+//double* get_modis_lat(hid_t file, char* resolution, int* size)
+double* get_modis_lat(hid_t file, char* resolution, uint64_t* size)
 {
 	printf("Reading MODIS latitude\n");
 	//Path variables
@@ -845,7 +858,7 @@ double* get_modis_lat(hid_t file, char* resolution, int* size)
 		
 */
 
-double* get_modis_long(hid_t file, char* resolution, int* size)
+double* get_modis_long(hid_t file, char* resolution, uint64_t * size)
 {
 	printf("Reading MODIS longitude\n");
 	//Path variables
@@ -1720,7 +1733,8 @@ double* get_mop_long(hid_t file, int* size)
 */
 
 
-double* get_ast_rad(hid_t file, char* subsystem, char* d_name, int*size)
+//double* get_ast_rad(hid_t file, char* subsystem, char* d_name, int*size)
+double* get_ast_rad(hid_t file, char* subsystem, char* d_name, uint64_t *size)
 {
 	printf("Reading ASTER radiance\n");
 	//Path variables
@@ -1770,8 +1784,9 @@ double* get_ast_rad(hid_t file, char* subsystem, char* d_name, int*size)
 	}
 	
 	//Get total data size
-	printf("Get total data size\n");
-	int total_size = 0;
+	//printf("Get total data size\n");
+	//int total_size = 0;
+	uint64_t total_size = 0;
 	for(i = 0; i < num_groups; i++){
 		char* name = names[i];
 		if(strcmp(name, "") == 0) {
@@ -1798,7 +1813,8 @@ double* get_ast_rad(hid_t file, char* subsystem, char* d_name, int*size)
 	printf("Reading values\n");
 	double* result_data = (double*)calloc(total_size, sizeof(double));
 	
-	int curr_size = 0;
+	//int curr_size = 0;
+	uint64_t curr_size = 0;
 	for(i = 0; i < num_groups; i++){
 		//Path formation
 		char* name = names[i];
@@ -1825,7 +1841,8 @@ double* get_ast_rad(hid_t file, char* subsystem, char* d_name, int*size)
 			//continue;
 		}
 		#endif
-		int gran_size = curr_dim[0] * curr_dim[1];
+		//int gran_size = curr_dim[0] * curr_dim[1];
+		uint64_t gran_size = curr_dim[0] * curr_dim[1];
 		memcpy(&result_data[curr_size], data, sizeof(double) * gran_size);
 		curr_size += gran_size;
 		free(data);
@@ -1858,7 +1875,8 @@ double* get_ast_rad(hid_t file, char* subsystem, char* d_name, int*size)
 		Returns NULL upon error
 */
 
-double* get_ast_lat(hid_t file, char* subsystem, char* d_name, int*size)
+//double* get_ast_lat(hid_t file, char* subsystem, char* d_name, int*size)
+double* get_ast_lat(hid_t file, char* subsystem, char* d_name, uint64_t *size)
 {
 	printf("Reading ASTER lat\n");
 	//Path variables
@@ -1913,7 +1931,8 @@ double* get_ast_lat(hid_t file, char* subsystem, char* d_name, int*size)
 
 	//Get total data size
 	printf("Getting total data size\n");
-	int total_size = 0;
+	//int total_size = 0;
+	uint64_t total_size = 0;
 	for(i = 0; i < num_groups; i++){
 		char* name = names[i];
 		if(strcmp(name, "") == 0) {
@@ -1955,7 +1974,9 @@ double* get_ast_lat(hid_t file, char* subsystem, char* d_name, int*size)
 	
 	printf("Reading values\n");
 	double* lat_data = (double*)calloc(total_size, sizeof(double));
-	int curr_lat_size = 0;
+	// Redundant: tackle later if having time.
+	//int curr_lat_size = 0;
+	uint64_t  curr_lat_size = 0;
 	int read_first = -1;
 	for(i = 0; i < num_groups; i++){
 		//Path formation
@@ -1983,7 +2004,8 @@ double* get_ast_lat(hid_t file, char* subsystem, char* d_name, int*size)
 			//continue;
 		}
 		#endif
-		int gran_size = curr_dim[0] * curr_dim[1];
+		//int gran_size = curr_dim[0] * curr_dim[1];
+		uint64_t gran_size = curr_dim[0] * curr_dim[1];
 		memcpy(&lat_data[curr_lat_size], data, sizeof(double) * gran_size);
 		curr_lat_size += gran_size;
 		free(data);
@@ -2017,7 +2039,7 @@ double* get_ast_lat(hid_t file, char* subsystem, char* d_name, int*size)
 */
 
 
-double* get_ast_long(hid_t file, char* subsystem, char* d_name, int* size)
+double* get_ast_long(hid_t file, char* subsystem, char* d_name, uint64_t * size)
 {
 	printf("Reading ASTER long\n");
 	//Path variables
@@ -2114,7 +2136,8 @@ double* get_ast_long(hid_t file, char* subsystem, char* d_name, int* size)
 	
 	printf("Reading values\n");
 	double* long_data = (double*)calloc(total_size, sizeof(double));
-	int curr_long_size = 0;
+	//int curr_long_size = 0;
+	uint64_t curr_long_size = 0;
 	for(i = 0; i < num_groups; i++){
 		//Path formation
 		char* name = names[i];
@@ -2141,7 +2164,8 @@ double* get_ast_long(hid_t file, char* subsystem, char* d_name, int* size)
 			//continue;
 		}
 		#endif
-		int gran_size = curr_dim[0] * curr_dim[1];
+		//int gran_size = curr_dim[0] * curr_dim[1];
+		uint64_t gran_size = curr_dim[0] * curr_dim[1];
 		memcpy(&long_data[curr_long_size], data, sizeof(double) * gran_size);
 		curr_long_size += gran_size;
 		free(data);
@@ -2174,7 +2198,7 @@ double* get_ast_long(hid_t file, char* subsystem, char* d_name, int* size)
 		Returns NULL upon error
 */
 
-double* get_ast_rad_by_gran(hid_t file, char* subsystem, char* d_name, char* gran_name, int*size)
+double* get_ast_rad_by_gran(hid_t file, char* subsystem, char* d_name, char* gran_name, uint64_t *size)
 {
 	printf("Reading ASTER radiance by gran\n");
 	//Path variables
@@ -2231,7 +2255,7 @@ double* get_ast_rad_by_gran(hid_t file, char* subsystem, char* d_name, char* gra
 		Returns NULL upon error
 */
 
-double* get_ast_lat_by_gran(hid_t file, char* subsystem, char* d_name, char* gran_name, int*size)
+double* get_ast_lat_by_gran(hid_t file, char* subsystem, char* d_name, char* gran_name, uint64_t *size)
 {
 	printf("Reading ASTER lat by gran\n");
 	//Path variables
@@ -2282,7 +2306,8 @@ double* get_ast_lat_by_gran(hid_t file, char* subsystem, char* d_name, char* gra
 */
 
 
-double* get_ast_long_by_gran(hid_t file, char* subsystem, char* d_name, char* gran_name, int*size)
+//double* get_ast_long_by_gran(hid_t file, char* subsystem, char* d_name, char* gran_name, int*size)
+double* get_ast_long_by_gran(hid_t file, char* subsystem, char* d_name, char* gran_name, uint64_t *size)
 {
 	printf("Reading ASTER long by gran\n");
 	//Path variables
@@ -2529,7 +2554,8 @@ double* af_read(hid_t file, char* dataset_name)
 */
 
 
-int af_write_misr_on_modis(hid_t output_file, double* misr_out, double* modis, int modis_size, int modis_band_size, int misr_size)
+//int af_write_misr_on_modis(hid_t output_file, double* misr_out, double* modis, int modis_size, int modis_band_size, int misr_size)
+int af_write_misr_on_modis(hid_t output_file, double* misr_out, double* modis, uint64_t modis_size, int modis_band_size, int misr_size)
 {
 	//Create datafield group
 	hid_t group_id = H5Gcreate2(output_file, "/Data_Fields", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
@@ -2621,7 +2647,8 @@ int af_write_misr_on_modis(hid_t output_file, double* misr_out, double* modis, i
 */
 
 
-int af_write_mm_geo(hid_t output_file, int geo_flag, double* geo_data, int geo_size, int outputWidth,hid_t ctrackDset, hid_t atrackDset)
+//int af_write_mm_geo(hid_t output_file, int geo_flag, double* geo_data, int geo_size, int outputWidth,hid_t ctrackDset, hid_t atrackDset)
+int af_write_mm_geo(hid_t output_file, int geo_flag, double* geo_data, uint64_t geo_size, int outputWidth,hid_t ctrackDset, hid_t atrackDset)
 {
 	//Check if geolocation group exists --- TODO - change it to H5Lexists
 	htri_t status = H5Lexists(output_file, "Geolocation", H5P_DEFAULT);
@@ -3266,11 +3293,13 @@ void concat_by_sep(char** source, const char** w, char* sep, size_t length, int 
 
 
 //Summing up dimensions
-double dim_sum_free(hsize_t* dims, int arr_len)
+//double dim_sum_free(hsize_t* dims, int arr_len)
+double dim_sum_free(hsize_t* dims, uint64_t arr_len)
 {
           
 	double sum = 0.0;
-	int i;
+	//int i;
+	uint64_t i;
         if(dims == NULL)
            return sum;
 	for(i = 0; i < arr_len; i++){
@@ -3289,10 +3318,12 @@ double dim_sum_free(hsize_t* dims, int arr_len)
 }
 
 //Summing up dimensions
-double dim_sum(hsize_t* dims, int arr_len)
+//double dim_sum(hsize_t* dims, int arr_len)
+double dim_sum(hsize_t* dims, uint64_t arr_len)
 {
 	double sum = 0.0;
-	int i;
+	//int i;
+	uint64_t i;
         if(dims == NULL)
             return sum;
 	for(i = 0; i < arr_len; i++){

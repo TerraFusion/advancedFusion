@@ -792,7 +792,8 @@ int main(int argc, char *argv[])
 	 * Calculate nearest neighbor source over target geolocation
 	 * Note: use not shifted trgCellNum for this
 	 */
-	int * targetNNsrcID = NULL;
+	//int * targetNNsrcID = NULL;
+	uint64_t * targetNNsrcID = NULL;
 	
 	std::cout <<  "\nRunning nearest neighbor block index method... \n";
 	#if DEBUG_ELAPSE_TIME

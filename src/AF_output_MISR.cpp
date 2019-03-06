@@ -55,7 +55,8 @@
 // T_IN : input data type
 // T_OUT : output data type
 template <typename T_IN, typename T_OUT>
-static int af_WriteSingleRadiance_MisrAsTrg(hid_t outputFile, hid_t dataTypeH5, hid_t fileSpaceH5, T_IN* misrData, int misrDataSize, int outputWidth, int cameraIdx, int radianceIdx,const strVec_t cameras,const strVec_t radiances, hid_t ctrackDset,hid_t atrackDset,hid_t cameraDset,hid_t bandDset)
+static int af_WriteSingleRadiance_MisrAsTrg(hid_t outputFile, hid_t dataTypeH5, hid_t fileSpaceH5, T_IN* misrData, uint64_t misrDataSize, int outputWidth, int cameraIdx, int radianceIdx,const strVec_t cameras,const strVec_t radiances, hid_t ctrackDset,hid_t atrackDset,hid_t cameraDset,hid_t bandDset)
+//static int af_WriteSingleRadiance_MisrAsTrg(hid_t outputFile, hid_t dataTypeH5, hid_t fileSpaceH5, T_IN* misrData, int misrDataSize, int outputWidth, int cameraIdx, int radianceIdx,const strVec_t cameras,const strVec_t radiances, hid_t ctrackDset,hid_t atrackDset,hid_t cameraDset,hid_t bandDset)
 {
 #if DEBUG_TOOL
 	std::cout << "DBG_TOOL " << __FUNCTION__ << "> BEGIN \n";
@@ -233,7 +234,8 @@ done:
  *  - Success: SUCCEED  (defined in AF_common.h)
  *  - Fail : FAILED  (defined in AF_common.h)
  */
-int af_GenerateOutputCumulative_MisrAsTrg(AF_InputParmeterFile &inputArgs, hid_t outputFile,hid_t srcFile, int trgCellNumOri, std::map<std::string, strVec_t> &inputMultiVarsMap,hid_t ctrackDset, hid_t atrackDset)
+//int af_GenerateOutputCumulative_MisrAsTrg(AF_InputParmeterFile &inputArgs, hid_t outputFile,hid_t srcFile, int trgCellNumOri, std::map<std::string, strVec_t> &inputMultiVarsMap,hid_t ctrackDset, hid_t atrackDset)
+int af_GenerateOutputCumulative_MisrAsTrg(AF_InputParmeterFile &inputArgs, hid_t outputFile,hid_t srcFile, uint64_t trgCellNumOri, std::map<std::string, strVec_t> &inputMultiVarsMap,hid_t ctrackDset, hid_t atrackDset)
 {
 	#if DEBUG_TOOL
 	std::cout << "DBG_TOOL " << __FUNCTION__ << "> BEGIN \n";
@@ -273,7 +275,8 @@ int af_GenerateOutputCumulative_MisrAsTrg(AF_InputParmeterFile &inputArgs, hid_t
 	int widthShifted = 0;
 	int heightShifted = 0;
 	int targetOutputWidth = 0;
-	int trgCellNum = 0;
+	//int trgCellNum = 0;
+	uint64_t trgCellNum = 0;
 
 	/*
 	 * get targetOutputWidth and trgCellNum
@@ -299,7 +302,8 @@ int af_GenerateOutputCumulative_MisrAsTrg(AF_InputParmeterFile &inputArgs, hid_t
 	hid_t misrDataspace = H5Screate_simple(rankSpace, misr_dim, NULL);
 
 	std::string misrShift = inputArgs.GetMISR_Shift();
-	int numCells;
+	//int numCells;
+	uint64_t numCells;
 	double *misrSingleDataPtr = NULL;
 	double *misrSingleData = NULL;
 	std::string misrCamera;
@@ -417,7 +421,8 @@ int af_GenerateOutputCumulative_MisrAsTrg(AF_InputParmeterFile &inputArgs, hid_t
 // T_IN : input data type
 // T_OUT : output data type
 template <typename T_IN, typename T_OUT>
-static int af_WriteSingleRadiance_MisrAsSrc(hid_t outputFile, hid_t dataTypeH5, hid_t fileSpaceH5, T_IN* processedData, int trgCellNum, int outputWidth, int cameraIdx, int radIdx, const strVec_t cameras,const strVec_t radiances, hid_t ctrackDset,hid_t atrackDset,hid_t cameraDset,hid_t bandDset)
+static int af_WriteSingleRadiance_MisrAsSrc(hid_t outputFile, hid_t dataTypeH5, hid_t fileSpaceH5, T_IN* processedData, uint64_t trgCellNum, int outputWidth, int cameraIdx, int radIdx, const strVec_t cameras,const strVec_t radiances, hid_t ctrackDset,hid_t atrackDset,hid_t cameraDset,hid_t bandDset)
+//static int af_WriteSingleRadiance_MisrAsSrc(hid_t outputFile, hid_t dataTypeH5, hid_t fileSpaceH5, T_IN* processedData, int trgCellNum, int outputWidth, int cameraIdx, int radIdx, const strVec_t cameras,const strVec_t radiances, hid_t ctrackDset,hid_t atrackDset,hid_t cameraDset,hid_t bandDset)
 {
 	#if DEBUG_TOOL
 	std::cout << "DBG_TOOL " << __FUNCTION__ << "> BEGIN \n";
@@ -585,7 +590,8 @@ done:
  *  - Success: SUCCEED  (defined in AF_common.h)
  *  - Fail : FAILED  (defined in AF_common.h)
  */
-int af_GenerateOutputCumulative_MisrAsSrc(AF_InputParmeterFile &inputArgs, hid_t outputFile, int *targetNNsrcID,  int trgCellNum, hid_t srcFile, int srcCellNum, std::map<std::string, strVec_t> &inputMultiVarsMap,hid_t ctrackDset, hid_t atrackDset)
+//int af_GenerateOutputCumulative_MisrAsSrc(AF_InputParmeterFile &inputArgs, hid_t outputFile, int *targetNNsrcID,  int trgCellNum, hid_t srcFile, int srcCellNum, std::map<std::string, strVec_t> &inputMultiVarsMap,hid_t ctrackDset, hid_t atrackDset)
+int af_GenerateOutputCumulative_MisrAsSrc(AF_InputParmeterFile &inputArgs, hid_t outputFile, uint64_t *targetNNsrcID,  uint64_t trgCellNum, hid_t srcFile, uint64_t srcCellNum, std::map<std::string, strVec_t> &inputMultiVarsMap,hid_t ctrackDset, hid_t atrackDset)
 {
 	#if DEBUG_TOOL
 	std::cout << "DBG_TOOL " << __FUNCTION__ << "> BEGIN \n";
@@ -646,7 +652,8 @@ int af_GenerateOutputCumulative_MisrAsSrc(AF_InputParmeterFile &inputArgs, hid_t
 	std::cout << "DBG_TOOL " << __FUNCTION__ << "> trgCellNum: " << trgCellNum << ", srcCellNum: " << srcCellNum << "\n";
 	std::cout << "DBG_TOOL " << __FUNCTION__ << "> srcOutputWidth: " << srcOutputWidth <<  "\n";
 	#endif
-	int numCells;
+	//int numCells;
+	uint64_t numCells;
 	double *misrSingleData=NULL;
 
 	std::string singleRad;
@@ -656,7 +663,8 @@ int af_GenerateOutputCumulative_MisrAsSrc(AF_InputParmeterFile &inputArgs, hid_t
 	// srcProcessedData , nsrcPixels
 	// misrSingleData 
 	double * srcProcessedData = NULL;
-	int * nsrcPixels = NULL;
+	//int * nsrcPixels = NULL;
+	uint64_t * nsrcPixels = NULL;
 	// Note: This is Combination case only
 	for(int j=0; j < cameras.size(); j++) {
 		singleCamera = cameras[j];
@@ -700,7 +708,8 @@ int af_GenerateOutputCumulative_MisrAsSrc(AF_InputParmeterFile &inputArgs, hid_t
 				nnInterpolate(misrSingleData, srcProcessedData, targetNNsrcID, trgCellNum);
 			}
 			else if (inputArgs.CompareStrCaseInsensitive(resampleMethod, "summaryInterpolate")) {
-				nsrcPixels = new int [trgCellNum];
+				//nsrcPixels = new int [trgCellNum];
+				nsrcPixels = new uint64_t [trgCellNum];
 				summaryInterpolate(misrSingleData, targetNNsrcID, srcCellNum, srcProcessedData, NULL, nsrcPixels, trgCellNum);
 				#if 0 // DEBUG_TOOL
 				std::cout << "DBG_TOOL> No nodata values: \n";

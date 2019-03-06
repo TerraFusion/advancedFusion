@@ -234,7 +234,7 @@ static int af_WriteSingleRadiance_AsterAsSrc(hid_t outputFile, std::string outpu
  *	- Fail : FAILED  (defined in AF_common.h)
  */
 //int af_GenerateOutputCumulative_AsterAsSrc(AF_InputParmeterFile &inputArgs, hid_t outputFile, int *targetNNsrcID,  int trgCellNumNoShift, hid_t srcFile, int srcCellNum, std::map<std::string, strVec_t> &inputMultiVarsMap,hid_t ctrackDset,hid_t atrackDset)
-int af_GenerateOutputCumulative_AsterAsSrc(AF_InputParmeterFile &inputArgs, hid_t outputFile, int *targetNNsrcID,  uint64_t trgCellNumNoShift, hid_t srcFile, uint64_t srcCellNum, std::map<std::string, strVec_t> &inputMultiVarsMap,hid_t ctrackDset,hid_t atrackDset)
+int af_GenerateOutputCumulative_AsterAsSrc(AF_InputParmeterFile &inputArgs, hid_t outputFile, uint64_t *targetNNsrcID,  uint64_t trgCellNumNoShift, hid_t srcFile, uint64_t srcCellNum, std::map<std::string, strVec_t> &inputMultiVarsMap,hid_t ctrackDset,hid_t atrackDset)
 {
 	#if DEBUG_TOOL
 	std::cout << "DBG_TOOL " << __FUNCTION__ << "> BEGIN \n";
@@ -305,7 +305,6 @@ int af_GenerateOutputCumulative_AsterAsSrc(AF_InputParmeterFile &inputArgs, hid_
 	#endif
 	//int numCells;
 	uint64_t numCells;
-// STOP here
 	double *asterSingleData=NULL;
 
 	//-----------------------------------------------------------------
@@ -314,7 +313,9 @@ int af_GenerateOutputCumulative_AsterAsSrc(AF_InputParmeterFile &inputArgs, hid_
 	// asterSingleData
 	double * srcProcessedData = NULL; // radiance
 	double * SD = NULL;  // Standard Deviation
+	// Note: srcPixelCount value is small, int is enough. 
 	int * srcPixelCount = NULL; // count
+	//uint64_t * srcPixelCount = NULL; // count
 	// Note: This is Combination case only
 	for (int i=0; i< bands.size(); i++) {
 		#if DEBUG_TOOL
@@ -354,6 +355,7 @@ int af_GenerateOutputCumulative_AsterAsSrc(AF_InputParmeterFile &inputArgs, hid_
 		else if (inputArgs.CompareStrCaseInsensitive(resampleMethod, "summaryInterpolate")) {
 			SD = new double [trgCellNumNoShift];
 			srcPixelCount = new int [trgCellNumNoShift];
+			//srcPixelCount = new uint64_t [trgCellNumNoShift];
 			summaryInterpolate(asterSingleData, targetNNsrcID, srcCellNum, srcProcessedData, SD, srcPixelCount, trgCellNumNoShift);
 			#if 0 // DEBUG_TOOL
 			std::cout << "DBG_TOOL> No nodata values: \n";
@@ -379,7 +381,9 @@ int af_GenerateOutputCumulative_AsterAsSrc(AF_InputParmeterFile &inputArgs, hid_
 		double * srcSDDataPtr = NULL;
 		// pixel count data
 		int * srcPixelCountDataShifted = NULL;
+		//uint64_t * srcPixelCountDataShifted = NULL;
 		int * srcPixelCountDataPtr = NULL;
+		//uint64_t * srcPixelCountDataPtr = NULL;
 
 		// if MISR is target and Shift is On
 		if(inputArgs.GetMISR_Shift() == "ON" && inputArgs.GetTargetInstrument() == MISR_STR) {
@@ -413,6 +417,7 @@ int af_GenerateOutputCumulative_AsterAsSrc(AF_InputParmeterFile &inputArgs, hid_
 			 * shift PixelCount data
 			 */
 			srcPixelCountDataShifted = new int [widthShifted * heightShifted];
+			//srcPixelCountDataShifted = new uint64_t [widthShifted * heightShifted];
 			MISRBlockOffset<int>(srcPixelCount, srcPixelCountDataShifted, (inputArgs.GetMISR_Resolution() == "L") ? 0 : 1);
 			// use srcPixelCountDataShifted instead of PixelCount, and free memory
 			if(srcPixelCount) {
