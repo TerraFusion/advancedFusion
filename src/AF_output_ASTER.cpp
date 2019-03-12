@@ -79,24 +79,23 @@ static int af_WriteSingleRadiance_AsterAsSrc(hid_t outputFile, std::string outpu
 	 * set output data type
 	 */
 	//hid_t dataTypeOutH5; 
-	hid_t dataTypeOutH5 = dataTypeH5;
-#if 0
+	hid_t dataTypeOutH5;
+//#if 0
 	if (std::is_same<T_OUT, float>::value) {
 		dataTypeOutH5 = H5T_IEEE_F32LE;
 	}
 	else if (std::is_same<T_OUT, double>::value) {
 		dataTypeOutH5 = H5T_IEEE_F64LE;
 	}
-	//else if (std::is_same<T_OUT, int>::value) {
-	else if (std::is_same<T_OUT, long long>::value) {
-		//dataTypeOutH5 = H5T_NATIVE_INT;
-		dataTypeOutH5 = H5T_STD_I64LE;
+	//else if (std::is_same<T_OUT, unsigned int>::value) {
+	else if (std::is_same<T_OUT, int>::value) {
+	        dataTypeOutH5 = H5T_NATIVE_INT;
 	}
 	else {
 		std::cerr << __FUNCTION__ << ":" << __LINE__ <<  "> Error: invlid output data type T_OUT specified." << std::endl;
 		return FAILED;
 	}
-#endif
+//#endif
 
 	/*-------------------------------------
 	 * if first time, create dataset
@@ -469,7 +468,7 @@ printf("after datasize \n");
 		// output pixels count dset
 		//ret = af_WriteSingleRadiance_AsterAsSrc<int, int>(outputFile, ASTER_COUNT_DSET, dataTypeIntH5, asterDataspace,	srcPixelCountDataPtr, numCells /*processed size*/, srcOutputWidth, i /*bandIdx*/,bands,ctrackDset,atrackDset,bandDset);
 		//ret = af_WriteSingleRadiance_AsterAsSrc<uint64_t, uint64_t>(outputFile, ASTER_COUNT_DSET, dataTypeIntH5, asterDataspace,	srcPixelCountDataPtr, numCells /*processed size*/, srcOutputWidth, i /*bandIdx*/,bands,ctrackDset,atrackDset,bandDset);
-		ret = af_WriteSingleRadiance_AsterAsSrc<uint64_t, uint64_t>(outputFile, ASTER_COUNT_DSET, H5T_STD_I64LE, asterDataspace,	srcPixelCountDataPtr, numCells /*processed size*/, srcOutputWidth, i /*bandIdx*/,bands,ctrackDset,atrackDset,bandDset);
+		ret = af_WriteSingleRadiance_AsterAsSrc<uint64_t, int>(outputFile, ASTER_COUNT_DSET, H5T_STD_I64LE, asterDataspace,	srcPixelCountDataPtr, numCells /*processed size*/, srcOutputWidth, i /*bandIdx*/,bands,ctrackDset,atrackDset,bandDset);
 		if (ret == FAILED) {
 			std::cerr << __FUNCTION__ << "> Error: returned fail.\n";
 		}
