@@ -2092,8 +2092,9 @@ double* get_ast_long(hid_t file, char* subsystem, char* d_name, uint64_t * size)
 	
 	//Get total data size
 	printf("Getting total data size\n");
-	int total_size = 0;
-	int store_count = 0;
+	//int total_size = 0;
+    uint64_t total_size = 0;
+	//int store_count = 0;
 	for(i = 0; i < num_groups; i++){
 		char* name = names[i];
 		if(strcmp(name, "") == 0) {

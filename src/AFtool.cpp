@@ -309,7 +309,8 @@ int   AF_GenerateTargetRadiancesOutput(AF_InputParmeterFile &inputArgs, hid_t ou
  *  - Fail : FAILED  (defined in AF_common.h)
  *
  */
-int   AF_GenerateSourceRadiancesOutput(AF_InputParmeterFile &inputArgs, hid_t outputFile, int * targetNNsrcID, int trgCellNum, hid_t srcFile, int srcCellNum, std::map<std::string, strVec_t> & srcInputMultiVarsMap,hid_t ctrackDset,hid_t atrackDset)
+//int   AF_GenerateSourceRadiancesOutput(AF_InputParmeterFile &inputArgs, hid_t outputFile, int * targetNNsrcID, int trgCellNum, hid_t srcFile, int srcCellNum, std::map<std::string, strVec_t> & srcInputMultiVarsMap,hid_t ctrackDset,hid_t atrackDset)
+int   AF_GenerateSourceRadiancesOutput(AF_InputParmeterFile &inputArgs, hid_t outputFile, uint64_t * targetNNsrcID, uint64_t trgCellNum, hid_t srcFile, uint64_t srcCellNum, std::map<std::string, strVec_t> & srcInputMultiVarsMap,hid_t ctrackDset,hid_t atrackDset)
 {
 	#if DEBUG_TOOL
 	std::cout << "DBG_TOOL " << __FUNCTION__ << "> BEGIN \n";
@@ -802,14 +803,16 @@ int main(int argc, char *argv[])
 	std::string resampleMethod =  inputArgs.GetResampleMethod();
 	// source is low and target is similar or high resolution case (ex: MISRtoMODIS and vice versa)
 	if (inputArgs.CompareStrCaseInsensitive(resampleMethod, "nnInterpolate")) {
-		targetNNsrcID = new int [trgCellNumNoShift];
+		//targetNNsrcID = new int [trgCellNumNoShift];
+		targetNNsrcID = new uint64_t [trgCellNumNoShift];
 		double maxRadius = inputArgs.GetMaxRadiusForNNeighborFunc(srcInstrument);
 		nearestNeighborBlockIndex(&srcLatitude, &srcLongitude, srcCellNum, targetLatitude, targetLongitude, targetNNsrcID, NULL, trgCellNumNoShift, maxRadius);
 	} 
 	// source is high and target is low resolution case (ex: ASTERtoMODIS)
 	else if (inputArgs.CompareStrCaseInsensitive(resampleMethod, "summaryInterpolate")) {
 		// when summaryInterpolate is used, need to swap source and target. This is cases for projecting high resolution to low resolution case like ASTER to MODIS
-		targetNNsrcID = new int [srcCellNum];
+		//targetNNsrcID = new int [srcCellNum];
+		targetNNsrcID = new uint64_t [srcCellNum];
 		// get it from src instrument of nearestNeighbor point of view, which is switched for this case, thus use target instrument.
 		double maxRadius = inputArgs.GetMaxRadiusForNNeighborFunc(trgInstrument);
 		nearestNeighborBlockIndex(&targetLatitude, &targetLongitude, trgCellNumNoShift, srcLatitude, srcLongitude, targetNNsrcID, NULL, srcCellNum, maxRadius);

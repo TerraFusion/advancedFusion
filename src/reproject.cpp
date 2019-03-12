@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <math.h>
 #include <omp.h>
+#include <stdint.h>
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -648,10 +649,13 @@ void nearestNeighbor(double ** psouLat, double ** psouLon, int nSou, double * ta
  * Output: 	
  * 	double * tarVal:	the output values at target cells
  */ 
-void nnInterpolate(double * souVal, double * tarVal, int * tarNNSouID, int nTar) {
+//void nnInterpolate(double * souVal, double * tarVal, int * tarNNSouID, int nTar) {
+void nnInterpolate(double * souVal, double * tarVal, uint64_t * tarNNSouID, uint64_t nTar) {
 
-	int nnSouID;
-	int i;
+	//int nnSouID;
+	uint64_t nnSouID;
+	//int i;
+	uint64_t i;
 
 #pragma omp parallel for private(nnSouID)
 	for(i = 0; i < nTar; i++) {
@@ -682,9 +686,11 @@ void nnInterpolate(double * souVal, double * tarVal, int * tarNNSouID, int nTar)
  * 	double * tarSD:		the standard deviation (SD) value at target cells (can be NULL if no SD values need to be reported)
  * 	int * nSouPixels:	the output numbers of contributing source cells to each target cell
  */
-void summaryInterpolate(double * souVal, int * souNNTarID, int nSou, double * tarVal, double * tarSD, int * nSouPixels, int nTar) {
+//void summaryInterpolate(double * souVal, int * souNNTarID, int nSou, double * tarVal, double * tarSD, int * nSouPixels, int nTar) {
+void summaryInterpolate(double * souVal, uint64_t * souNNTarID, uint64_t nSou, double * tarVal, double * tarSD, uint64_t * nSouPixels, uint64_t nTar) {
 
-	for(int i = 0; i < nTar; i++) {
+    uint64_t i;
+	for(i = 0; i < nTar; i++) {
 	
 		tarVal[i] = 0;
 		if (tarSD != NULL) {
@@ -693,8 +699,8 @@ void summaryInterpolate(double * souVal, int * souNNTarID, int nSou, double * ta
 		nSouPixels[i] = 0;
 	}
 
-	int nnTarID;
-	for(int i = 0; i < nSou; i++) {
+	uint64_t nnTarID;
+	for(i = 0; i < nSou; i++) {
 		
 		nnTarID = souNNTarID[i];
 		if(nnTarID > 0 && souVal[i] >= 0) {
@@ -707,7 +713,7 @@ void summaryInterpolate(double * souVal, int * souNNTarID, int nSou, double * ta
 	}
 
 
-	for(int i = 0; i < nTar; i++) {
+	for(i = 0; i < nTar; i++) {
 	
 		if(nSouPixels[i] > 0) {
 			tarVal[i] = tarVal[i] / nSouPixels[i];

@@ -78,20 +78,25 @@ static int af_WriteSingleRadiance_AsterAsSrc(hid_t outputFile, std::string outpu
 	/*-------------------------------------
 	 * set output data type
 	 */
-	hid_t dataTypeOutH5;
+	//hid_t dataTypeOutH5; 
+	hid_t dataTypeOutH5 = dataTypeH5;
+#if 0
 	if (std::is_same<T_OUT, float>::value) {
 		dataTypeOutH5 = H5T_IEEE_F32LE;
 	}
 	else if (std::is_same<T_OUT, double>::value) {
 		dataTypeOutH5 = H5T_IEEE_F64LE;
 	}
-	else if (std::is_same<T_OUT, int>::value) {
-		dataTypeOutH5 = H5T_NATIVE_INT;
+	//else if (std::is_same<T_OUT, int>::value) {
+	else if (std::is_same<T_OUT, long long>::value) {
+		//dataTypeOutH5 = H5T_NATIVE_INT;
+		dataTypeOutH5 = H5T_STD_I64LE;
 	}
 	else {
 		std::cerr << __FUNCTION__ << ":" << __LINE__ <<  "> Error: invlid output data type T_OUT specified." << std::endl;
 		return FAILED;
 	}
+#endif
 
 	/*-------------------------------------
 	 * if first time, create dataset
@@ -254,7 +259,7 @@ int af_GenerateOutputCumulative_AsterAsSrc(AF_InputParmeterFile &inputArgs, hid_
 		printf("create_pure_dim_dataset for ASTER band failed.\n");
 		return FAILED;
 	}
-    
+printf("After create_pure_dim_dataset \n");    
 	//-----------------------------------
 	// define data types for hdf5 data
 	hid_t dataTypeDoubleH5 = H5Tcopy(H5T_NATIVE_DOUBLE);
@@ -264,12 +269,14 @@ int af_GenerateOutputCumulative_AsterAsSrc(AF_InputParmeterFile &inputArgs, hid_
 		return FAILED;
 	}
 
+#if 0
 	hid_t dataTypeIntH5 = H5Tcopy(H5T_NATIVE_INT);
 	status = H5Tset_order(dataTypeIntH5, H5T_ORDER_LE);
 	if(status < 0) {
 		printf("Error: ASTER write error in H5Tset_order\n");
 		return FAILED;
 	}
+#endif
 
 
 	/*------------------------------------------
@@ -285,8 +292,10 @@ int af_GenerateOutputCumulative_AsterAsSrc(AF_InputParmeterFile &inputArgs, hid_
 	uint64_t trgCellNum;
 	ret = af_GetWidthAndHeightForOutputDataSize(inputArgs.GetTargetInstrument() /*target base output */, inputArgs, widthShifted, heightShifted);
 	if(ret < 0) {
+        printf("cannot obtain output datasize \n");
 		return FAILED;
 	}
+printf("after datasize \n");
 	int srcOutputWidth = widthShifted;
 	if(inputArgs.GetMISR_Shift() == "ON" && inputArgs.GetTargetInstrument() == MISR_STR) {
 		trgCellNum = widthShifted * heightShifted;
@@ -314,8 +323,8 @@ int af_GenerateOutputCumulative_AsterAsSrc(AF_InputParmeterFile &inputArgs, hid_
 	double * srcProcessedData = NULL; // radiance
 	double * SD = NULL;  // Standard Deviation
 	// Note: srcPixelCount value is small, int is enough. 
-	int * srcPixelCount = NULL; // count
-	//uint64_t * srcPixelCount = NULL; // count
+	//int * srcPixelCount = NULL; // count
+	uint64_t * srcPixelCount = NULL; // count
 	// Note: This is Combination case only
 	for (int i=0; i< bands.size(); i++) {
 		#if DEBUG_TOOL
@@ -354,8 +363,8 @@ int af_GenerateOutputCumulative_AsterAsSrc(AF_InputParmeterFile &inputArgs, hid_
 		}
 		else if (inputArgs.CompareStrCaseInsensitive(resampleMethod, "summaryInterpolate")) {
 			SD = new double [trgCellNumNoShift];
-			srcPixelCount = new int [trgCellNumNoShift];
-			//srcPixelCount = new uint64_t [trgCellNumNoShift];
+			//srcPixelCount = new int [trgCellNumNoShift];
+			srcPixelCount = new uint64_t [trgCellNumNoShift];
 			summaryInterpolate(asterSingleData, targetNNsrcID, srcCellNum, srcProcessedData, SD, srcPixelCount, trgCellNumNoShift);
 			#if 0 // DEBUG_TOOL
 			std::cout << "DBG_TOOL> No nodata values: \n";
@@ -380,10 +389,10 @@ int af_GenerateOutputCumulative_AsterAsSrc(AF_InputParmeterFile &inputArgs, hid_
 		double * srcSDDataShifted = NULL;
 		double * srcSDDataPtr = NULL;
 		// pixel count data
-		int * srcPixelCountDataShifted = NULL;
-		//uint64_t * srcPixelCountDataShifted = NULL;
-		int * srcPixelCountDataPtr = NULL;
-		//uint64_t * srcPixelCountDataPtr = NULL;
+		//int * srcPixelCountDataShifted = NULL;
+		uint64_t * srcPixelCountDataShifted = NULL;
+		//int * srcPixelCountDataPtr = NULL;
+		uint64_t * srcPixelCountDataPtr = NULL;
 
 		// if MISR is target and Shift is On
 		if(inputArgs.GetMISR_Shift() == "ON" && inputArgs.GetTargetInstrument() == MISR_STR) {
@@ -416,9 +425,9 @@ int af_GenerateOutputCumulative_AsterAsSrc(AF_InputParmeterFile &inputArgs, hid_
 			/*-------------------- 
 			 * shift PixelCount data
 			 */
-			srcPixelCountDataShifted = new int [widthShifted * heightShifted];
-			//srcPixelCountDataShifted = new uint64_t [widthShifted * heightShifted];
-			MISRBlockOffset<int>(srcPixelCount, srcPixelCountDataShifted, (inputArgs.GetMISR_Resolution() == "L") ? 0 : 1);
+			//srcPixelCountDataShifted = new int [widthShifted * heightShifted];
+			srcPixelCountDataShifted = new uint64_t [widthShifted * heightShifted];
+			MISRBlockOffset<uint64_t>(srcPixelCount, srcPixelCountDataShifted, (inputArgs.GetMISR_Resolution() == "L") ? 0 : 1);
 			// use srcPixelCountDataShifted instead of PixelCount, and free memory
 			if(srcPixelCount) {
 				delete [] srcPixelCount;
@@ -458,7 +467,9 @@ int af_GenerateOutputCumulative_AsterAsSrc(AF_InputParmeterFile &inputArgs, hid_
 		}
 
 		// output pixels count dset
-		ret = af_WriteSingleRadiance_AsterAsSrc<int, int>(outputFile, ASTER_COUNT_DSET, dataTypeIntH5, asterDataspace,	srcPixelCountDataPtr, numCells /*processed size*/, srcOutputWidth, i /*bandIdx*/,bands,ctrackDset,atrackDset,bandDset);
+		//ret = af_WriteSingleRadiance_AsterAsSrc<int, int>(outputFile, ASTER_COUNT_DSET, dataTypeIntH5, asterDataspace,	srcPixelCountDataPtr, numCells /*processed size*/, srcOutputWidth, i /*bandIdx*/,bands,ctrackDset,atrackDset,bandDset);
+		//ret = af_WriteSingleRadiance_AsterAsSrc<uint64_t, uint64_t>(outputFile, ASTER_COUNT_DSET, dataTypeIntH5, asterDataspace,	srcPixelCountDataPtr, numCells /*processed size*/, srcOutputWidth, i /*bandIdx*/,bands,ctrackDset,atrackDset,bandDset);
+		ret = af_WriteSingleRadiance_AsterAsSrc<uint64_t, uint64_t>(outputFile, ASTER_COUNT_DSET, H5T_STD_I64LE, asterDataspace,	srcPixelCountDataPtr, numCells /*processed size*/, srcOutputWidth, i /*bandIdx*/,bands,ctrackDset,atrackDset,bandDset);
 		if (ret == FAILED) {
 			std::cerr << __FUNCTION__ << "> Error: returned fail.\n";
 		}
