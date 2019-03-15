@@ -26,7 +26,7 @@
  *	double * tarNNDis	the output nearest distance for each target cell (input NULL if you don't need this field)
  */ 
 //void nearestNeighborBlockIndex(double ** psouLat, double ** psouLon, int nSou, double * tarLat, double * tarLon, int * tarNNSouID, double * tarNNDis, int nTar, double maxR);
-void nearestNeighborBlockIndex(double ** psouLat, double ** psouLon, uint64_t nSou, double * tarLat, double * tarLon, uint64_t * tarNNSouID, double * tarNNDis, uint64_t nTar, double maxR);
+void nearestNeighborBlockIndex(double ** psouLat, double ** psouLon, int64_t nSou, double * tarLat, double * tarLon, int64_t * tarNNSouID, double * tarNNDis, int64_t nTar, double maxR);
 
 
 /**
@@ -61,7 +61,7 @@ void nearestNeighbor(double ** psouLat, double ** psouLon, int nSou, double * ta
  * 	double * tarVal:	the output values at target cells
  */ 
 //void nnInterpolate(double * souVal, double * tarVal, int * tarNNSouID, int nTar);
-void nnInterpolate(double * souVal, double * tarVal, uint64_t * tarNNSouID, uint64_t nTar);
+void nnInterpolate(double * souVal, double * tarVal, int64_t * tarNNSouID, int64_t nTar);
 
 
 /**
@@ -81,7 +81,7 @@ void nnInterpolate(double * souVal, double * tarVal, uint64_t * tarNNSouID, uint
  * 	int * nSouPixels:	the output numbers of contributing source cells to each target cell
  */
 //void summaryInterpolate(double * souVal, int * souNNTarID, int nSou, double * tarVal, double * tarSD, int * nSouPixels, int nTar);
-void summaryInterpolate(double * souVal, uint64_t * souNNTarID, uint64_t nSou, double * tarVal, double * tarSD, uint64_t * nSouPixels, uint64_t nTar);
+void summaryInterpolate(double * souVal, int64_t * souNNTarID, int64_t nSou, double * tarVal, double * tarSD, int64_t * nSouPixels, int64_t nTar);
 
 
 

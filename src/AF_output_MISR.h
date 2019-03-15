@@ -16,9 +16,9 @@
 
 //  MODIS as Target instrument, generate radiance data
 //int af_GenerateOutputCumulative_MisrAsTrg(AF_InputParmeterFile &inputArgs, hid_t outputFile,hid_t srcFile, int trgCellNumOri, std::map<std::string, strVec_t> &inputMultiVarsMap,hid_t ctrackDset,hid_t atrackDset);
-int af_GenerateOutputCumulative_MisrAsTrg(AF_InputParmeterFile &inputArgs, hid_t outputFile,hid_t srcFile, uint64_t trgCellNumOri, std::map<std::string, strVec_t> &inputMultiVarsMap,hid_t ctrackDset,hid_t atrackDset);
+int af_GenerateOutputCumulative_MisrAsTrg(AF_InputParmeterFile &inputArgs, hid_t outputFile,hid_t srcFile, int64_t trgCellNumOri, std::map<std::string, strVec_t> &inputMultiVarsMap,hid_t ctrackDset,hid_t atrackDset);
 
 //  MODIS as Source instrument, generate radiance data
 //int af_GenerateOutputCumulative_MisrAsSrc(AF_InputParmeterFile &inputArgs, hid_t outputFile, int *targetNNsrcID,  int trgCellNum, hid_t srcFile, int srcCellNum, std::map<std::string, strVec_t> &inputMultiVarsMap,hid_t ctrackDset,hid_t atrackDset);
-int af_GenerateOutputCumulative_MisrAsSrc(AF_InputParmeterFile &inputArgs, hid_t outputFile, uint64_t *targetNNsrcID,  uint64_t trgCellNum, hid_t srcFile, uint64_t srcCellNum, std::map<std::string, strVec_t> &inputMultiVarsMap,hid_t ctrackDset,hid_t atrackDset);
+int af_GenerateOutputCumulative_MisrAsSrc(AF_InputParmeterFile &inputArgs, hid_t outputFile, int64_t *targetNNsrcID,  int64_t trgCellNum, hid_t srcFile, int64_t srcCellNum, std::map<std::string, strVec_t> &inputMultiVarsMap,hid_t ctrackDset,hid_t atrackDset);
 #endif // _AF_OUTPUT_MISR_H_

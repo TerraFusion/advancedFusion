@@ -58,7 +58,7 @@ strVec_t ref_band_list = {"1","2","3", "4", "5", "6", "7","8", "9", "10", "11", 
 // T_IN : input data type
 // T_OUT : output data type
 template <typename T_IN, typename T_OUT>
-static int af_WriteSingleRadiance_ModisAsTrg(hid_t outputFile, hid_t dataTypeH5, hid_t fileSpaceH5, T_IN* modisData, uint64_t modisDataSize, int outputWidth, int bandIdx,bool has_refsb,const strVec_t bands,hid_t ctrackDset, hid_t atrackDset, hid_t bandDset)
+static int af_WriteSingleRadiance_ModisAsTrg(hid_t outputFile, hid_t dataTypeH5, hid_t fileSpaceH5, T_IN* modisData, int64_t modisDataSize, int outputWidth, int bandIdx,bool has_refsb,const strVec_t bands,hid_t ctrackDset, hid_t atrackDset, hid_t bandDset)
 //static int af_WriteSingleRadiance_ModisAsTrg(hid_t outputFile, hid_t dataTypeH5, hid_t fileSpaceH5, T_IN* modisData, int modisDataSize, int outputWidth, int bandIdx,bool has_refsb,const strVec_t bands,hid_t ctrackDset, hid_t atrackDset, hid_t bandDset)
 {
 	#if DEBUG_TOOL
@@ -221,7 +221,7 @@ done:
  *	- Fail : FAILED  (defined in AF_common.h)
  */
 //int af_GenerateOutputCumulative_ModisAsTrg(AF_InputParmeterFile &inputArgs, hid_t outputFile,hid_t srcFile, int trgCellNum, std::map<std::string, strVec_t> &inputMultiVarsMap,hid_t ctrackDset, hid_t atrackDset)
-int af_GenerateOutputCumulative_ModisAsTrg(AF_InputParmeterFile &inputArgs, hid_t outputFile,hid_t srcFile, uint64_t trgCellNum, std::map<std::string, strVec_t> &inputMultiVarsMap,hid_t ctrackDset, hid_t atrackDset)
+int af_GenerateOutputCumulative_ModisAsTrg(AF_InputParmeterFile &inputArgs, hid_t outputFile,hid_t srcFile, int64_t trgCellNum, std::map<std::string, strVec_t> &inputMultiVarsMap,hid_t ctrackDset, hid_t atrackDset)
 {
 	#if DEBUG_TOOL
 	std::cout << "DBG_TOOL " << __FUNCTION__ << "> BEGIN \n";
@@ -276,7 +276,7 @@ int af_GenerateOutputCumulative_ModisAsTrg(AF_InputParmeterFile &inputArgs, hid_
 	hid_t modisDataspace = H5Screate_simple(rankSpace, modis_dim, NULL);
 
 	//int numCells;
-	uint64_t numCells;
+	int64_t numCells;
 	double *modisSingleData;
 	std::vector<std::string> singleBandVec;
 	for (int i=0; i< bands.size(); i++) {
@@ -370,7 +370,7 @@ int af_GenerateOutputCumulative_ModisAsTrg(AF_InputParmeterFile &inputArgs, hid_
 // T_IN : input data type
 // T_OUT : output data type
 template <typename T_IN, typename T_OUT>
-static int af_WriteSingleRadiance_ModisAsSrc(hid_t outputFile, hid_t dataTypeH5, hid_t fileSpaceH5, T_IN* processedData, uint64_t trgCellNum, int outputWidth, int bandIdx,bool has_refsb,const strVec_t bands, hid_t ctrackDset,hid_t atrackDset,hid_t bandDset)
+static int af_WriteSingleRadiance_ModisAsSrc(hid_t outputFile, hid_t dataTypeH5, hid_t fileSpaceH5, T_IN* processedData, int64_t trgCellNum, int outputWidth, int bandIdx,bool has_refsb,const strVec_t bands, hid_t ctrackDset,hid_t atrackDset,hid_t bandDset)
 //static int af_WriteSingleRadiance_ModisAsSrc(hid_t outputFile, hid_t dataTypeH5, hid_t fileSpaceH5, T_IN* processedData, int trgCellNum, int outputWidth, int bandIdx,bool has_refsb,const strVec_t bands, hid_t ctrackDset,hid_t atrackDset,hid_t bandDset)
 {
 #if DEBUG_TOOL
@@ -537,7 +537,7 @@ static int af_WriteSingleRadiance_ModisAsSrc(hid_t outputFile, hid_t dataTypeH5,
  *	- Fail : FAILED  (defined in AF_common.h)
  */
 //int af_GenerateOutputCumulative_ModisAsSrc(AF_InputParmeterFile &inputArgs, hid_t outputFile, int *targetNNsrcID,  int trgCellNumNoShift, hid_t srcFile, int srcCellNum, std::map<std::string, strVec_t> &inputMultiVarsMap,hid_t ctrackDset, hid_t atrackDset)
-int af_GenerateOutputCumulative_ModisAsSrc(AF_InputParmeterFile &inputArgs, hid_t outputFile, uint64_t *targetNNsrcID,  uint64_t trgCellNumNoShift, hid_t srcFile, uint64_t srcCellNum, std::map<std::string, strVec_t> &inputMultiVarsMap,hid_t ctrackDset, hid_t atrackDset)
+int af_GenerateOutputCumulative_ModisAsSrc(AF_InputParmeterFile &inputArgs, hid_t outputFile, int64_t *targetNNsrcID,  int64_t trgCellNumNoShift, hid_t srcFile, int64_t srcCellNum, std::map<std::string, strVec_t> &inputMultiVarsMap,hid_t ctrackDset, hid_t atrackDset)
 {
 	#if DEBUG_TOOL
 	std::cout << "DBG_TOOL " << __FUNCTION__ << "> BEGIN \n";
@@ -583,7 +583,7 @@ int af_GenerateOutputCumulative_ModisAsSrc(AF_InputParmeterFile &inputArgs, hid_
 	int widthShifted;
 	int heightShifted;
 	//int trgCellNum;
-	uint64_t trgCellNum;
+	int64_t trgCellNum;
 	ret = af_GetWidthAndHeightForOutputDataSize(inputArgs.GetTargetInstrument() /*target base output */, inputArgs, widthShifted, heightShifted);
 	if(ret < 0) {
 		return FAILED;
@@ -605,7 +605,7 @@ int af_GenerateOutputCumulative_ModisAsSrc(AF_InputParmeterFile &inputArgs, hid_
 	std::cout << "DBG_TOOL " << __FUNCTION__ << "> srcOutputWidth: " << srcOutputWidth <<  "\n";
 	#endif
 	//int numCells;
-	uint64_t numCells;
+	int64_t numCells;
 	double *modisSingleData=NULL;
 
 	std::vector<std::string> singleBandVec;
@@ -615,7 +615,7 @@ int af_GenerateOutputCumulative_ModisAsSrc(AF_InputParmeterFile &inputArgs, hid_
 	// modisSingleData
 	double * srcProcessedData = NULL;
 	//int * nsrcPixels = NULL;
-	uint64_t * nsrcPixels = NULL;
+	int64_t * nsrcPixels = NULL;
 	// Note: This is Combination case only
 	for (int i=0; i< bands.size(); i++) {
 		#if DEBUG_TOOL
@@ -656,7 +656,7 @@ int af_GenerateOutputCumulative_ModisAsSrc(AF_InputParmeterFile &inputArgs, hid_
 		}
 		else if (inputArgs.CompareStrCaseInsensitive(resampleMethod, "summaryInterpolate")) {
 			//nsrcPixels = new int [trgCellNumNoShift];
-			nsrcPixels = new uint64_t [trgCellNumNoShift];
+			nsrcPixels = new int64_t [trgCellNumNoShift];
 			summaryInterpolate(modisSingleData, targetNNsrcID, srcCellNum, srcProcessedData, NULL, nsrcPixels, trgCellNumNoShift);
 			#if 0 // DEBUG_TOOL
 			std::cout << "DBG_TOOL> No nodata values: \n";

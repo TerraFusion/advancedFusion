@@ -57,7 +57,7 @@
 // T_IN : input data type
 // T_OUT : output data type
 template <typename T_IN, typename T_OUT>
-static int af_WriteSingleRadiance_AsterAsSrc(hid_t outputFile, std::string outputDsetName, hid_t dataTypeH5, hid_t fileSpaceH5, T_IN* processedData, uint64_t trgCellNum, int outputWidth, int bandIdx,const strVec_t bands, hid_t ctrackDset,hid_t atrackDset,hid_t bandDset)
+static int af_WriteSingleRadiance_AsterAsSrc(hid_t outputFile, std::string outputDsetName, hid_t dataTypeH5, hid_t fileSpaceH5, T_IN* processedData, int64_t trgCellNum, int outputWidth, int bandIdx,const strVec_t bands, hid_t ctrackDset,hid_t atrackDset,hid_t bandDset)
 //static int af_WriteSingleRadiance_AsterAsSrc(hid_t outputFile, std::string outputDsetName, hid_t dataTypeH5, hid_t fileSpaceH5, T_IN* processedData, int trgCellNum, int outputWidth, int bandIdx,const strVec_t bands, hid_t ctrackDset,hid_t atrackDset,hid_t bandDset)
 {
 #if DEBUG_TOOL
@@ -238,7 +238,7 @@ static int af_WriteSingleRadiance_AsterAsSrc(hid_t outputFile, std::string outpu
  *	- Fail : FAILED  (defined in AF_common.h)
  */
 //int af_GenerateOutputCumulative_AsterAsSrc(AF_InputParmeterFile &inputArgs, hid_t outputFile, int *targetNNsrcID,  int trgCellNumNoShift, hid_t srcFile, int srcCellNum, std::map<std::string, strVec_t> &inputMultiVarsMap,hid_t ctrackDset,hid_t atrackDset)
-int af_GenerateOutputCumulative_AsterAsSrc(AF_InputParmeterFile &inputArgs, hid_t outputFile, uint64_t *targetNNsrcID,  uint64_t trgCellNumNoShift, hid_t srcFile, uint64_t srcCellNum, std::map<std::string, strVec_t> &inputMultiVarsMap,hid_t ctrackDset,hid_t atrackDset)
+int af_GenerateOutputCumulative_AsterAsSrc(AF_InputParmeterFile &inputArgs, hid_t outputFile, int64_t *targetNNsrcID,  int64_t trgCellNumNoShift, hid_t srcFile, int64_t srcCellNum, std::map<std::string, strVec_t> &inputMultiVarsMap,hid_t ctrackDset,hid_t atrackDset)
 {
 	#if DEBUG_TOOL
 	std::cout << "DBG_TOOL " << __FUNCTION__ << "> BEGIN \n";
@@ -288,7 +288,7 @@ printf("After create_pure_dim_dataset \n");
 	int widthShifted;
 	int heightShifted;
 	//int trgCellNum;
-	uint64_t trgCellNum;
+	int64_t trgCellNum;
 	ret = af_GetWidthAndHeightForOutputDataSize(inputArgs.GetTargetInstrument() /*target base output */, inputArgs, widthShifted, heightShifted);
 	if(ret < 0) {
         printf("cannot obtain output datasize \n");
@@ -312,7 +312,7 @@ printf("after datasize \n");
 	std::cout << "DBG_TOOL " << __FUNCTION__ << "> srcOutputWidth: " << srcOutputWidth <<  "\n";
 	#endif
 	//int numCells;
-	uint64_t numCells;
+	int64_t numCells;
 	double *asterSingleData=NULL;
 
 	//-----------------------------------------------------------------
@@ -323,7 +323,7 @@ printf("after datasize \n");
 	double * SD = NULL;  // Standard Deviation
 	// Note: srcPixelCount value is small, int is enough. 
 	//int * srcPixelCount = NULL; // count
-	uint64_t * srcPixelCount = NULL; // count
+	int64_t * srcPixelCount = NULL; // count
 	// Note: This is Combination case only
 	for (int i=0; i< bands.size(); i++) {
 		#if DEBUG_TOOL
@@ -363,7 +363,7 @@ printf("after datasize \n");
 		else if (inputArgs.CompareStrCaseInsensitive(resampleMethod, "summaryInterpolate")) {
 			SD = new double [trgCellNumNoShift];
 			//srcPixelCount = new int [trgCellNumNoShift];
-			srcPixelCount = new uint64_t [trgCellNumNoShift];
+			srcPixelCount = new int64_t [trgCellNumNoShift];
 			summaryInterpolate(asterSingleData, targetNNsrcID, srcCellNum, srcProcessedData, SD, srcPixelCount, trgCellNumNoShift);
 			#if 0 // DEBUG_TOOL
 			std::cout << "DBG_TOOL> No nodata values: \n";
@@ -389,9 +389,9 @@ printf("after datasize \n");
 		double * srcSDDataPtr = NULL;
 		// pixel count data
 		//int * srcPixelCountDataShifted = NULL;
-		uint64_t * srcPixelCountDataShifted = NULL;
+		int64_t * srcPixelCountDataShifted = NULL;
 		//int * srcPixelCountDataPtr = NULL;
-		uint64_t * srcPixelCountDataPtr = NULL;
+		int64_t * srcPixelCountDataPtr = NULL;
 
 		// if MISR is target and Shift is On
 		if(inputArgs.GetMISR_Shift() == "ON" && inputArgs.GetTargetInstrument() == MISR_STR) {
@@ -425,8 +425,8 @@ printf("after datasize \n");
 			 * shift PixelCount data
 			 */
 			//srcPixelCountDataShifted = new int [widthShifted * heightShifted];
-			srcPixelCountDataShifted = new uint64_t [widthShifted * heightShifted];
-			MISRBlockOffset<uint64_t>(srcPixelCount, srcPixelCountDataShifted, (inputArgs.GetMISR_Resolution() == "L") ? 0 : 1);
+			srcPixelCountDataShifted = new int64_t [widthShifted * heightShifted];
+			MISRBlockOffset<int64_t>(srcPixelCount, srcPixelCountDataShifted, (inputArgs.GetMISR_Resolution() == "L") ? 0 : 1);
 			// use srcPixelCountDataShifted instead of PixelCount, and free memory
 			if(srcPixelCount) {
 				delete [] srcPixelCount;
@@ -467,8 +467,8 @@ printf("after datasize \n");
 
 		// output pixels count dset
 		//ret = af_WriteSingleRadiance_AsterAsSrc<int, int>(outputFile, ASTER_COUNT_DSET, dataTypeIntH5, asterDataspace,	srcPixelCountDataPtr, numCells /*processed size*/, srcOutputWidth, i /*bandIdx*/,bands,ctrackDset,atrackDset,bandDset);
-		//ret = af_WriteSingleRadiance_AsterAsSrc<uint64_t, uint64_t>(outputFile, ASTER_COUNT_DSET, dataTypeIntH5, asterDataspace,	srcPixelCountDataPtr, numCells /*processed size*/, srcOutputWidth, i /*bandIdx*/,bands,ctrackDset,atrackDset,bandDset);
-		ret = af_WriteSingleRadiance_AsterAsSrc<uint64_t, int>(outputFile, ASTER_COUNT_DSET, H5T_STD_I64LE, asterDataspace,	srcPixelCountDataPtr, numCells /*processed size*/, srcOutputWidth, i /*bandIdx*/,bands,ctrackDset,atrackDset,bandDset);
+		//ret = af_WriteSingleRadiance_AsterAsSrc<int64_t, int64_t>(outputFile, ASTER_COUNT_DSET, dataTypeIntH5, asterDataspace,	srcPixelCountDataPtr, numCells /*processed size*/, srcOutputWidth, i /*bandIdx*/,bands,ctrackDset,atrackDset,bandDset);
+		ret = af_WriteSingleRadiance_AsterAsSrc<int64_t, int>(outputFile, ASTER_COUNT_DSET, H5T_STD_I64LE, asterDataspace,	srcPixelCountDataPtr, numCells /*processed size*/, srcOutputWidth, i /*bandIdx*/,bands,ctrackDset,atrackDset,bandDset);
 		if (ret == FAILED) {
 			std::cerr << __FUNCTION__ << "> Error: returned fail.\n";
 		}

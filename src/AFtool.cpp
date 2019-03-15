@@ -67,7 +67,7 @@ void Usage(int &argc, char *argv[])
  *
  */
 //int AF_GetGeolocationDataFromInstrument(std::string instrument, AF_InputParmeterFile &inputArgs, hid_t inputFile, double **latitude /*OUT*/, double **longitude /*OUT*/, int &cellNum /*OUT*/)
-int AF_GetGeolocationDataFromInstrument(std::string instrument, AF_InputParmeterFile &inputArgs, hid_t inputFile, double **latitude /*OUT*/, double **longitude /*OUT*/, uint64_t &cellNum /*OUT*/)
+int AF_GetGeolocationDataFromInstrument(std::string instrument, AF_InputParmeterFile &inputArgs, hid_t inputFile, double **latitude /*OUT*/, double **longitude /*OUT*/, int64_t &cellNum /*OUT*/)
 {
 	#if DEBUG_TOOL
 	std::cout << "DBG_TOOL " << __FUNCTION__ << "> BEGIN \n";
@@ -189,7 +189,7 @@ int AF_GetGeolocationDataFromInstrument(std::string instrument, AF_InputParmeter
  *  - Fail : FAILED  (defined in AF_common.h)
  *
  */
-int   AF_GenerateTargetRadiancesOutput(AF_InputParmeterFile &inputArgs, hid_t outputFile, uint64_t trgCellNum, hid_t srcFile, std::map<std::string, strVec_t> & trgInputMultiVarsMap,hid_t ctrackDset,hid_t atrackDset)
+int   AF_GenerateTargetRadiancesOutput(AF_InputParmeterFile &inputArgs, hid_t outputFile, int64_t trgCellNum, hid_t srcFile, std::map<std::string, strVec_t> & trgInputMultiVarsMap,hid_t ctrackDset,hid_t atrackDset)
 //int   AF_GenerateTargetRadiancesOutput(AF_InputParmeterFile &inputArgs, hid_t outputFile, int trgCellNum, hid_t srcFile, std::map<std::string, strVec_t> & trgInputMultiVarsMap,hid_t ctrackDset,hid_t atrackDset)
 {
 	#if DEBUG_TOOL
@@ -310,7 +310,7 @@ int   AF_GenerateTargetRadiancesOutput(AF_InputParmeterFile &inputArgs, hid_t ou
  *
  */
 //int   AF_GenerateSourceRadiancesOutput(AF_InputParmeterFile &inputArgs, hid_t outputFile, int * targetNNsrcID, int trgCellNum, hid_t srcFile, int srcCellNum, std::map<std::string, strVec_t> & srcInputMultiVarsMap,hid_t ctrackDset,hid_t atrackDset)
-int   AF_GenerateSourceRadiancesOutput(AF_InputParmeterFile &inputArgs, hid_t outputFile, uint64_t * targetNNsrcID, uint64_t trgCellNum, hid_t srcFile, uint64_t srcCellNum, std::map<std::string, strVec_t> & srcInputMultiVarsMap,hid_t ctrackDset,hid_t atrackDset)
+int   AF_GenerateSourceRadiancesOutput(AF_InputParmeterFile &inputArgs, hid_t outputFile, int64_t * targetNNsrcID, int64_t trgCellNum, hid_t srcFile, int64_t srcCellNum, std::map<std::string, strVec_t> & srcInputMultiVarsMap,hid_t ctrackDset,hid_t atrackDset)
 {
 	#if DEBUG_TOOL
 	std::cout << "DBG_TOOL " << __FUNCTION__ << "> BEGIN \n";
@@ -615,7 +615,7 @@ int main(int argc, char *argv[])
 	 */
 	std::cout << "\nGetting source instrument latitude & longitude data...\n";
 	//int srcCellNum;
-	uint64_t srcCellNum;
+	int64_t srcCellNum;
 	double* srcLatitude = NULL;
 	double* srcLongitude = NULL;
 	#if DEBUG_ELAPSE_TIME
@@ -641,7 +641,7 @@ int main(int argc, char *argv[])
 	 */
 	std::cout << "\nGetting target instrument latitude & longitude data...\n";
 	//int trgCellNumNoShift;
-	uint64_t trgCellNumNoShift;
+	int64_t trgCellNumNoShift;
 	double* targetLatitude = NULL;
 	double* targetLongitude = NULL;
 	#if DEBUG_ELAPSE_TIME
@@ -665,7 +665,7 @@ int main(int argc, char *argv[])
 	 * Output Target instrument latitude and longitude
 	 */
 	//int trgCellNumNew;
-	uint64_t trgCellNumNew;
+	int64_t trgCellNumNew;
 	int trgOutputWidth;
 	double * targetLatitudePtr = NULL;
 	int widthShifted;
@@ -794,7 +794,7 @@ int main(int argc, char *argv[])
 	 * Note: use not shifted trgCellNum for this
 	 */
 	//int * targetNNsrcID = NULL;
-	uint64_t * targetNNsrcID = NULL;
+	int64_t * targetNNsrcID = NULL;
 	
 	std::cout <<  "\nRunning nearest neighbor block index method... \n";
 	#if DEBUG_ELAPSE_TIME
@@ -804,7 +804,7 @@ int main(int argc, char *argv[])
 	// source is low and target is similar or high resolution case (ex: MISRtoMODIS and vice versa)
 	if (inputArgs.CompareStrCaseInsensitive(resampleMethod, "nnInterpolate")) {
 		//targetNNsrcID = new int [trgCellNumNoShift];
-		targetNNsrcID = new uint64_t [trgCellNumNoShift];
+		targetNNsrcID = new int64_t [trgCellNumNoShift];
 		double maxRadius = inputArgs.GetMaxRadiusForNNeighborFunc(srcInstrument);
 		nearestNeighborBlockIndex(&srcLatitude, &srcLongitude, srcCellNum, targetLatitude, targetLongitude, targetNNsrcID, NULL, trgCellNumNoShift, maxRadius);
 	} 
@@ -812,7 +812,7 @@ int main(int argc, char *argv[])
 	else if (inputArgs.CompareStrCaseInsensitive(resampleMethod, "summaryInterpolate")) {
 		// when summaryInterpolate is used, need to swap source and target. This is cases for projecting high resolution to low resolution case like ASTER to MODIS
 		//targetNNsrcID = new int [srcCellNum];
-		targetNNsrcID = new uint64_t [srcCellNum];
+		targetNNsrcID = new int64_t [srcCellNum];
 		// get it from src instrument of nearestNeighbor point of view, which is switched for this case, thus use target instrument.
 		double maxRadius = inputArgs.GetMaxRadiusForNNeighborFunc(trgInstrument);
 		nearestNeighborBlockIndex(&targetLatitude, &targetLongitude, trgCellNumNoShift, srcLatitude, srcLongitude, targetNNsrcID, NULL, srcCellNum, maxRadius);

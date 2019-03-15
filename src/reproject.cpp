@@ -26,11 +26,11 @@ struct LonBlocks {
 	double blockSizeR;
 	int nBlocks;
 	//int * indexID;
-	uint64_t * indexID;
+	int64_t * indexID;
 };
 
 //struct LonBlocks * pointIndexOnLatLon(double ** plat, double ** plon, int * oriID, int count, int nBlockY, double maxradian) {
-struct LonBlocks * pointIndexOnLatLon(double ** plat, double ** plon, uint64_t * oriID, uint64_t count, int nBlockY, double maxradian) {
+struct LonBlocks * pointIndexOnLatLon(double ** plat, double ** plon, int64_t * oriID, int64_t count, int nBlockY, double maxradian) {
 
 	double *lat = *plat;
 	double *lon = *plon;
@@ -52,7 +52,7 @@ struct LonBlocks * pointIndexOnLatLon(double ** plat, double ** plon, uint64_t *
 	blockIndex[0].nBlocks = 1;
 	// Why (sizeof(int)*2)?
 	//if(NULL == (blockIndex[0].indexID = (int *) malloc (sizeof(int) * 2))) {
-	if(NULL == (blockIndex[0].indexID = (uint64_t *) malloc (sizeof(uint64_t) * 2))) {
+	if(NULL == (blockIndex[0].indexID = (int64_t *) malloc (sizeof(int64_t) * 2))) {
 		printf("ERROR: Out of memory at line %d in file %s\n", __LINE__, __FILE__);
 		exit(1);	
 	}
@@ -65,7 +65,7 @@ struct LonBlocks * pointIndexOnLatLon(double ** plat, double ** plon, uint64_t *
 	blockIndex[nBlockY - 1].blockSizeR = 2 * M_PI;
 	blockIndex[nBlockY - 1].nBlocks = 1;
 	//if(NULL == (blockIndex[nBlockY - 1].indexID = (int *) malloc (sizeof(int) * 2))) {
-	if(NULL == (blockIndex[nBlockY - 1].indexID = (uint64_t *) malloc (sizeof(uint64_t) * 2))) {
+	if(NULL == (blockIndex[nBlockY - 1].indexID = (int64_t *) malloc (sizeof(int64_t) * 2))) {
 		printf("ERROR: Out of memory at line %d in file %s\n", __LINE__, __FILE__);
 		exit(1);	
 	}
@@ -94,7 +94,7 @@ struct LonBlocks * pointIndexOnLatLon(double ** plat, double ** plon, uint64_t *
 		blockIndex[i].blockSizeR = 2 * M_PI / blockIndex[i].nBlocks;
 
 		//if(NULL == (blockIndex[i].indexID = (int *) malloc (sizeof(int) * (blockIndex[i].nBlocks + 1)))) {
-		if(NULL == (blockIndex[i].indexID = (uint64_t *) malloc (sizeof(uint64_t) * (blockIndex[i].nBlocks + 1)))) {
+		if(NULL == (blockIndex[i].indexID = (int64_t *) malloc (sizeof(int64_t) * (blockIndex[i].nBlocks + 1)))) {
 			printf("ERROR: Out of memory at line %d in file %s\n", __LINE__, __FILE__);
 			exit(1);
         	}
@@ -109,7 +109,7 @@ struct LonBlocks * pointIndexOnLatLon(double ** plat, double ** plon, uint64_t *
 	}
 
 	int rowID, colID;
-	for(uint64_t li = 0; li < count; li++) {
+	for(int64_t li = 0; li < count; li++) {
 	
 		rowID = (int)((lat[li] + M_PI/2) / latBlockR);
 		
@@ -123,7 +123,7 @@ struct LonBlocks * pointIndexOnLatLon(double ** plat, double ** plon, uint64_t *
 
 
 	//int newCount = 0;
-	uint64_t  newCount = 0;
+	int64_t  newCount = 0;
 	for(i = 0; i < nBlockY; i++) {
 //		printf("%d:\t%d\n", i, newCount);
 		blockIndex[i].indexID[0] = newCount;
@@ -146,7 +146,7 @@ struct LonBlocks * pointIndexOnLatLon(double ** plat, double ** plon, uint64_t *
 		exit(1);
 	}
 	
-	for(uint64_t li = 0; li < count; li++) {
+	for(int64_t li = 0; li < count; li++) {
 	
 		rowID = (int)((lat[li] + M_PI/2) / latBlockR);
 		
@@ -285,7 +285,7 @@ int * pointIndexOnLat(double ** plat, double ** plon,  int * oriID, int count, i
  */
 
 //void nearestNeighborBlockIndex(double ** psouLat, double ** psouLon, int nSou, double * tarLat, double * tarLon, int * tarNNSouID, double * tarNNDis, int nTar, double maxR) {
-void nearestNeighborBlockIndex(double ** psouLat, double ** psouLon, uint64_t nSou, double * tarLat, double * tarLon, uint64_t * tarNNSouID, double * tarNNDis, uint64_t nTar, double maxR) {
+void nearestNeighborBlockIndex(double ** psouLat, double ** psouLon, int64_t nSou, double * tarLat, double * tarLon, int64_t * tarNNSouID, double * tarNNDis, int64_t nTar, double maxR) {
 	double * souLat = *psouLat;
 	double * souLon = *psouLon;
 
@@ -302,7 +302,7 @@ void nearestNeighborBlockIndex(double ** psouLat, double ** psouLon, uint64_t nS
 	double latBlockR = M_PI / nBlockY;
 
 	int i, j, k, kk, l;
-	uint64_t li;
+	int64_t li;
 #pragma omp parallel for
 	for(li = 0; li < nSou; li++) {
 		
@@ -322,9 +322,9 @@ void nearestNeighborBlockIndex(double ** psouLat, double ** psouLon, uint64_t nS
 	}
 
 	//int * souID;
-	uint64_t * souID;
+	int64_t * souID;
 	//if(NULL == (souID = (int *)malloc(sizeof(double) * nSou))) {
-	if(NULL == (souID = (uint64_t *)malloc(sizeof(uint64_t) * nSou))) {
+	if(NULL == (souID = (int64_t *)malloc(sizeof(int64_t) * nSou))) {
 		printf("ERROR: Out of memory at line %d in file %s\n", __LINE__, __FILE__);
 		exit(1);
 	}
@@ -650,12 +650,12 @@ void nearestNeighbor(double ** psouLat, double ** psouLon, int nSou, double * ta
  * 	double * tarVal:	the output values at target cells
  */ 
 //void nnInterpolate(double * souVal, double * tarVal, int * tarNNSouID, int nTar) {
-void nnInterpolate(double * souVal, double * tarVal, uint64_t * tarNNSouID, uint64_t nTar) {
+void nnInterpolate(double * souVal, double * tarVal, int64_t * tarNNSouID, int64_t nTar) {
 
 	//int nnSouID;
-	uint64_t nnSouID;
+	int64_t nnSouID;
 	//int i;
-	uint64_t i;
+	int64_t i;
 
 #pragma omp parallel for private(nnSouID)
 	for(i = 0; i < nTar; i++) {
@@ -687,9 +687,9 @@ void nnInterpolate(double * souVal, double * tarVal, uint64_t * tarNNSouID, uint
  * 	int * nSouPixels:	the output numbers of contributing source cells to each target cell
  */
 //void summaryInterpolate(double * souVal, int * souNNTarID, int nSou, double * tarVal, double * tarSD, int * nSouPixels, int nTar) {
-void summaryInterpolate(double * souVal, uint64_t * souNNTarID, uint64_t nSou, double * tarVal, double * tarSD, uint64_t * nSouPixels, uint64_t nTar) {
+void summaryInterpolate(double * souVal, int64_t * souNNTarID, int64_t nSou, double * tarVal, double * tarSD, int64_t * nSouPixels, int64_t nTar) {
 
-    uint64_t i;
+    int64_t i;
 	for(i = 0; i < nTar; i++) {
 	
 		tarVal[i] = 0;
@@ -699,7 +699,7 @@ void summaryInterpolate(double * souVal, uint64_t * souNNTarID, uint64_t nSou, d
 		nSouPixels[i] = 0;
 	}
 
-	uint64_t nnTarID;
+	int64_t nnTarID;
 	for(i = 0; i < nSou; i++) {
 		
 		nnTarID = souNNTarID[i];
