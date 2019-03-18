@@ -552,6 +552,9 @@ int main(int argc, char *argv[])
 	inputArgs.ParseByLine();
 	ret = inputArgs.CheckParsedValues();
 	if (ret < 0) {
+		std:: cout <<"Invalid Input parameters. \n";
+		std:: cout <<"AFtool fails to run. \n";
+		std:: cout <<"Correct the input parameters and re-run. \n";
 		return FAILED;
 	}
 

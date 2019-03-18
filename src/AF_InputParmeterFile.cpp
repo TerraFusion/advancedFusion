@@ -13,6 +13,7 @@
 #include <fstream>
 #include <sstream>
 #include <cstring>
+#include <algorithm>
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -579,7 +580,7 @@ void AF_InputParmeterFile::ParseByLine()
  */
 int AF_InputParmeterFile::CheckParsedValues()
 {
-	bool isValidInput;
+	bool isValidInput = true;
 
 	
 	/*=================================================
@@ -595,6 +596,17 @@ int AF_InputParmeterFile::CheckParsedValues()
 		return -1; // failed
 	}
 
+	// Check if the Source and Target instruments are valid.
+	if (IsSourceTargetInstrumentValid() == false) {
+		std::cerr << "Error: Source instrument must be one of (MODIS,ASTER,MISR). Target instrument must be one of (MODIS,MISR,USER_DEFINE)\n";
+		return -1; // failed
+	}
+
+	// Check if the resample method is valid.
+	if (IsResampleMethodValid() == false) 
+		return -1; // failed
+
+    
 
 	/*=================================================
 	 * MODIS section
@@ -604,25 +616,40 @@ int AF_InputParmeterFile::CheckParsedValues()
 		if (isValidInput == false) {
 			return -1; // failed
 		}
+		isValidInput = CheckMODISband();
+		if (isValidInput == false) {
+			return -1; // failed
+		}
 	}
 
 
 	/*=================================================
 	 * ASTER section
 	 */
-	if (sourceInstrument == ASTER_STR || targetInstrument == ASTER_STR) {
+	// Current ASTER is only the source instrument.
+	//if (sourceInstrument == ASTER_STR || targetInstrument == ASTER_STR) {
+	if (sourceInstrument == ASTER_STR) {
 		isValidInput = CheckRevise_ASTERresolution(aster_Resolution);
 		if (isValidInput == false) {
 			return -1; // failed
 		}
-	
+
 		isValidInput = CheckRevise_ASTERbands(aster_Bands);
 		if (isValidInput == false) {
 			return -1; // failed
 		}
 	}
 
-	
+	/*=================================================
+	 * MISR section
+	 */
+
+	if (sourceInstrument == MISR_STR || targetInstrument == MISR_STR) {
+		if(false == CheckMISRParameters())
+			return -1; // failed
+	}
+
+    
 	return 0; // succeed
 }
 
@@ -654,6 +681,45 @@ bool AF_InputParmeterFile::CheckInputBFdataPath(const std::string &filePath)
 }
 
 /*=================================================================
+ * Check if source and target instrument are valid 
+ *
+ * Parameter:
+ *  - none 
+ *
+ * Return:
+ *  - valid : true
+ *  - not vaid : false
+ * Note: 
+ * Current only ASTER,MODIS,MISR are valid for source.
+ * Only MODIS,MISR and User-defined are valid for target.
+ * CERES and MOPITT may be added later. 
+ *
+ */
+bool AF_InputParmeterFile::IsResampleMethodValid()
+{
+	bool ret = true;
+	#if DEBUG_TOOL_PARSER
+	//std::cout << "DBG_PARSER " << __FUNCTION__ << ":" << __LINE__ << "> ResampleMethod: " << RESAMPLE_METHOD <<   ".\n";
+	std::cout << "DBG_PARSER " << __FUNCTION__ << ":" << __LINE__ << "> ResampleMethod: " << resampleMethod <<   ".\n";
+	#endif
+
+	if(resampleMethod !="nnInterpolate" && resampleMethod != "summaryInterpolate") { 
+		std::cerr <<"resample method must be either <nnIterpolate> or <summaryInterpolate>.  \n";
+		ret = false;
+	}
+
+ 	if(ret == false)
+		return ret;
+	else if(sourceInstrument == "ASTER" && resampleMethod== "nnInterpolate") {
+		std::cerr <<"For ASTER, resample method must be summaryInterpolate. \n";
+        ret = false;
+	}
+    return ret;
+
+
+}
+
+/*=================================================================
  * Check if source instrument is same as target instrument
  *
  * Parameter:
@@ -678,7 +744,44 @@ bool AF_InputParmeterFile::IsSourceTargetInstrumentSame()
 	return ret;
 }
 
+/*=================================================================
+ * Check if source and target instrument are valid 
+ *
+ * Parameter:
+ *  - none 
+ *
+ * Return:
+ *  - valid : true
+ *  - not vaid : false
+ * Note: 
+ * Current only ASTER,MODIS,MISR are valid for source.
+ * Only MODIS,MISR and User-defined are valid for target.
+ * CERES and MOPITT may be added later. 
+ *
+ */
+bool AF_InputParmeterFile::IsSourceTargetInstrumentValid()
+{
+	bool ret = true;
+	#if DEBUG_TOOL_PARSER
+	std::cout << "DBG_PARSER " << __FUNCTION__ << ":" << __LINE__ << "> sourceInstrument: " << sourceInstrument << ", targetInstrument: " << targetInstrument <<   ".\n";
+	#endif
 
+	std::vector<std::string>  validSourceInstruments = {"MODIS","ASTER","MISR"};
+	std::vector<std::string> validTargetInstruments = {"MODIS","MISR","USER_DEFINE"};
+	
+	if(std::find(validSourceInstruments.begin(),validSourceInstruments.end(),sourceInstrument) == validSourceInstruments.end())
+		ret = false;
+
+	if(std::find(validTargetInstruments.begin(),validTargetInstruments.end(),targetInstrument) == validTargetInstruments.end())
+		ret = false;
+
+	if(sourceInstrument == "CERES" || sourceInstrument == "MOPITT" || targetInstrument == "CERES" || targetInstrument == "MOPITT") 
+		std::cout <<"CERES and MOPITT are not supported. \n";
+	else if(targetInstrument == "ASTER") 
+		std::cout <<"ASTER as a target instrument is not supported. \n";
+    return ret;
+
+}
 /*=================================================================
  * Check and Revise Modis resolution input
  *
@@ -722,7 +825,67 @@ bool AF_InputParmeterFile::CheckRevise_MODISresolution(std::string &str)
 	return ret;
 }
 
+/*=================================================================
+ * Check Modis Band input
+ *
+ * Parameter:
+ *  - str [IN/OUT] : resolution string.
+ *					 Check and convert it for internal notation.
+ *
+ * Return:
+ *  - success - true
+ *  - fail - false
+ */
+bool AF_InputParmeterFile::CheckMODISband()
+{
+	bool ret = true;
+	bool isAllbands = false;
+	for(int i=0; i < modis_Bands.size(); i++) {
+		if (CompareStrCaseInsensitive(modis_Bands[i], "ALL")) {
+				isAllbands = true;
+				#if DEBUG_TOOL_PARSER
+				std::cout << "DBG_PARSER " << __FUNCTION__ << ":" << __LINE__ << "> ALL for Modis bands.\n";
+				#endif
+				break;
+		}
+	}	
 
+	if(false == isAllbands) {
+
+		const std::vector<std::string> modisBands_1km = {"1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13L", "13H", "14L", "14H", "15", "16", "17", "18", "19", "20", "21", "22", "23", "24", "25", "26", "27", "28", "29", "30", "31", "32", "33", "34", "35", "36"};
+		const std::vector<std::string> modisBands_500m = {"1", "2", "3","4", "5", "6", "7"};
+		const std::vector<std::string> modisBands_250m = {"1", "2"};
+		for (int i = 0; i < modis_Bands.size(); i++) {
+			if("_1KM" == modis_Resolution){
+				if(std::find(modisBands_1km.begin(),modisBands_1km.end(),modis_Bands[i]) == modisBands_1km.end()){
+					ret = false;
+					std:: cerr <<"Error: Invalid MODIS Band number for 1KM. The valid range is >=1 and <=36.\n";
+					break;
+				}
+			}
+		
+			else if("_500m" == modis_Resolution){
+				if(std::find(modisBands_500m.begin(),modisBands_500m.end(),modis_Bands[i]) == modisBands_500m.end()) {
+					ret = false;
+					std:: cerr <<"Error: Invalid MODIS Band for 500m, The valid range is >=1 and <=7.\n";
+					break;
+				}
+			}
+				
+			else {// resolution must be "_250m" 
+				if(std::find(modisBands_250m.begin(),modisBands_250m.end(),modis_Bands[i]) == modisBands_250m.end()) {
+					ret = false;
+					std:: cerr <<"Error: Invalid MODIS Band for 250m, The valid band number is either 1 or 2.\n";
+					break;
+				}
+			}
+		}
+	}	
+
+	return ret;
+	
+
+}
 /*=================================================================
  * Check and Revise Aster resolution input
  *
@@ -765,6 +928,7 @@ bool AF_InputParmeterFile::CheckRevise_ASTERresolution(std::string &str)
 	return ret;
 }
 
+
 /*=================================================================
  * Check and Revise Aster bands input
  *
@@ -786,31 +950,40 @@ bool AF_InputParmeterFile::CheckRevise_ASTERbands(std::vector<std::string> &strV
     }
 	#endif
 
+	const std::vector<std::string> astBands_tir = {"10","11","12","13","14"};
+	const std::vector<std::string> astBands_swir = {"4","5","6","7","8","9"};
+	const std::vector<std::string> astBands_vnir = {"1","2","3"};
 
-	#if 0 // TODO_LATER - allow range by Resolution 
-	if (CompareStrCaseInsensitive(aster_Resolution, "TIR" /*90M*/)) {
-		for(int i = 0; i < strVec.size(); i++) {
-			if (CompareStrCaseInsensitive(strVec[i], "10") ||
-	        	CompareStrCaseInsensitive(strVec[i], "11") ||
-	        	CompareStrCaseInsensitive(strVec[i], "12") ||
-	        	CompareStrCaseInsensitive(strVec[i], "13") ||
-	        	CompareStrCaseInsensitive(strVec[i], "14")) {
-				strVec[i] = "ImageData" + strVec[i];
-			}
-			else {
-				std::cerr	<< "Error: Invalid ASTER band '" << strVec[i] << "'.\n"
-							<< "Only allowed 10 to 14 for 90M.\n";
+	for (int i = 0; i < strVec.size(); i++) {
+		if("TIR" == aster_Resolution){
+			if(std::find(astBands_tir.begin(),astBands_tir.end(),strVec[i]) == astBands_tir.end()){
 				ret = false;
+				std:: cerr <<"Error: Invalid ASTER Band number for 90M. The valid range is >=10 and <=14.\n";
+				break;
+			}
+		}
+		
+		else if("SWIR" == aster_Resolution){
+			if(std::find(astBands_swir.begin(),astBands_swir.end(),strVec[i]) == astBands_swir.end()) {
+				ret = false;
+				std:: cerr <<"Error: Invalid ASTER Band for 500m, The valid range is >=4 and <=9.\n";
+				break;
+			}		
+		}
+				
+		else {// resolution must be "VNIR" 
+			if(std::find(astBands_vnir.begin(),astBands_vnir.end(),strVec[i]) == astBands_vnir.end()) {
+				ret = false;
+				std:: cerr <<"Error: Invalid ASTER Band for 250m, The valid band number is either 1 or 2 or 3.\n";
+				break;
 			}
 		}
 	}
-	else if (CompareStrCaseInsensitive(aster_Resolution, "SWIR" /*30M*/)) {
-		// only allow 4 ~ 9
-	}
-	else if (CompareStrCaseInsensitive(aster_Resolution, "VNIR" /*15M*/)) {
-		// only allow 1 ~ 3
-	}
-	#else
+		
+	// No need to check if the returned value is false.
+	if(false == ret)
+		return ret;
+    // Assign Image names
 	for(int i = 0; i < strVec.size(); i++) {
 		if (CompareStrCaseInsensitive(strVec[i], "1") ||
 			CompareStrCaseInsensitive(strVec[i], "2") ||
@@ -837,7 +1010,6 @@ bool AF_InputParmeterFile::CheckRevise_ASTERbands(std::vector<std::string> &strV
 			ret = false;
 		}
 	}
-	#endif
 
 	#if DEBUG_TOOL_PARSER
 	std::cout << "DBG_PARSER " << __FUNCTION__ << ":" << __LINE__ << "> After update" << std::endl;
@@ -849,6 +1021,59 @@ bool AF_InputParmeterFile::CheckRevise_ASTERbands(std::vector<std::string> &strV
 	return ret;
 }
 
+bool AF_InputParmeterFile::CheckMISRParameters() {
+
+	bool ret = true;
+	// 1. Resolution
+	if(misr_Resolution != "L" &&  misr_Resolution != "H") {
+		std::cerr<<"MISR resolution should be either 'L' or 'H' \n";	
+		return false;
+	}
+	// 2. Camera Angle
+	const std::vector<std::string> ValidmisrCameraAngles ={"DF","CF","BF","AF","AN","AA","BA","CA","DA"}; 
+	for (int i = 0; i<misr_CameraAngles.size();i++) {
+		if(std::find(ValidmisrCameraAngles.begin(),ValidmisrCameraAngles.end(),misr_CameraAngles[i]) == ValidmisrCameraAngles.end()) {
+			ret = false;
+			std:: cerr <<"Error: Invalid MISR camera angles. The valid angle should be one of <DF,CF,BF,AF,AN,AA,BA,CA,DA>.\n";
+			break;
+        }
+	}
+	if (false == ret) 
+		return false;
+	// 3. Radiance 
+	const std::vector<std::string> ValidmisrRadiances ={"Blue_Radiance","Green_Radiance","Red_Radiance","NIR_Radiance"}; 
+	for (int i = 0; i<misr_Radiances.size();i++) {
+		if(std::find(ValidmisrRadiances.begin(),ValidmisrRadiances.end(),misr_Radiances[i]) == ValidmisrRadiances.end()) {
+			ret = false;
+			std:: cerr <<"Error: Invalid MISR Radiances.\n"; 
+			std:: cerr <<"The valid angle should be one of <Blue_Radiance,Green_Radiance,Red_Radiance,NIR_Radiance>.\n";
+			break;
+        }
+	}
+	if (false == ret) 
+		return false;
+	
+	// 4. target block unstack
+	if(targetInstrument == "MISR") {
+		if(misr_Shift != "ON" && misr_Shift != "OFF") {
+			std:: cerr <<"Error: MISR_TARGET_BLOCKUNSTACK must be either <ON> or <OFF>.\n"; 
+			return false;
+		}
+	}
+	// 5. If H resolution with real low resolution data
+	if("H" == misr_Resolution) {
+std::cerr<<"coming to high resolution\n ";
+		if(std::find(misr_CameraAngles.begin(),misr_CameraAngles.end(),"AN") == misr_CameraAngles.end()) {
+std::cerr<<"Angle right\n ";
+			if(std::find(misr_Radiances.begin(),misr_Radiances.end(),"Red_Radiance") == misr_Radiances.end()) {
+				std::cerr <<"Low resolution MISR radiance is specified as high resolution. \n";
+				return false;
+			}
+		}
+	}
+	return ret;
+
+}
 /* ######################################################################
  * Functions to get input based parameter of internal functions
  */

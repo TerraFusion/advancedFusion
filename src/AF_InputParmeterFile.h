@@ -121,14 +121,19 @@ class AF_InputParmeterFile
 	// Common
 	bool CheckInputBFdataPath(const std::string &str);
 	bool IsSourceTargetInstrumentSame();
+	bool IsSourceTargetInstrumentValid();
+	bool IsResampleMethodValid();
+
 	// MODIS
 	bool CheckRevise_MODISresolution(std::string &str);
-	#if 1 // JK_ASTER2MODIS
+	bool CheckMODISband();
+
 	// ASTER
 	bool CheckRevise_ASTERresolution(std::string &str);
 	bool CheckRevise_ASTERbands(std::vector<std::string> &strVec);
-	#endif
 
+	// MISR
+	bool CheckMISRParameters();
 
 	private:
 	bool didReadHeaderFile;
