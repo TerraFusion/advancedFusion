@@ -649,7 +649,15 @@ int AF_InputParmeterFile::CheckParsedValues()
 			return -1; // failed
 	}
 
-    
+   	/*=================================================
+	 * MISR section
+	 */
+	if (targetInstrument == "USER_DEFINE") {
+		if(false == CheckUDParameters())
+			return -1; // failed
+	}
+
+
 	return 0; // succeed
 }
 
@@ -1062,9 +1070,7 @@ bool AF_InputParmeterFile::CheckMISRParameters() {
 	}
 	// 5. If H resolution with real low resolution data
 	if("H" == misr_Resolution) {
-std::cerr<<"coming to high resolution\n ";
 		if(std::find(misr_CameraAngles.begin(),misr_CameraAngles.end(),"AN") == misr_CameraAngles.end()) {
-std::cerr<<"Angle right\n ";
 			if(std::find(misr_Radiances.begin(),misr_Radiances.end(),"Red_Radiance") == misr_Radiances.end()) {
 				std::cerr <<"Low resolution MISR radiance is specified as high resolution. \n";
 				return false;
@@ -1072,6 +1078,34 @@ std::cerr<<"Angle right\n ";
 		}
 	}
 	return ret;
+
+}
+
+bool AF_InputParmeterFile::CheckUDParameters() {
+
+	double user_xmin = GetUSER_xMin();
+	double user_xmax = GetUSER_xMax();
+	double user_ymin = GetUSER_yMin();
+	double user_ymax = GetUSER_yMax();
+	double user_resolution = GetUSER_Resolution();
+
+	if(user_xmin >=user_xmax){
+		std::cerr<<"User Grid: USER_X_MIN is " << user_xmin <<" USER_X_MAX is "<< user_xmax << "." << std::endl 
+		         <<"USER_X_MIN should be less than or equal to USER_X_MAX.\n";
+		return false;
+	}
+	if(user_ymin >=user_ymax){ 
+		std::cerr<<"User Grid: USER_Y_MIN is " << user_ymin <<" USER_Y_MAX is "<< user_ymax <<"." << std::endl 
+		         <<"USER_Y_MIN should be less than or equal to USER_Y_MAX.\n";
+		return false;
+	}
+	if(user_resolution <=0){
+		std::cerr<<"User Grid: USER_RESOLUTION is " << user_resolution << "." <<std::endl 
+		         <<"USER_RESOLUTION should be a positive number.\n";
+		return false;
+	}
+
+	return true;
 
 }
 /* ######################################################################

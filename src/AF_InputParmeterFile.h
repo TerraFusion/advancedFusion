@@ -135,6 +135,9 @@ class AF_InputParmeterFile
 	// MISR
 	bool CheckMISRParameters();
 
+	// User-defined 
+	bool CheckUDParameters();
+
 	private:
 	bool didReadHeaderFile;
 
