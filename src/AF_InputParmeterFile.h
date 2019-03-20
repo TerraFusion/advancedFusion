@@ -84,6 +84,7 @@ class AF_InputParmeterFile
 	// ASTER  section ------------------
 	std::string GetASTER_Resolution();
 	std::vector<std::string>  GetASTER_Bands();
+	std::vector<std::string>  GetASTER_Orig_Bands();
 	#endif
 	// USER_DEFINE section ---------
 	int GetUSER_EPSG();
@@ -94,6 +95,7 @@ class AF_InputParmeterFile
 	double GetUSER_Resolution();
 
 
+	float GetInstrumentResolutionValue(const std::string & instrument);
 	/*===========================================
 	 * Handle multi-value variables
 	 */
@@ -161,6 +163,7 @@ class AF_InputParmeterFile
 	#if 1 // JK_ASTER2MODIS
 	// ASTER section ------------------
 	std::string aster_Resolution;
+	std::vector<std::string> aster_Orig_Bands;
 	std::vector<std::string> aster_Bands;
 	#endif
 	// USER_DEFINE section -------

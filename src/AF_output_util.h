@@ -26,4 +26,5 @@
  */
 int af_GetWidthAndHeightForOutputDataSize(std::string instrument, AF_InputParmeterFile &inputArgs, int &crossTrackWidth /*OUT*/, int &alongTrackHeight /*OUT*/);
 
+
 #endif // _AF_OUTPUT_UTIL_H_

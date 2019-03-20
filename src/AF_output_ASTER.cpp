@@ -21,6 +21,8 @@
 #include "io.h"
 #include "reproject.h"
 #include "misrutil.h"
+#include <iostream>
+#include <string>
 
 
 
@@ -57,7 +59,7 @@
 // T_IN : input data type
 // T_OUT : output data type
 template <typename T_IN, typename T_OUT>
-static int af_WriteSingleRadiance_AsterAsSrc(hid_t outputFile, std::string outputDsetName, hid_t dataTypeH5, hid_t fileSpaceH5, T_IN* processedData, int trgCellNum, int outputWidth, int bandIdx,const strVec_t bands, hid_t ctrackDset,hid_t atrackDset,hid_t bandDset)
+static int af_WriteSingleRadiance_AsterAsSrc(AF_InputParmeterFile &inputArgs, hid_t outputFile, std::string outputDsetName, hid_t dataTypeH5, hid_t fileSpaceH5, T_IN* processedData, int trgCellNum, int outputWidth, int bandIdx,const strVec_t bands, hid_t ctrackDset,hid_t atrackDset,hid_t bandDset)
 {
 #if DEBUG_TOOL
 	std::cout << "DBG_TOOL " << __FUNCTION__ << "> BEGIN \n";
@@ -147,7 +149,96 @@ static int af_WriteSingleRadiance_AsterAsSrc(hid_t outputFile, std::string outpu
 			// same as _FillValue.
 			if(af_write_cf_attributes(aster_dataset, units, _FillValue, valid_min,valid_max,handle_flag) < 0) {
 				std::cerr << __FUNCTION__ << ":" << __LINE__ <<	"> Error: af_write_cf_attributes" << std::endl;
+				return FAILED;
 			}
+
+			// Add CF long name
+			const char* long_name = "long_name";
+			if(outputDsetName == "ASTER_Count") {
+				if(H5LTset_attribute_string(outputFile,dsetPath.c_str(),long_name,"Number of ASTER pixels in a resampled cell")<0) {
+					H5Dclose(aster_dataset);
+					std::cerr << __FUNCTION__ << ":" << __LINE__ <<	"> Error: cannot generate long_name attribute for ASTER_Count" << std::endl;
+					return FAILED;
+				}
+			}
+			else if(outputDsetName == "ASTER_SD") {
+                if(H5LTset_attribute_string(outputFile,dsetPath.c_str(),long_name,"Standard deviation of ASTER pixels in a resampled cell")<0) {
+					H5Dclose(aster_dataset);
+                    std::cerr << __FUNCTION__ << ":" << __LINE__ << "> Error: cannot generate long_name attribute for ASTER_SD" << std::endl;
+                    return FAILED;
+                }
+            }
+			else {
+
+				// Write long_name 
+				std::string aster_resolution = inputArgs.GetASTER_Resolution();
+				std::string long_name_value; 
+				if(aster_resolution == "TIR") {
+					std::string tir = "Thermal Infrared ";
+					//long_name_value = "ASTER " + "Thermal Infrared ";
+					long_name_value = "ASTER " + tir;
+					long_name_value += "Radiance";
+				}
+				else if(aster_resolution == "SWIR") {
+					std::string swir = "Short-wave Infrared ";
+					long_name_value = "ASTER " + swir;
+					long_name_value += "Radiance";
+				}
+				else {
+					std::string vnir ="Visible and Near Infrared ";
+					long_name_value = "ASTER " +vnir;
+					long_name_value += "Radiance";
+				}
+
+	 			if(H5LTset_attribute_string(outputFile,dsetPath.c_str(),long_name,long_name_value.c_str())<0) {
+					H5Dclose(aster_dataset);
+                    std::cerr << __FUNCTION__ << ":" << __LINE__ << "> Error: cannot generate long_name attribute for ASTER Radiance" << std::endl;
+                    return FAILED;
+                }
+ 				
+				std::vector<std::string> band_name_vec = inputArgs.GetASTER_Orig_Bands();
+				//std::string band_name_values = std::accumulate(band_name_vec.begin(),band_name_vec.end(),std::string(",")); 
+//#if 0
+				std::string band_name_values;
+				for(int i = 0; i<band_name_vec.size();i++) 
+					band_name_values = band_name_values + band_name_vec[i] +',';
+				
+//#endif
+				band_name_values = band_name_values.erase(band_name_values.size()-1,1);
+                if(H5LTset_attribute_string(outputFile,dsetPath.c_str(),"band_names",band_name_values.c_str())<0) {
+					H5Dclose(aster_dataset);
+					std::cerr << __FUNCTION__ << ":" << __LINE__ << "> Error: cannot generate band_names" << std::endl;
+					return FAILED;
+				}
+
+				// Add resolution as a number.
+				float aster_resolution_value = inputArgs.GetInstrumentResolutionValue(ASTER_STR);
+				if(false == af_AddSpatialResolutionAttrs(outputFile,dsetPath,aster_resolution_value,true)) {
+					H5Dclose(aster_dataset);
+					return FAILED;
+				}
+
+				float target_resolution_value = inputArgs.GetInstrumentResolutionValue(inputArgs.GetTargetInstrument());
+				if(false == af_AddSpatialResolutionAttrs(outputFile,dsetPath,target_resolution_value,false)) {
+					H5Dclose(aster_dataset);
+					return FAILED;
+				}
+
+                if(H5LTset_attribute_string(outputFile,dsetPath.c_str(),"spatial_resolution_units","meter")<0) {
+					H5Dclose(aster_dataset);
+					std::cerr << __FUNCTION__ << ":" << __LINE__ << "> Error: cannot generate spatial_resolution_units" << std::endl;
+					return FAILED;
+				}
+
+				// Add resample method
+				if(H5LTset_attribute_string(outputFile,dsetPath.c_str(),"resample_method","Summary Interpolation")<0) {
+					H5Dclose(aster_dataset);
+					std::cerr << __FUNCTION__ << ":" << __LINE__ << "> Error: cannot generate spatial_resolution_units" << std::endl;
+					return FAILED;
+				}
+			
+			}
+
 		}
 	}
 	else {
@@ -436,19 +527,19 @@ int af_GenerateOutputCumulative_AsterAsSrc(AF_InputParmeterFile &inputArgs, hid_
 		StartElapseTime();
 		#endif
 		// output radiance dset
-		ret = af_WriteSingleRadiance_AsterAsSrc<double, float>(outputFile, ASTER_RADIANCE_DSET, dataTypeDoubleH5, asterDataspace,  srcRadianceDataPtr, numCells /*processed size*/, srcOutputWidth, i /*bandIdx*/,bands,ctrackDset,atrackDset,bandDset);
+		ret = af_WriteSingleRadiance_AsterAsSrc<double, float>(inputArgs,outputFile, ASTER_RADIANCE_DSET, dataTypeDoubleH5, asterDataspace,  srcRadianceDataPtr, numCells /*processed size*/, srcOutputWidth, i /*bandIdx*/,bands,ctrackDset,atrackDset,bandDset);
 		if (ret == FAILED) {
 			std::cerr << __FUNCTION__ << "> Error: returned fail.\n";
 		}
 
 		// output standard deviation dset
-		ret = af_WriteSingleRadiance_AsterAsSrc<double, float>(outputFile, ASTER_SD_DSET, dataTypeDoubleH5, asterDataspace,  srcSDDataPtr, numCells /*processed size*/, srcOutputWidth, i /*bandIdx*/,bands,ctrackDset,atrackDset,bandDset);
+		ret = af_WriteSingleRadiance_AsterAsSrc<double, float>(inputArgs,outputFile, ASTER_SD_DSET, dataTypeDoubleH5, asterDataspace,  srcSDDataPtr, numCells /*processed size*/, srcOutputWidth, i /*bandIdx*/,bands,ctrackDset,atrackDset,bandDset);
 		if (ret == FAILED) {
 			std::cerr << __FUNCTION__ << "> Error: returned fail.\n";
 		}
 
 		// output pixels count dset
-		ret = af_WriteSingleRadiance_AsterAsSrc<int, int>(outputFile, ASTER_COUNT_DSET, dataTypeIntH5, asterDataspace,	srcPixelCountDataPtr, numCells /*processed size*/, srcOutputWidth, i /*bandIdx*/,bands,ctrackDset,atrackDset,bandDset);
+		ret = af_WriteSingleRadiance_AsterAsSrc<int, int>(inputArgs,outputFile, ASTER_COUNT_DSET, dataTypeIntH5, asterDataspace,	srcPixelCountDataPtr, numCells /*processed size*/, srcOutputWidth, i /*bandIdx*/,bands,ctrackDset,atrackDset,bandDset);
 		if (ret == FAILED) {
 			std::cerr << __FUNCTION__ << "> Error: returned fail.\n";
 		}

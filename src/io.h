@@ -65,3 +65,4 @@ double dim_sum_free(hsize_t* dims, int arr_len);
 double float_to_double(float f);
 double misr_averaging(double window[16]);
 hid_t  create_pure_dim_dataset(hid_t loc_id, hsize_t dim_size,char* dim_name);
+bool af_AddSpatialResolutionAttrs(hid_t outputFile, const std::string & dsetPath, float attr_value,bool isSrc);

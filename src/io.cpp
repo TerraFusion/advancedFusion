@@ -3384,3 +3384,27 @@ hid_t create_pure_dim_dataset(hid_t loc_id, hsize_t dim_size,char* dim_name) {
     }
     return dim_dset;
 }
+
+bool af_AddSpatialResolutionAttrs(hid_t outputFile, const std::string & dsetPath, float attr_value,bool isSrc) {
+
+	if(attr_value <=0) {
+		std::cerr << __FUNCTION__ << ":" << __LINE__ << "> Error: resolution must be a positive number." << std::endl;
+        return false;
+    }
+	if(true == isSrc) {
+		if(H5LTset_attribute_float(outputFile,dsetPath.c_str(),"spatial_resolution_original",&attr_value, 1 ) <0) {
+			std::cerr << __FUNCTION__ << ":" << __LINE__ << "> Error: cannot generate resolution attribute." << std::endl;
+			return false;
+		}
+	}
+	else {
+		if(H5LTset_attribute_float(outputFile,dsetPath.c_str(),"spatial_resolution_resampled",&attr_value, 1 ) <0) {
+			std::cerr << __FUNCTION__ << ":" << __LINE__ << "> Error: cannot generate resolution attribute." << std::endl;
+			return false;
+		}
+	}
+	return true;
+}
+
+
+

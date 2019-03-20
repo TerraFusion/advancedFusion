@@ -448,7 +448,79 @@ static int af_WriteSingleRadiance_ModisAsSrc(hid_t outputFile, hid_t dataTypeH5,
 			if(af_write_cf_attributes(modis_dataset, units, _FillValue,valid_min,valid_max,0) < 0) {
 				std::cerr << __FUNCTION__ << ":" << __LINE__ <<	"> Error: af_write_cf_attributes" << std::endl;
 			}
+#if 0
+				// Write long_name 
+				std::string aster_resolution = inputArgs.GetASTER_Resolution();
+				std::string long_name_value; 
+				if(aster_resolution == "TIR") {
+					std::string tir = "Thermal Infrared ";
+					//long_name_value = "ASTER " + "Thermal Infrared ";
+					long_name_value = "ASTER " + tir;
+					long_name_value += "Radiance";
+				}
+				else if(aster_resolution == "SWIR") {
+					std::string swir = "Short-wave Infrared ";
+					long_name_value = "ASTER " + swir;
+					long_name_value += "Radiance";
+				}
+				else {
+					std::string vnir ="Visible and Near Infrared ";
+					long_name_value = "ASTER " +vnir;
+					long_name_value += "Radiance";
+				}
+
+	 			if(H5LTset_attribute_string(outputFile,dsetPath.c_str(),long_name,long_name_value.c_str())<0) {
+					H5Dclose(aster_dataset);
+                    std::cerr << __FUNCTION__ << ":" << __LINE__ << "> Error: cannot generate long_name attribute for ASTER Radiance" << std::endl;
+                    return FAILED;
+                }
+ 				
+				std::vector<std::string> band_name_vec = inputArgs.GetASTER_Orig_Bands();
+				//std::string band_name_values = std::accumulate(band_name_vec.begin(),band_name_vec.end(),std::string(",")); 
+//#if 0
+				std::string band_name_values;
+				for(int i = 0; i<band_name_vec.size();i++) 
+					band_name_values = band_name_values + band_name_vec[i] +',';
+				
+//#endif
+				band_name_values = band_name_values.erase(band_name_values.size()-1,1);
+                if(H5LTset_attribute_string(outputFile,dsetPath.c_str(),"band_names",band_name_values.c_str())<0) {
+					H5Dclose(aster_dataset);
+					std::cerr << __FUNCTION__ << ":" << __LINE__ << "> Error: cannot generate band_names" << std::endl;
+					return FAILED;
+				}
+
+				// Add resolution as a number.
+				float aster_resolution_value = inputArgs.GetInstrumentResolutionValue(ASTER_STR);
+				if(false == af_AddSpatialResolutionAttrs(outputFile,dsetPath,aster_resolution_value,true)) {
+					H5Dclose(aster_dataset);
+					return FAILED;
+				}
+
+				float target_resolution_value = inputArgs.GetInstrumentResolutionValue(inputArgs.GetTargetInstrument());
+				if(false == af_AddSpatialResolutionAttrs(outputFile,dsetPath,target_resolution_value,false)) {
+					H5Dclose(aster_dataset);
+					return FAILED;
+				}
+
+                if(H5LTset_attribute_string(outputFile,dsetPath.c_str(),"spatial_resolution_units","meter")<0) {
+					H5Dclose(aster_dataset);
+					std::cerr << __FUNCTION__ << ":" << __LINE__ << "> Error: cannot generate spatial_resolution_units" << std::endl;
+					return FAILED;
+				}
+
+				// Add resample method
+				if(H5LTset_attribute_string(outputFile,dsetPath.c_str(),"resample_method","Summary Interpolation")<0) {
+					H5Dclose(aster_dataset);
+					std::cerr << __FUNCTION__ << ":" << __LINE__ << "> Error: cannot generate spatial_resolution_units" << std::endl;
+					return FAILED;
+				}
+	
+
+#endif
+			
 		}
+
 	}
 	else {
 		modis_dataset = H5Dopen2(outputFile, dsetPath.c_str(), H5P_DEFAULT);

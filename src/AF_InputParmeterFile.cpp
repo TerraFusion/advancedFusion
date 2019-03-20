@@ -634,6 +634,7 @@ int AF_InputParmeterFile::CheckParsedValues()
 			return -1; // failed
 		}
 
+		aster_Orig_Bands = aster_Bands;
 		isValidInput = CheckRevise_ASTERbands(aster_Bands);
 		if (isValidInput == false) {
 			return -1; // failed
@@ -1275,6 +1276,11 @@ std::vector<std::string>  AF_InputParmeterFile::GetASTER_Bands()
 	return aster_Bands;
 }
 
+std::vector<std::string>  AF_InputParmeterFile::GetASTER_Orig_Bands()
+{
+	return aster_Orig_Bands;
+}
+
 
 /*---------------------
  * USER section
@@ -1334,6 +1340,40 @@ double AF_InputParmeterFile::GetUSER_Resolution()
 }
 
 
+float AF_InputParmeterFile::GetInstrumentResolutionValue(const std::string & instrument) {
+
+	float instr_resolution = -1;
+	if(instrument == MODIS_STR) {
+		if("_1KM" == modis_Resolution) 
+			instr_resolution = 1000;
+		else if("_500m" == modis_Resolution) 
+			instr_resolution = 500;
+		if("_250m" == modis_Resolution) 
+			instr_resolution = 250;
+	}
+	else if(instrument == MISR_STR) {
+		if("L" == misr_Resolution) 
+			instr_resolution = 1100;
+		else if("H" == misr_Resolution) 
+			instr_resolution = 275;
+	}
+    else if(instrument == ASTER_STR) {
+		if(aster_Resolution == "TIR") { // 90M
+			instr_resolution = 90.0;
+		}
+		else if(aster_Resolution == "SWIR") { // 30M
+			instr_resolution = 30.0;
+		}
+		else if(aster_Resolution == "VNIR") { // 15M
+			instr_resolution = 15.0;
+		}
+	}
+	else if(instrument == USERGRID_STR) 
+		instr_resolution = (float)(GetUSER_Resolution());
+
+	return instr_resolution;
+
+}
 /* #####################################
  *
  * Handling multi-value variables
