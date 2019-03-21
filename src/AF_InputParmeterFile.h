@@ -129,6 +129,7 @@ class AF_InputParmeterFile
 	// MODIS
 	bool CheckRevise_MODISresolution(std::string &str);
 	bool CheckMODISband();
+	void BuildMODISRadianceTypeList();
 
 	// ASTER
 	bool CheckRevise_ASTERresolution(std::string &str);
@@ -159,6 +160,7 @@ class AF_InputParmeterFile
 	std::string misr_Shift;
 	// MODIS section  --------------
 	std::string modis_Resolution;
+	std:: vector<unsigned short> modis_Radiance_Type_List;
 	std::vector<std::string> modis_Bands;
 	#if 1 // JK_ASTER2MODIS
 	// ASTER section ------------------

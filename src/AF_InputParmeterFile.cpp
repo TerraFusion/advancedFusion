@@ -620,6 +620,7 @@ int AF_InputParmeterFile::CheckParsedValues()
 		if (isValidInput == false) {
 			return -1; // failed
 		}
+		BuildMODISRadianceTypeList();
 	}
 
 
@@ -894,6 +895,145 @@ bool AF_InputParmeterFile::CheckMODISband()
 	return ret;
 	
 
+}
+/*=================================================================
+ * Build Modis Radiance Type List
+ *
+ * Parameter:
+ *  - str [IN/OUT] : resolution string.
+ *					 Check and convert it for internal notation.
+ *
+ * Return:
+ *  - success - true
+ *  - fail - false
+ */
+void AF_InputParmeterFile::BuildMODISRadianceTypeList()
+{
+
+	if(modis_Bands.size()==0)
+		return;
+
+#if 0
+	std::vector<std::string> 1km_emissive={"20","21","22","23", "24", "25","27", "28", "29", "30", "31", "32", "33", "34", "35", "36"};
+	std::vector<std::string> 1km_refsb={"8", "9", "10", "11", "12", "13L", "13H", "14L", "14H", "15", "16", "17", "18", "19",26};
+	std::vector<std::string> 250m_refsb={"1","2"};
+	std::vector<std::string> 500m_refsb={"3","4","5","6","7"};
+#endif
+
+	// Optimize the calculation a little bit. We use integer numbers so we can compare. Map 13L to 13. 13H to 14. 14L to 37, 14H to 38.
+	
+
+	//Check if 'ALL' is in bands
+	bool isAllbands = false;
+	for(int i=0; i < modis_Bands.size(); i++) {
+		if (CompareStrCaseInsensitive(modis_Bands[i], "ALL")) {
+			isAllbands = true;
+			#if DEBUG_TOOL_PARSER
+			std::cout << "DBG_PARSER " << __FUNCTION__ << ":" << __LINE__ << "> ALL for Modis bands.\n";
+			#endif
+			break;
+		}
+	}
+
+	if(true == isAllbands) {
+
+		// Check the MODIS ALL BANDs assignment at the function BuildMultiValueVariableMap function 
+		if("_1KM" == modis_Resolution) {
+			modis_Radiance_Type_List.resize(38);
+			for(int i = 0; i <modis_Radiance_Type_List.size();i++) {
+				if(i<2)
+					modis_Radiance_Type_List[i] = 4;
+				else if(i<7)
+					modis_Radiance_Type_List[i] = 3;
+				else if(i>20 && i!= 27)
+					modis_Radiance_Type_List[i] = 1;
+				else
+					modis_Radiance_Type_List[i] = 2;
+			}
+		}
+		else if ("_500m" == modis_Resolution) {
+			modis_Radiance_Type_List.resize(7);
+			for(int i = 0; i <modis_Radiance_Type_List.size();i++) {
+				if(i<2)
+					modis_Radiance_Type_List[i] = 6;
+				else
+					modis_Radiance_Type_List[i] = 5;
+			}
+		}
+		else {
+			modis_Radiance_Type_List.resize(2);
+			for(int i = 0; i <modis_Radiance_Type_List.size();i++) 
+				modis_Radiance_Type_List[i] = 7;
+		}
+
+	}
+	else {
+#if 0
+	std::vector<std::string> 1km_emissive={"20","21","22","23", "24", "25","27", "28", "29", "30", "31", "32", "33", "34", "35", "36"};
+	std::vector<std::string> 1km_refsb={"8", "9", "10", "11", "12", "13L", "13H", "14L", "14H", "15", "16", "17", "18", "19",26};
+	std::vector<std::string> 250m_refsb={"1","2"};
+	std::vector<std::string> 500m_refsb={"3","4","5","6","7"};
+#endif
+	// Optimize the calculation a little bit. We use integer numbers so we can compare. Map 13L to 13. 13H to 14. 14L to 37, 14H to 38.
+	
+		// Allocate memory for modis_Radiance_Type_List
+		modis_Radiance_Type_List.resize(modis_Bands.size());
+		std::vector<int> modis_band_int;
+		if("_1KM" == modis_Resolution) {
+			for(int i = 0; i <modis_Bands.size();i++) {
+				if("13L" == modis_Bands[i])
+					modis_band_int.push_back(13);
+				else if("13H" == modis_Bands[i])
+					modis_band_int.push_back(14);
+				else if("14L" == modis_Bands[i])
+					modis_band_int.push_back(37);
+				else if("14H" == modis_Bands[i])
+					modis_band_int.push_back(38);
+				else { 
+					int temp_band = std::stoi(modis_Bands[i],NULL,0);
+					modis_band_int.push_back(temp_band);
+				}
+			}
+			for(int i = 0; i<modis_band_int.size();i++) {
+				//if(modis_band_int[i]>=20 && modis_band_int[i]<=36 && modis_band_int[i]!=26)
+				//		modis_Radiance_Type_List[i] = 0; // 1KM emissive
+				if((modis_band_int[i]>=8 && modis_band_int[i]<=19)||(modis_band_int[i]==26)
+						||(modis_band_int[i]>36))
+						modis_Radiance_Type_List[i] = 2; // 1KM RefSB
+				else if(modis_band_int[i] <=2) 
+					modis_Radiance_Type_List[i] = 4; //250_Aggr1KM
+				//else if(modis_band_int[i] <=7 && modis_band_int[i] >=3) 
+				else if(modis_band_int[i] <=7) 
+					modis_Radiance_Type_List[i] = 3; // 500_Aggr1KM
+				else // Must be 1KM Emissive
+					modis_Radiance_Type_List[i] = 1; // 1KM Emissive
+			}
+		}
+
+		else{
+			for(int i = 0; i <modis_Bands.size();i++) {
+				int temp_band = std::stoi(modis_Bands[i],NULL,0);
+				modis_band_int.push_back(temp_band);
+			}
+			if("_500m" == modis_Resolution) {
+				for(int i = 0; i<modis_band_int.size();i++) {
+					if(modis_band_int[i] <=2) 
+						modis_Radiance_Type_List[i] = 6; // 250_Aggr500
+					else // Must be 500RefSB
+						modis_Radiance_Type_List[i] = 5; 
+				}
+			}
+			else {//250m
+				for(int i = 0; i<modis_band_int.size();i++) 
+					modis_Radiance_Type_List[i] = 7; // 250_RefSB
+			}
+		}
+	}
+
+	for(int i = 0; i <modis_Radiance_Type_List.size(); i++) 
+		std::cerr<<"modis radiance type at [" <<i <<"] is "<< modis_Radiance_Type_List[i] <<std::endl;
+
+	
 }
 /*=================================================================
  * Check and Revise Aster resolution input
