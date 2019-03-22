@@ -849,10 +849,10 @@ bool AF_InputParmeterFile::CheckRevise_MODISresolution(std::string &str)
 bool AF_InputParmeterFile::CheckMODISband()
 {
 	bool ret = true;
-	bool isAllbands = false;
+	IsAllMODISBands = false;
 	for(int i=0; i < modis_Bands.size(); i++) {
 		if (CompareStrCaseInsensitive(modis_Bands[i], "ALL")) {
-				isAllbands = true;
+				IsAllMODISBands = true;
 				#if DEBUG_TOOL_PARSER
 				std::cout << "DBG_PARSER " << __FUNCTION__ << ":" << __LINE__ << "> ALL for Modis bands.\n";
 				#endif
@@ -860,7 +860,7 @@ bool AF_InputParmeterFile::CheckMODISband()
 		}
 	}	
 
-	if(false == isAllbands) {
+	if(false == IsAllMODISBands) {
 
 		const std::vector<std::string> modisBands_1km = {"1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13L", "13H", "14L", "14H", "15", "16", "17", "18", "19", "20", "21", "22", "23", "24", "25", "26", "27", "28", "29", "30", "31", "32", "33", "34", "35", "36"};
 		const std::vector<std::string> modisBands_500m = {"1", "2", "3","4", "5", "6", "7"};
@@ -923,19 +923,7 @@ void AF_InputParmeterFile::BuildMODISRadianceTypeList()
 	// Optimize the calculation a little bit. We use integer numbers so we can compare. Map 13L to 13. 13H to 14. 14L to 37, 14H to 38.
 	
 
-	//Check if 'ALL' is in bands
-	bool isAllbands = false;
-	for(int i=0; i < modis_Bands.size(); i++) {
-		if (CompareStrCaseInsensitive(modis_Bands[i], "ALL")) {
-			isAllbands = true;
-			#if DEBUG_TOOL_PARSER
-			std::cout << "DBG_PARSER " << __FUNCTION__ << ":" << __LINE__ << "> ALL for Modis bands.\n";
-			#endif
-			break;
-		}
-	}
-
-	if(true == isAllbands) {
+	if(true == IsAllMODISBands) {
 
 		// Check the MODIS ALL BANDs assignment at the function BuildMultiValueVariableMap function 
 		if("_1KM" == modis_Resolution) {
@@ -1582,6 +1570,8 @@ int AF_InputParmeterFile::BuildMultiValueVariableMap(std::string &instrument, st
 		/*----------------------------
 		 * Check if 'ALL' is in bands
 		 */
+		// IsAllBands has been checked when checking the input parameters.
+#if 0
 		bool isAllbands = false;
 		for(int i=0; i < modis_Bands.size(); i++) {
 			if (CompareStrCaseInsensitive(modis_Bands[i], "ALL")) {
@@ -1591,12 +1581,14 @@ int AF_InputParmeterFile::BuildMultiValueVariableMap(std::string &instrument, st
 				#endif
 				break;
 			}
-        }
+		}
+#endif
 		/*
 		 * if ALL is in bands, build all list
 		 */
 		std::vector<std::string> modisBandsUpdated;
-		if (isAllbands) {
+		//if (isAllbands) {
+		if (IsAllMODISBands) {
 			if(modis_Resolution == "_1KM") {
 				// 38 bands total
 				modisBandsUpdated = {"1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13L", "13H", "14L", "14H", "15", "16", "17", "18", "19", "20", "21", "22", "23", "24", "25", "26", "27", "28", "29", "30", "31", "32", "33", "34", "35", "36"};

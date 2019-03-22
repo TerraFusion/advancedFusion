@@ -80,6 +80,9 @@ class AF_InputParmeterFile
 	// MODIS section -------------------
 	std::string GetMODIS_Resolution();
 	std::vector<std::string>  GetMODIS_Bands();
+	bool IsMODIS_AllBands() { return IsAllMODISBands;}
+	std::vector<int> GetMODIS_Radiance_TypeList() {return modis_Radiance_Type_List;}
+	
 	#if 1 // JK_ASTER2MODIS
 	// ASTER  section ------------------
 	std::string GetASTER_Resolution();
@@ -159,8 +162,9 @@ class AF_InputParmeterFile
 	std::vector<std::string> misr_Radiances;
 	std::string misr_Shift;
 	// MODIS section  --------------
+	bool IsAllMODISBands;
 	std::string modis_Resolution;
-	std:: vector<unsigned short> modis_Radiance_Type_List;
+	std:: vector<int> modis_Radiance_Type_List;
 	std::vector<std::string> modis_Bands;
 	#if 1 // JK_ASTER2MODIS
 	// ASTER section ------------------

@@ -162,12 +162,12 @@ static int af_WriteSingleRadiance_AsterAsSrc(AF_InputParmeterFile &inputArgs, hi
 				}
 			}
 			else if(outputDsetName == "ASTER_SD") {
-                if(H5LTset_attribute_string(outputFile,dsetPath.c_str(),long_name,"Standard deviation of ASTER pixels in a resampled cell")<0) {
+				if(H5LTset_attribute_string(outputFile,dsetPath.c_str(),long_name,"Standard deviation of ASTER pixels in a resampled cell")<0) {
 					H5Dclose(aster_dataset);
-                    std::cerr << __FUNCTION__ << ":" << __LINE__ << "> Error: cannot generate long_name attribute for ASTER_SD" << std::endl;
-                    return FAILED;
-                }
-            }
+					std::cerr << __FUNCTION__ << ":" << __LINE__ << "> Error: cannot generate long_name attribute for ASTER_SD" << std::endl;
+					return FAILED;
+				}
+			}
 			else {
 
 				// Write long_name 
@@ -192,9 +192,9 @@ static int af_WriteSingleRadiance_AsterAsSrc(AF_InputParmeterFile &inputArgs, hi
 
 	 			if(H5LTset_attribute_string(outputFile,dsetPath.c_str(),long_name,long_name_value.c_str())<0) {
 					H5Dclose(aster_dataset);
-                    std::cerr << __FUNCTION__ << ":" << __LINE__ << "> Error: cannot generate long_name attribute for ASTER Radiance" << std::endl;
-                    return FAILED;
-                }
+					std::cerr << __FUNCTION__ << ":" << __LINE__ << "> Error: cannot generate long_name attribute for ASTER Radiance" << std::endl;
+					return FAILED;
+				}
  				
 				std::vector<std::string> band_name_vec = inputArgs.GetASTER_Orig_Bands();
 				//std::string band_name_values = std::accumulate(band_name_vec.begin(),band_name_vec.end(),std::string(",")); 
@@ -205,7 +205,7 @@ static int af_WriteSingleRadiance_AsterAsSrc(AF_InputParmeterFile &inputArgs, hi
 				
 //#endif
 				band_name_values = band_name_values.erase(band_name_values.size()-1,1);
-                if(H5LTset_attribute_string(outputFile,dsetPath.c_str(),"band_names",band_name_values.c_str())<0) {
+				if(H5LTset_attribute_string(outputFile,dsetPath.c_str(),"band_names",band_name_values.c_str())<0) {
 					H5Dclose(aster_dataset);
 					std::cerr << __FUNCTION__ << ":" << __LINE__ << "> Error: cannot generate band_names" << std::endl;
 					return FAILED;
@@ -224,16 +224,20 @@ static int af_WriteSingleRadiance_AsterAsSrc(AF_InputParmeterFile &inputArgs, hi
 					return FAILED;
 				}
 
-                if(H5LTset_attribute_string(outputFile,dsetPath.c_str(),"spatial_resolution_units","meter")<0) {
+				if(H5LTset_attribute_string(outputFile,dsetPath.c_str(),"spatial_resolution_units","meter")<0) {
 					H5Dclose(aster_dataset);
 					std::cerr << __FUNCTION__ << ":" << __LINE__ << "> Error: cannot generate spatial_resolution_units" << std::endl;
 					return FAILED;
 				}
 
 				// Add resample method
-				if(H5LTset_attribute_string(outputFile,dsetPath.c_str(),"resample_method","Summary Interpolation")<0) {
+				std::string resample_method_value = "Summary Interpolation";
+				if(inputArgs.GetResampleMethod()=="nnInterpolate")
+					resample_method_value = "Nearest Neighbor Interpolation";
+
+				if(H5LTset_attribute_string(outputFile,dsetPath.c_str(),"resample_method",resample_method_value.c_str())<0) {
 					H5Dclose(aster_dataset);
-					std::cerr << __FUNCTION__ << ":" << __LINE__ << "> Error: cannot generate spatial_resolution_units" << std::endl;
+					std::cerr << __FUNCTION__ << ":" << __LINE__ << "> Error: cannot generate resample_method attr." << std::endl;
 					return FAILED;
 				}
 			
