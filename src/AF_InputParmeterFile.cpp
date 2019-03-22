@@ -1018,9 +1018,10 @@ void AF_InputParmeterFile::BuildMODISRadianceTypeList()
 		}
 	}
 
+#if 0
 	for(int i = 0; i <modis_Radiance_Type_List.size(); i++) 
 		std::cerr<<"modis radiance type at [" <<i <<"] is "<< modis_Radiance_Type_List[i] <<std::endl;
-
+#endif
 	
 }
 /*=================================================================

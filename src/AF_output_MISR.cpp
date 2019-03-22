@@ -55,23 +55,8 @@
 // T_IN : input data type
 // T_OUT : output data type
 template <typename T_IN, typename T_OUT>
-static int af_WriteSingleRadiance_MisrAsTrg(AF_InputParmeterFile &inputArgs, hid_t outputFile, hid_t dataTypeH5, hid_t fileSpaceH5, T_IN* misrData, int misrDataSize, int outputWidth, int cameraIdx, int radianceIdx,const strVec_t cameras,const strVec_t radiances, hid_t ctrackDset,hid_t atrackDset,hid_t cameraDset,hid_t bandDset)
+static int af_WriteSingleRadiance_MisrAsTrg(AF_InputParmeterFile &inputArgs, hid_t outputFile, hid_t dataTypeH5, hid_t fileSpaceH5, T_IN* misrData, int misrDataSize, int outputWidth, int cameraIdx, int radianceIdx, hid_t ctrackDset,hid_t atrackDset,hid_t cameraDset,hid_t bandDset)
 {
-#if DEBUG_TOOL
-	std::cout << "DBG_TOOL " << __FUNCTION__ << "> BEGIN \n";
-    std::cout << "MISR radiance bands: ";
-	for(int i=0; i < radiances.size(); i++) {
-		std::cout << radiances[i] << " ";
-	}
-	std::cout << std::endl;
-
-    std::cout << "MISR cameras: ";
-	for(int i=0; i < cameras.size(); i++) {
-		std::cout << cameras[i] << " ";
-	}
-	std::cout << std::endl;
-
-#endif
 
 	int ret = SUCCEED;
 
@@ -144,12 +129,74 @@ static int af_WriteSingleRadiance_MisrAsTrg(AF_InputParmeterFile &inputArgs, hid
 
 			char* units = "Watts/m^2/micrometer/steradian";
 			float valid_min = 0;
-                        float valid_max = 800.0;
-                        float _FillValue = -999.0;
+			float valid_max = 800.0;
+			float _FillValue = -999.0;
 			if(af_write_cf_attributes(misr_dataset, units, _FillValue, valid_min,valid_max,0) < 0) {
 				std::cerr << __FUNCTION__ << ":" << __LINE__ <<  "> Error: af_write_cf_attributes" << std::endl;                            
 				return FAILED;                        
 			}
+
+			// Add CF long_name 
+			const char* long_name = "long_name";
+ 			if(H5LTset_attribute_string(outputFile,dsetPath.c_str(),long_name,"MISR Level 1B2 Radiance")<0) {
+				H5Dclose(misr_dataset);
+				std::cerr << __FUNCTION__ << ":" << __LINE__ << "> Error: cannot generate long_name attribute for MISR Radiance" << std::endl;
+				return FAILED;
+			}
+//#if 0 				
+			//std::string misr_resolution = inputArgs.GetMISR_Resolution();
+			std::string camera_angle_values;
+			std::vector<std::string> camera_angle_vec = inputArgs.GetMISR_CameraAngles();
+			for(int i = 0; i<camera_angle_vec.size();i++) 
+				camera_angle_values = camera_angle_values + camera_angle_vec[i] +',';
+			camera_angle_values = camera_angle_values.erase(camera_angle_values.size()-1,1);
+
+			if(H5LTset_attribute_string(outputFile,dsetPath.c_str(),"camera_names",camera_angle_values.c_str())<0) {
+				H5Dclose(misr_dataset);
+				std::cerr << __FUNCTION__ << ":" << __LINE__ << "> Error: cannot generate camera_angles" << std::endl;
+				return FAILED;
+			}
+
+			std::string radiance_values;
+			std::vector<std::string> radiance_vec = inputArgs.GetMISR_Radiance();
+			for(int i = 0; i<radiance_vec.size();i++) 
+				radiance_values = radiance_values + radiance_vec[i] +',';
+			radiance_values = radiance_values.erase(radiance_values.size()-1,1);
+			
+
+			if(H5LTset_attribute_string(outputFile,dsetPath.c_str(),"band_names",radiance_values.c_str())<0) {
+				H5Dclose(misr_dataset);
+				std::cerr << __FUNCTION__ << ":" << __LINE__ << "> Error: cannot generate radiances" << std::endl;
+				return FAILED;
+			}
+
+			// Add resolution as a number.
+			float misr_resolution_value = inputArgs.GetInstrumentResolutionValue(MISR_STR);
+			if(H5LTset_attribute_float(outputFile,dsetPath.c_str(),"spatial_resolution",&misr_resolution_value, 1 ) <0) {
+                std::cerr << __FUNCTION__ << ":" << __LINE__ << "> Error: cannot generate resolution attribute." << std::endl;
+				H5Dclose(misr_dataset);
+                return FAILED;
+            }
+
+			if(H5LTset_attribute_string(outputFile,dsetPath.c_str(),"spatial_resolution_units","meter")<0) {
+				H5Dclose(misr_dataset);
+				std::cerr << __FUNCTION__ << ":" << __LINE__ << "> Error: cannot generate spatial_resolution_units" << std::endl;
+				return FAILED;
+			}
+
+			// Add unstacked 
+			std::string misr_target_block_unstack_value = inputArgs.GetMISR_Shift();
+			//if(inputArgs.GetResampleMethod()=="nnInterpolate")
+			//		resample_method_value = "Nearest Neighbor Interpolation";
+
+			if(H5LTset_attribute_string(outputFile,dsetPath.c_str(),"MISR_target_block_unstack",misr_target_block_unstack_value.c_str())<0) {
+				H5Dclose(misr_dataset);
+				std::cerr << __FUNCTION__ << ":" << __LINE__ << "> Error: cannot generate MISR target block unstack attr." << std::endl;
+				return FAILED;
+
+			}
+
+
 		}
 	}
 	else {
@@ -356,7 +403,7 @@ int af_GenerateOutputCumulative_MisrAsTrg(AF_InputParmeterFile &inputArgs, hid_t
 			#if DEBUG_ELAPSE_TIME
 			StartElapseTime();
 			#endif
-			af_WriteSingleRadiance_MisrAsTrg<double, float>(inputArgs,outputFile, misrDatatype, misrDataspace,  misrSingleDataPtr, numCells, targetOutputWidth, i, j,cameras,radiances,ctrackDset,atrackDset,cameraDset,bandDset);
+			af_WriteSingleRadiance_MisrAsTrg<double, float>(inputArgs,outputFile, misrDatatype, misrDataspace,  misrSingleDataPtr, numCells, targetOutputWidth, i, j,ctrackDset,atrackDset,cameraDset,bandDset);
 			#if DEBUG_ELAPSE_TIME
 			StopElapseTimeAndShow("DBG_TIME> Write target MISR single band data  DONE.");
 			#endif
@@ -417,7 +464,7 @@ int af_GenerateOutputCumulative_MisrAsTrg(AF_InputParmeterFile &inputArgs, hid_t
 // T_IN : input data type
 // T_OUT : output data type
 template <typename T_IN, typename T_OUT>
-static int af_WriteSingleRadiance_MisrAsSrc(AF_InputParmeterFile &inputArgs,hid_t outputFile, hid_t dataTypeH5, hid_t fileSpaceH5, T_IN* processedData, int trgCellNum, int outputWidth, int cameraIdx, int radIdx, const strVec_t cameras,const strVec_t radiances, hid_t ctrackDset,hid_t atrackDset,hid_t cameraDset,hid_t bandDset)
+static int af_WriteSingleRadiance_MisrAsSrc(AF_InputParmeterFile &inputArgs,hid_t outputFile, hid_t dataTypeH5, hid_t fileSpaceH5, T_IN* processedData, int trgCellNum, int outputWidth, int cameraIdx, int radIdx, hid_t ctrackDset,hid_t atrackDset,hid_t cameraDset,hid_t bandDset)
 {
 	#if DEBUG_TOOL
 	std::cout << "DBG_TOOL " << __FUNCTION__ << "> BEGIN \n";
@@ -433,10 +480,10 @@ static int af_WriteSingleRadiance_MisrAsSrc(AF_InputParmeterFile &inputArgs,hid_
 	 * set output data type
 	 */
 	hid_t dataTypeOutH5;
-        if (std::is_same<T_OUT, float>::value) {
+	if (std::is_same<T_OUT, float>::value) {
 		dataTypeOutH5 = H5T_IEEE_F32LE;
 	}
-        else if (std::is_same<T_OUT, double>::value) {
+	else if (std::is_same<T_OUT, double>::value) {
 		dataTypeOutH5 = H5T_IEEE_F64LE;
 	}
 	else if (std::is_same<T_OUT, int>::value) {
@@ -492,74 +539,67 @@ static int af_WriteSingleRadiance_MisrAsSrc(AF_InputParmeterFile &inputArgs,hid_
 
 			
 			char* units = "Watts/m^2/micrometer/steradian";
-                        float valid_min = 0;
-                        float valid_max = 800.0;
-                        float _FillValue = -999.0;
+			float valid_min = 0;
+			float valid_max = 800.0;
+			float _FillValue = -999.0;
 			if(af_write_cf_attributes(misr_dataset, units, _FillValue, valid_min,valid_max,0) < 0) {
 				std::cerr << __FUNCTION__ << ":" << __LINE__ <<  "> Error: af_write_cf_attributes" << std::endl;
 				return FAILED;
 			}
-#if 0
+			
 			// Add CF long_name 
 			const char* long_name = "long_name";
- 			if(H5LTset_attribute_string(outputFile,dsetPath.c_str(),long_name,"MODIS Level 1B Radiance")<0) {
-					H5Dclose(modis_dataset);
-				std::cerr << __FUNCTION__ << ":" << __LINE__ << "> Error: cannot generate long_name attribute for ASTER Radiance" << std::endl;
+ 			if(H5LTset_attribute_string(outputFile,dsetPath.c_str(),long_name,"MISR Level 1B2 Radiance")<0) {
+					H5Dclose(misr_dataset);
+				std::cerr << __FUNCTION__ << ":" << __LINE__ << "> Error: cannot generate long_name attribute for MISR Radiance" << std::endl;
 				return FAILED;
 			}
- 				
-			std::string modis_resolution = inputArgs.GetMODIS_Resolution();
-			std::string band_name_values;
-			std::vector<std::string> band_name_vec = inputArgs.GetMODIS_Bands();
-			//Check if 'ALL' is in bands
-			bool isAllBands = inputArgs.IsMODIS_AllBands();
-			if(true == isAllBands) {
-				if("_1KM" == modis_resolution) 
-					band_name_values = All_bands_1km;
-				else if("_500m" == modis_resolution) 
-					band_name_values = All_bands_500m;
-				else
-					band_name_values = All_bands_250m;
-			}
-			else {
-				for(int i = 0; i<band_name_vec.size();i++) 
-					band_name_values = band_name_values + band_name_vec[i] +',';
-				band_name_values = band_name_values.erase(band_name_values.size()-1,1);
-			}
+//#if 0 				
+			//std::string misr_resolution = inputArgs.GetMISR_Resolution();
+			std::string camera_angle_values;
+			std::vector<std::string> camera_angle_vec = inputArgs.GetMISR_CameraAngles();
+			for(int i = 0; i<camera_angle_vec.size();i++) 
+				camera_angle_values = camera_angle_values + camera_angle_vec[i] +',';
+			camera_angle_values = camera_angle_values.erase(camera_angle_values.size()-1,1);
+			
 
-			if(H5LTset_attribute_string(outputFile,dsetPath.c_str(),"band_names",band_name_values.c_str())<0) {
-				H5Dclose(modis_dataset);
-				std::cerr << __FUNCTION__ << ":" << __LINE__ << "> Error: cannot generate band_names" << std::endl;
+			if(H5LTset_attribute_string(outputFile,dsetPath.c_str(),"camera_names",camera_angle_values.c_str())<0) {
+				H5Dclose(misr_dataset);
+				std::cerr << __FUNCTION__ << ":" << __LINE__ << "> Error: cannot generate camera_angles" << std::endl;
 				return FAILED;
 			}
 
+			std::string radiance_values;
+			std::vector<std::string> radiance_vec = inputArgs.GetMISR_Radiance();
+			for(int i = 0; i<radiance_vec.size();i++) 
+				radiance_values = radiance_values + radiance_vec[i] +',';
+			radiance_values = radiance_values.erase(radiance_values.size()-1,1);
+			
+
+			if(H5LTset_attribute_string(outputFile,dsetPath.c_str(),"band_names",radiance_values.c_str())<0) {
+				H5Dclose(misr_dataset);
+				std::cerr << __FUNCTION__ << ":" << __LINE__ << "> Error: cannot generate radiances" << std::endl;
+				return FAILED;
+			}
 
 			// Add resolution as a number.
-			float modis_resolution_value = inputArgs.GetInstrumentResolutionValue(MODIS_STR);
-			if(false == af_AddSpatialResolutionAttrs(outputFile,dsetPath,modis_resolution_value,true)) {
-				H5Dclose(modis_dataset);
+			float misr_resolution_value = inputArgs.GetInstrumentResolutionValue(MISR_STR);
+			if(false == af_AddSrcSpatialResolutionAttrs(outputFile,dsetPath,misr_resolution_value,true)) {
+				H5Dclose(misr_dataset);
 				return FAILED;
 			}
 
 			float target_resolution_value = inputArgs.GetInstrumentResolutionValue(inputArgs.GetTargetInstrument());
-			if(false == af_AddSpatialResolutionAttrs(outputFile,dsetPath,target_resolution_value,false)) {
-				H5Dclose(modis_dataset);
+			if(false == af_AddSrcSpatialResolutionAttrs(outputFile,dsetPath,target_resolution_value,false)) {
+				H5Dclose(misr_dataset);
 				return FAILED;
 			}
 
 			if(H5LTset_attribute_string(outputFile,dsetPath.c_str(),"spatial_resolution_units","meter")<0) {
-				H5Dclose(modis_dataset);
+				H5Dclose(misr_dataset);
 				std::cerr << __FUNCTION__ << ":" << __LINE__ << "> Error: cannot generate spatial_resolution_units" << std::endl;
 				return FAILED;
 			}
-
-			std::vector<int> modis_radiance_type_list = inputArgs.GetMODIS_Radiance_TypeList();
-			if(H5LTset_attribute_int(outputFile,dsetPath.c_str(),"MODIS_radiance_type",&modis_radiance_type_list[0],modis_radiance_type_list.size())<0) {
-				H5Dclose(modis_dataset);
-				std::cerr << __FUNCTION__ << ":" << __LINE__ << "> Error: cannot generate MODIS radiance type" << std::endl;
-				return FAILED;
-			}
-		
 
 			// Add resample method
 			std::string resample_method_value = "Summary Interpolation";
@@ -567,14 +607,12 @@ static int af_WriteSingleRadiance_MisrAsSrc(AF_InputParmeterFile &inputArgs,hid_
 				resample_method_value = "Nearest Neighbor Interpolation";
 
 			if(H5LTset_attribute_string(outputFile,dsetPath.c_str(),"resample_method",resample_method_value.c_str())<0) {
-				H5Dclose(modis_dataset);
+				H5Dclose(misr_dataset);
 				std::cerr << __FUNCTION__ << ":" << __LINE__ << "> Error: cannot generate resample_method attr." << std::endl;
 				return FAILED;
 
 			}
-
-#endif
-
+//#endif
 		}
 	}
 	else {
@@ -677,7 +715,7 @@ int af_GenerateOutputCumulative_MisrAsSrc(AF_InputParmeterFile &inputArgs, hid_t
 	strVec_t radiances = inputMultiVarsMap[MISR_RADIANCE];
 
 	// Create band and camera dimensions
-	hid_t bandDset = create_pure_dim_dataset(outputFile,(hsize_t)(radiances.size()),"Band_Misr");
+	hid_t bandDset = create_pure_dim_dataset(outputFile,(hsize_t)(radiances.size()),"Band_MISR");
 	if(bandDset < 0) {
 		printf("create_pure_dim_dataset for MISR band failed.\n");
 		return FAILED;
@@ -796,7 +834,7 @@ int af_GenerateOutputCumulative_MisrAsSrc(AF_InputParmeterFile &inputArgs, hid_t
 			#if DEBUG_ELAPSE_TIME
 			StartElapseTime();
 			#endif
-			ret = af_WriteSingleRadiance_MisrAsSrc<double,float>(inputArgs,outputFile, misrDatatype, misrDataspace,  srcProcessedData, trgCellNum /*processed size*/, srcOutputWidth, j /*cameraIdx*/, i /*radIdx*/,cameras,radiances,ctrackDset,atrackDset,cameraDset,bandDset);
+			ret = af_WriteSingleRadiance_MisrAsSrc<double,float>(inputArgs,outputFile, misrDatatype, misrDataspace,  srcProcessedData, trgCellNum /*processed size*/, srcOutputWidth, j /*cameraIdx*/, i /*radIdx*/,ctrackDset,atrackDset,cameraDset,bandDset);
 			if (ret == FAILED) {
 				std::cerr << __FUNCTION__ << "> Error: returned fail.\n";
 			}

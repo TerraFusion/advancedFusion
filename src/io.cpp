@@ -3385,7 +3385,7 @@ hid_t create_pure_dim_dataset(hid_t loc_id, hsize_t dim_size,char* dim_name) {
     return dim_dset;
 }
 
-bool af_AddSpatialResolutionAttrs(hid_t outputFile, const std::string & dsetPath, float attr_value,bool isSrc) {
+bool af_AddSrcSpatialResolutionAttrs(hid_t outputFile, const std::string & dsetPath, float attr_value,bool isSrc) {
 
 	if(attr_value <=0) {
 		std::cerr << __FUNCTION__ << ":" << __LINE__ << "> Error: resolution must be a positive number." << std::endl;
@@ -3407,4 +3407,40 @@ bool af_AddSpatialResolutionAttrs(hid_t outputFile, const std::string & dsetPath
 }
 
 
+int af_write_user_geo_attrs(hid_t outputFile,int outputEPSG, double xMin, double yMin, double xMax, double yMax, double cellSize) {
 
+#if 0
+	hid_t h5_geo_group_id = H5Gopen(outputFile,"/Geolocation",H5P_DEFAULT);
+	if(h5_geo_group_id < 0) {
+		std::cerr << __FUNCTION__ << ":" << __LINE__ << "> Error: cannot open the Geo-location group." << std::endl;
+		return -1;
+	}
+#endif
+	if(H5LTset_attribute_int(outputFile,"Geolocation","user_epsg_code",&outputEPSG,1)<0) {
+		std::cerr << __FUNCTION__ << ":" << __LINE__ << "> Error: cannot set user-defined epsg_code attribute." << std::endl;
+		return -1;
+	}
+	if(H5LTset_attribute_double(outputFile,"Geolocation","user_x_min",&xMin,1)<0) {
+		std::cerr << __FUNCTION__ << ":" << __LINE__ << "> Error: cannot set user-defined user_x_min attribute." << std::endl;
+		return -1;
+	}
+	if(H5LTset_attribute_double(outputFile,"Geolocation","user_x_max",&xMax,1)<0) {
+		std::cerr << __FUNCTION__ << ":" << __LINE__ << "> Error: cannot set user-defined user_x_max attribute." << std::endl;
+		return -1;
+	}
+	if(H5LTset_attribute_double(outputFile,"Geolocation","user_y_min",&yMin,1)<0) {
+		std::cerr << __FUNCTION__ << ":" << __LINE__ << "> Error: cannot set user-defined user_y_min attribute." << std::endl;
+		return -1;
+	}
+	if(H5LTset_attribute_double(outputFile,"Geolocation","user_y_max",&yMax,1)<0) {
+		std::cerr << __FUNCTION__ << ":" << __LINE__ << "> Error: cannot set user-defined user_x_min attribute." << std::endl;
+		return -1;
+	}
+
+	if(H5LTset_attribute_double(outputFile,"Geolocation","user_resolution",&cellSize,1)<0) {
+		std::cerr << __FUNCTION__ << ":" << __LINE__ << "> Error: cannot set user-defined user_x_min attribute." << std::endl;
+		return -1;
+	}
+
+	return 0;
+}

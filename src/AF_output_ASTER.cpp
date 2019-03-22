@@ -176,17 +176,17 @@ static int af_WriteSingleRadiance_AsterAsSrc(AF_InputParmeterFile &inputArgs, hi
 				if(aster_resolution == "TIR") {
 					std::string tir = "Thermal Infrared ";
 					//long_name_value = "ASTER " + "Thermal Infrared ";
-					long_name_value = "ASTER " + tir;
+					long_name_value = "ASTER Level 1T " + tir;
 					long_name_value += "Radiance";
 				}
 				else if(aster_resolution == "SWIR") {
 					std::string swir = "Short-wave Infrared ";
-					long_name_value = "ASTER " + swir;
+					long_name_value = "ASTER Level 1T " + swir;
 					long_name_value += "Radiance";
 				}
 				else {
 					std::string vnir ="Visible and Near Infrared ";
-					long_name_value = "ASTER " +vnir;
+					long_name_value = "ASTER Level 1T " +vnir;
 					long_name_value += "Radiance";
 				}
 
@@ -213,13 +213,13 @@ static int af_WriteSingleRadiance_AsterAsSrc(AF_InputParmeterFile &inputArgs, hi
 
 				// Add resolution as a number.
 				float aster_resolution_value = inputArgs.GetInstrumentResolutionValue(ASTER_STR);
-				if(false == af_AddSpatialResolutionAttrs(outputFile,dsetPath,aster_resolution_value,true)) {
+				if(false == af_AddSrcSpatialResolutionAttrs(outputFile,dsetPath,aster_resolution_value,true)) {
 					H5Dclose(aster_dataset);
 					return FAILED;
 				}
 
 				float target_resolution_value = inputArgs.GetInstrumentResolutionValue(inputArgs.GetTargetInstrument());
-				if(false == af_AddSpatialResolutionAttrs(outputFile,dsetPath,target_resolution_value,false)) {
+				if(false == af_AddSrcSpatialResolutionAttrs(outputFile,dsetPath,target_resolution_value,false)) {
 					H5Dclose(aster_dataset);
 					return FAILED;
 				}
