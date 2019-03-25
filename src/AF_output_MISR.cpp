@@ -589,17 +589,35 @@ static int af_WriteSingleRadiance_MisrAsSrc(AF_InputParmeterFile &inputArgs,hid_
 				return FAILED;
 			}
 
-			float target_resolution_value = inputArgs.GetInstrumentResolutionValue(inputArgs.GetTargetInstrument());
-			if(false == af_AddSrcSpatialResolutionAttrs(outputFile,dsetPath,target_resolution_value,false)) {
-				H5Dclose(misr_dataset);
-				return FAILED;
-			}
+			if(inputArgs.GetTargetInstrument() != "USER_DEFINE") {
+				float target_resolution_value = inputArgs.GetInstrumentResolutionValue(inputArgs.GetTargetInstrument());
+				if(false == af_AddSrcSpatialResolutionAttrs(outputFile,dsetPath,target_resolution_value,false)) {
+					H5Dclose(misr_dataset);
+					return FAILED;
+				}
 
-			if(H5LTset_attribute_string(outputFile,dsetPath.c_str(),"spatial_resolution_units","meter")<0) {
+				if(H5LTset_attribute_string(outputFile,dsetPath.c_str(),"spatial_resolution_resampled_units","meter")<0) {
+					H5Dclose(misr_dataset);
+					std::cerr << __FUNCTION__ << ":" << __LINE__ << "> Error: cannot generate spatial_resolution_units" << std::endl;
+					return FAILED;
+				}
+			}
+			if(H5LTset_attribute_string(outputFile,dsetPath.c_str(),"spatial_resolution_original_units","meter")<0) {
 				H5Dclose(misr_dataset);
 				std::cerr << __FUNCTION__ << ":" << __LINE__ << "> Error: cannot generate spatial_resolution_units" << std::endl;
 				return FAILED;
 			}
+
+			if("USER_DEFINE" == inputArgs.GetTargetInstrument()) {
+				
+				std::string comments_ud = "Check the group attributes under group /Geolocation to find the user-defined ESPG code and resolution information.";
+				if(H5LTset_attribute_string(outputFile,dsetPath.c_str(),"spatial_resolution_resampled_description",comments_ud.c_str())<0) {
+					H5Dclose(misr_dataset);
+					std::cerr << __FUNCTION__ << ":" << __LINE__ << "> Error: cannot generate spatial_resolution_units" << std::endl;
+					return FAILED;
+				}	
+			}
+
 
 			// Add resample method
 			std::string resample_method_value = "Summary Interpolation";

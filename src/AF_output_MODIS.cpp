@@ -200,8 +200,8 @@ static int af_WriteSingleRadiance_ModisAsTrg(AF_InputParmeterFile &inputArgs,hid
 			
 			std::string comment_for_radiance_type ="Description for Attribute MODIS_radiance_type. \n" ;
 			comment_for_radiance_type += " There are seven radiance types depending on different MODIS Bands.";
-			comment_for_radiance_type +=" They are represented by numerical number from 1 to 7.";
-			comment_for_radiance_type +=" The corresponding band number can be found in attribute band_names. \n";
+			comment_for_radiance_type +=" The corresponding band number can be found in attribute band_names.";
+			comment_for_radiance_type +=" They are represented by numerical number from 1 to 7. \n";
 			comment_for_radiance_type +=" 1: 1KM_Emissive, 2: 1KM_RefSB, 3: 500_Aggr1km_RefSB, 4: 250_Aggr1km_RefSB \n";
 			comment_for_radiance_type +=" 5: 500_RefSB, 6: 250_Aggr500_RefSB, 7: 250_RefSB";
 
@@ -564,16 +564,34 @@ static int af_WriteSingleRadiance_ModisAsSrc(AF_InputParmeterFile &inputArgs,hid
 				return FAILED;
 			}
 
-			float target_resolution_value = inputArgs.GetInstrumentResolutionValue(inputArgs.GetTargetInstrument());
-			if(false == af_AddSrcSpatialResolutionAttrs(outputFile,dsetPath,target_resolution_value,false)) {
-				H5Dclose(modis_dataset);
-				return FAILED;
+			if(inputArgs.GetTargetInstrument() != "USER_DEFINE") {
+				float target_resolution_value = inputArgs.GetInstrumentResolutionValue(inputArgs.GetTargetInstrument());
+				if(false == af_AddSrcSpatialResolutionAttrs(outputFile,dsetPath,target_resolution_value,false)) {
+					H5Dclose(modis_dataset);
+					return FAILED;
+				}
+				if(H5LTset_attribute_string(outputFile,dsetPath.c_str(),"spatial_resolution_resampled_units","meter")<0) {
+                	H5Dclose(modis_dataset);
+                	std::cerr << __FUNCTION__ << ":" << __LINE__ << "> Error: cannot generate spatial_resolution_units" << std::endl;
+                	return FAILED;
+            	}
+
 			}
 
-			if(H5LTset_attribute_string(outputFile,dsetPath.c_str(),"spatial_resolution_units","meter")<0) {
+			if(H5LTset_attribute_string(outputFile,dsetPath.c_str(),"spatial_resolution_original_units","meter")<0) {
 				H5Dclose(modis_dataset);
 				std::cerr << __FUNCTION__ << ":" << __LINE__ << "> Error: cannot generate spatial_resolution_units" << std::endl;
 				return FAILED;
+			}
+
+			if("USER_DEFINE" == inputArgs.GetTargetInstrument()) {
+				
+				std::string comments_ud = "Check the group attributes under group /Geolocation to find the user-defined ESPG code and resolution information.";
+				if(H5LTset_attribute_string(outputFile,dsetPath.c_str(),"spatial_resolution_resampled_description",comments_ud.c_str())<0) {
+					H5Dclose(modis_dataset);
+					std::cerr << __FUNCTION__ << ":" << __LINE__ << "> Error: cannot generate spatial_resolution_units" << std::endl;
+					return FAILED;
+				}	
 			}
 
 			std::vector<int> modis_radiance_type_list = inputArgs.GetMODIS_Radiance_TypeList();
@@ -585,8 +603,8 @@ static int af_WriteSingleRadiance_ModisAsSrc(AF_InputParmeterFile &inputArgs,hid
 		
 			std::string comment_for_radiance_type ="Description for Attribute MODIS_radiance_type. \n";
 			comment_for_radiance_type += " There are seven radiance types depending on different MODIS Bands.";
-			comment_for_radiance_type +=" They are represented by numerical number from 1 to 7.";
-			comment_for_radiance_type +=" The corresponding band number can be found in attribute band_names. \n";
+			comment_for_radiance_type +=" The corresponding band number can be found in attribute band_names.";
+			comment_for_radiance_type +=" They are represented by numerical number from 1 to 7. \n";
 			comment_for_radiance_type +=" 1: 1KM_Emissive, 2: 1KM_RefSB, 3: 500_Aggr1km_RefSB, 4: 250_Aggr1km_RefSB \n";
 			comment_for_radiance_type +=" 5: 500_RefSB, 6: 250_Aggr500_RefSB, 7: 250_RefSB";
 
