@@ -46,6 +46,11 @@ const std::string MISR_STR = "MISR";
 const std::string ASTER_STR = "ASTER";
 const std::string USERGRID_STR = "USER_DEFINE";
 
+/*===================================================================
+ * Use chunking and compression
+ */
+const std::string H5_CHUNK_STR = "USE_HDF5_CHUNK_COMPRESSION";
+
 
 
 /*-------------------------
@@ -98,6 +103,7 @@ class AF_InputParmeterFile
 	double GetUSER_Resolution();
 
 
+	bool GetUseH5Chunk(){return use_chunk;}
 	float GetInstrumentResolutionValue(const std::string & instrument);
 	/*===========================================
 	 * Handle multi-value variables
@@ -189,6 +195,8 @@ class AF_InputParmeterFile
 	#if 1 // JK_ASTER2MODIS
 	std::vector<std::string> aster_MultiVars;
 	#endif
+
+	bool use_chunk;
 };
 
 #endif // _AF_INPUT_PARAMETER_FILE_H_

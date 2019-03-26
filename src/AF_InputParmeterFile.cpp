@@ -34,6 +34,8 @@ AF_InputParmeterFile::AF_InputParmeterFile()
 	didReadHeaderFile = false;
 	misr_Shift = "ON"; // if not specified, but only effective when MISR is target
 
+	use_chunk = false;
+
 	/*------------------------------
 	 * init multi-value variables
 	 */
@@ -569,6 +571,32 @@ void AF_InputParmeterFile::ParseByLine()
 			#endif
 			continue;
 		}
+		/*--------------------------- 
+		 * Chunking compression
+		 */
+		found = line.find(H5_CHUNK_STR.c_str());
+		if(found != std::string::npos)
+		{
+			line = line.substr(strlen(H5_CHUNK_STR.c_str()));
+			while(line[0] == ' ' || line[0] == ':')
+				line = line.substr(1);
+			pos = line.find_first_of(' ', 0);
+			std::stringstream ss(line); // Insert the string into a stream
+			std::string token;
+			std::string h5_chunk_comp;
+			while (ss >> token) {  // get exact string
+				h5_chunk_comp = token;
+			}
+			if(h5_chunk_comp !="false" && h5_chunk_comp !="False" && h5_chunk_comp !="FALSE" && h5_chunk_comp !="No" && h5_chunk_comp !="NO" 
+				&& h5_chunk_comp != "no")
+				use_chunk = true;
+			#if DEBUG_TOOL_PARSER
+			std::cout << "DBG_PARSER " << __FUNCTION__ << ":" << __LINE__ << "> " <<  H5_CHUNK_STR << ": " << misr_Shift << std::endl;
+			#endif
+			continue;
+		}
+
+
 
 	} // end of while
 }

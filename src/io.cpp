@@ -3444,3 +3444,28 @@ int af_write_user_geo_attrs(hid_t outputFile,int outputEPSG, double xMin, double
 
 	return 0;
 }
+
+hid_t create_chunk_comp_plist(hid_t plist_id,const unsigned int rank, const size_t CellNum, const size_t outputwidth) {
+
+	std::vector<size_t> chunk_dims;
+	if(rank <2) {
+		std::cerr << __FUNCTION__ << ":" << __LINE__ << "> Error: The rank of the chunk must be >1." << std::endl;
+		return -1;
+	}
+	chunk_dims.resize(rank);
+	for(unsigned int i= 0;i< (rank-2);i++)
+		chunk_dims[i] = 1;
+	chunk_dims[rank-2]=CellNum/outputwidth;
+	chunk_dims[rank-1]=outputwidth;
+	if(H5Pset_chunk(plist_id,rank,(hsize_t*)&chunk_dims[0])<0){
+		std::cerr << __FUNCTION__ << ":" << __LINE__ << "> Error: Cannot set HDF5 chunk." << std::endl;
+		return -1;
+	}
+	if(H5Pset_deflate(plist_id,1)<0)
+        {
+            std::cerr<< __FUNCTION__<< ":" <<__LINE__ <<"> Error:Cannot set deflate for the HDF5 dataset creation property list.\n";
+            return -1;
+        }
+	return plist_id;
+
+}
