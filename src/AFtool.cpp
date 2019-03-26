@@ -557,7 +557,6 @@ int main(int argc, char *argv[])
 		std:: cout <<"Correct the input parameters and re-run. \n";
 		return FAILED;
 	}
-
 	//-------------------------
 	// get instrument names
 	std::string srcInstrument = inputArgs.GetSourceInstrument();

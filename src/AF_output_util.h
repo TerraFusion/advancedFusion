@@ -10,6 +10,7 @@
  */
 
 #include "AF_InputParmeterFile.h"
+#include "gdalio.h"
 
 /*=====================================
  * Get output width of an instrument
@@ -25,6 +26,7 @@
  *						If 0, caller should not use this.
  */
 int af_GetWidthAndHeightForOutputDataSize(std::string instrument, AF_InputParmeterFile &inputArgs, int &crossTrackWidth /*OUT*/, int &alongTrackHeight /*OUT*/);
-
+std::string get_gtiff_fname(AF_InputParmeterFile &inputArgs,int camera_index,int band_index); 
+	
 
 #endif // _AF_OUTPUT_UTIL_H_

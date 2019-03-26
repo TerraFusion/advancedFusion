@@ -23,6 +23,7 @@
 #include "reproject.h"
 #include "misrutil.h"
 #include <algorithm>
+#include "gdalio.h"
 
 //const char* ref_band_list[22] = {"1","2","3", "4", "5", "6", "7","8", "9", "10", "11", "12", "13L", "13H", "14L", "14H", "15", "16", "17", "18", "19", "26"};
 strVec_t ref_band_list = {"1","2","3", "4", "5", "6", "7","8", "9", "10", "11", "12", "13L", "13H", "14L", "14H", "15", "16", "17", "18", "19", "26"};
@@ -277,7 +278,7 @@ static int af_WriteSingleRadiance_ModisAsTrg(AF_InputParmeterFile &inputArgs,hid
 	}
 done:
 	H5Dclose(modis_dataset);
-
+	
 	#if DEBUG_TOOL
 	std::cout << "DBG_TOOL " << __FUNCTION__ << "> END \n";
 	#endif
@@ -708,6 +709,26 @@ static int af_WriteSingleRadiance_ModisAsSrc(AF_InputParmeterFile &inputArgs,hid
 
  done:
 	H5Dclose(modis_dataset);
+//#if 0
+	bool output_geotiff = true;
+
+	if(true == output_geotiff && ("USER_DEFINE" == inputArgs.GetTargetInstrument())) {
+std::cerr<<"coming to write geotiff "<<std::endl;
+		//std::string op_geotiff_fname = get_gtiff_fname(inputArgs,-1,band_Index);
+		std::string op_geotiff_fname = "test.tif";
+		int userOutputEPSG = inputArgs.GetUSER_EPSG();
+		double userXmin = inputArgs.GetUSER_xMin();
+		double userXmax = inputArgs.GetUSER_xMax();
+		double userYmin = inputArgs.GetUSER_yMin();
+		double userYmax = inputArgs.GetUSER_yMax();
+		double userResolution = inputArgs.GetUSER_Resolution();
+		gdalIORegister();
+		writeGeoTiff((char*)op_geotiff_fname.c_str(),processedData, userOutputEPSG, userXmin, userYmin, userXmax, userYmax, userResolution);
+
+
+	}
+//#endif
+
 
 #if DEBUG_TOOL
 	std::cout << "DBG_TOOL " << __FUNCTION__ << "> END \n";
