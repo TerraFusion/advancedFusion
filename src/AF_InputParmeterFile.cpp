@@ -596,6 +596,30 @@ void AF_InputParmeterFile::ParseByLine()
 			continue;
 		}
 
+		/*--------------------------- 
+		 * GeoTiff output for user-defined grid
+		 */
+		found = line.find(GEO_TIFF_OUTPUT_STR.c_str());
+		if(found != std::string::npos)
+		{
+			line = line.substr(strlen(GEO_TIFF_OUTPUT_STR.c_str()));
+			while(line[0] == ' ' || line[0] == ':')
+				line = line.substr(1);
+			pos = line.find_first_of(' ', 0);
+			std::stringstream ss(line); // Insert the string into a stream
+			std::string token;
+			std::string have_geotiff_output;
+			while (ss >> token) {  // get exact string
+				have_geotiff_output = token;
+			}
+			if(have_geotiff_output !="false" && have_geotiff_output !="False" && have_geotiff_output !="FALSE" && have_geotiff_output !="No" && have_geotiff_output !="NO" 
+				&& have_geotiff_output != "no")
+				geotiff_output = true;
+			#if DEBUG_TOOL_PARSER
+			std::cout << "DBG_PARSER " << __FUNCTION__ << ":" << __LINE__ << "> " <<  GEO_TIFF_OUTPUT_STR << ": " << misr_Shift << std::endl;
+			#endif
+			continue;
+		}
 
 
 	} // end of while

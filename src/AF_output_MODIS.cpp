@@ -710,12 +710,11 @@ static int af_WriteSingleRadiance_ModisAsSrc(AF_InputParmeterFile &inputArgs,hid
  done:
 	H5Dclose(modis_dataset);
 //#if 0
-	bool output_geotiff = true;
+	bool output_geotiff = inputArgs.GetGeoTiffOutput();
 
 	if(true == output_geotiff && ("USER_DEFINE" == inputArgs.GetTargetInstrument())) {
-std::cerr<<"coming to write geotiff "<<std::endl;
-		//std::string op_geotiff_fname = get_gtiff_fname(inputArgs,-1,band_Index);
-		std::string op_geotiff_fname = "test.tif";
+		std::string op_geotiff_fname = get_gtiff_fname(inputArgs,-1,bandIdx);
+		//std::string op_geotiff_fname = "test.tif";
 		int userOutputEPSG = inputArgs.GetUSER_EPSG();
 		double userXmin = inputArgs.GetUSER_xMin();
 		double userXmax = inputArgs.GetUSER_xMax();

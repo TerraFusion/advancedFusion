@@ -714,6 +714,21 @@ static int af_WriteSingleRadiance_MisrAsSrc(AF_InputParmeterFile &inputArgs,hid_
 done:
 	H5Dclose(misr_dataset);
 
+	bool output_geotiff = inputArgs.GetGeoTiffOutput();
+
+	if(true == output_geotiff && ("USER_DEFINE" == inputArgs.GetTargetInstrument())) {
+		std::string op_geotiff_fname = get_gtiff_fname(inputArgs,cameraIdx,radIdx);
+		//std::string op_geotiff_fname = "test.tif";
+		int userOutputEPSG = inputArgs.GetUSER_EPSG();
+		double userXmin = inputArgs.GetUSER_xMin();
+		double userXmax = inputArgs.GetUSER_xMax();
+		double userYmin = inputArgs.GetUSER_yMin();
+		double userYmax = inputArgs.GetUSER_yMax();
+		double userResolution = inputArgs.GetUSER_Resolution();
+		gdalIORegister();
+		writeGeoTiff((char*)op_geotiff_fname.c_str(),processedData, userOutputEPSG, userXmin, userYmin, userXmax, userYmax, userResolution);
+	}
+
 	#if DEBUG_TOOL
 	std::cout << "DBG_TOOL " << __FUNCTION__ << "> END \n";
 	#endif

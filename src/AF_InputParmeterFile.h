@@ -51,7 +51,10 @@ const std::string USERGRID_STR = "USER_DEFINE";
  */
 const std::string H5_CHUNK_STR = "USE_HDF5_CHUNK_COMPRESSION";
 
-
+/*===================================================================
+ * Also have geo-tiff output 
+ */
+const std::string GEO_TIFF_OUTPUT_STR = "GEOTIFF_OUTPUT";
 
 /*-------------------------
  * New types
@@ -104,6 +107,7 @@ class AF_InputParmeterFile
 
 
 	bool GetUseH5Chunk(){return use_chunk;}
+	bool GetGeoTiffOutput(){return geotiff_output;}
 	float GetInstrumentResolutionValue(const std::string & instrument);
 	/*===========================================
 	 * Handle multi-value variables
@@ -197,6 +201,7 @@ class AF_InputParmeterFile
 	#endif
 
 	bool use_chunk;
+	bool geotiff_output;
 };
 
 #endif // _AF_INPUT_PARAMETER_FILE_H_
