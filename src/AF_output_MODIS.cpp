@@ -103,7 +103,18 @@ static int af_WriteSingleRadiance_ModisAsTrg(AF_InputParmeterFile &inputArgs,hid
 	 * otherwise, open existing one
 	 */
 	if(bandIdx==0) { // means new
-		modis_dataset = H5Dcreate2(outputFile, dsetPath.c_str(), dataTypeOutH5, fileSpaceH5,H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+		if(true == inputArgs.GetUseH5Chunk()) {
+			hid_t plist_id = H5Pcreate(H5P_DATASET_CREATE);
+			if(create_chunk_comp_plist(plist_id,3,(size_t)modisDataSize,(size_t)outputWidth)<0) {
+				std::cerr << __FUNCTION__ << ":" << __LINE__ <<  "> Error: create_chunk_comp_plist failed.\n";
+				H5Pclose(plist_id);
+				return FAILED;
+			}
+			modis_dataset = H5Dcreate2(outputFile, dsetPath.c_str(), dataTypeOutH5, fileSpaceH5,H5P_DEFAULT, plist_id, H5P_DEFAULT);
+			H5Pclose(plist_id);
+		}
+		else
+			modis_dataset = H5Dcreate2(outputFile, dsetPath.c_str(), dataTypeOutH5, fileSpaceH5,H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
 		if(modis_dataset < 0) {
 			std::cerr << __FUNCTION__ << ":" << __LINE__ <<  "> Error: H5Dcreate2 target data in output file.\n";
 			return FAILED;
@@ -481,7 +492,20 @@ static int af_WriteSingleRadiance_ModisAsSrc(AF_InputParmeterFile &inputArgs,hid
 	 * otherwise, open existing one
 	 */
 	if(bandIdx==0) { // means new
-		modis_dataset = H5Dcreate2(outputFile, dsetPath.c_str(), dataTypeOutH5, fileSpaceH5,H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+
+		if(true == inputArgs.GetUseH5Chunk()) {
+			hid_t plist_id = H5Pcreate(H5P_DATASET_CREATE);
+			if(create_chunk_comp_plist(plist_id,3,(size_t)trgCellNum,(size_t)outputWidth)<0) {
+				std::cerr << __FUNCTION__ << ":" << __LINE__ <<  "> Error: create_chunk_comp_plist failed.\n";
+				H5Pclose(plist_id);
+				return FAILED;
+			}
+			modis_dataset = H5Dcreate2(outputFile, dsetPath.c_str(), dataTypeOutH5, fileSpaceH5,H5P_DEFAULT, plist_id, H5P_DEFAULT);
+			H5Pclose(plist_id);
+		}
+		else
+			modis_dataset = H5Dcreate2(outputFile, dsetPath.c_str(), dataTypeOutH5, fileSpaceH5,H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+		
 		if(modis_dataset < 0) {
 			std::cerr << __FUNCTION__ << ":" << __LINE__ <<  "> Error: H5Dcreate2 target data in output file.\n";
 			return FAILED;

@@ -90,7 +90,19 @@ static int af_WriteSingleRadiance_MisrAsTrg(AF_InputParmeterFile &inputArgs, hid
 	 * otherwise, open existing one
 	 */
 	if( (cameraIdx + radianceIdx) ==0 ) { // means new
-		misr_dataset = H5Dcreate2(outputFile, dsetPath.c_str(), dataTypeOutH5, fileSpaceH5,H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+
+		if(true == inputArgs.GetUseH5Chunk()) {
+			hid_t plist_id = H5Pcreate(H5P_DATASET_CREATE);
+			if(create_chunk_comp_plist(plist_id,4,(size_t)misrDataSize,(size_t)outputWidth)<0) {
+				std::cerr << __FUNCTION__ << ":" << __LINE__ <<  "> Error: create_chunk_comp_plist failed.\n";
+				H5Pclose(plist_id);
+				return FAILED;
+			}
+			misr_dataset = H5Dcreate2(outputFile, dsetPath.c_str(), dataTypeOutH5, fileSpaceH5,H5P_DEFAULT, plist_id, H5P_DEFAULT);
+			H5Pclose(plist_id);
+		}
+		else
+			misr_dataset = H5Dcreate2(outputFile, dsetPath.c_str(), dataTypeOutH5, fileSpaceH5,H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
 		if(misr_dataset < 0) {
 			std::cerr << __FUNCTION__ << ":" << __LINE__ <<  "> Error: H5Dcreate2 target data in output file.\n";
 			return FAILED;
@@ -500,7 +512,18 @@ static int af_WriteSingleRadiance_MisrAsSrc(AF_InputParmeterFile &inputArgs,hid_
 	 * otherwise, open existing one
 	 */
 	if(cameraIdx==0 && radIdx==0) { // means new
-		misr_dataset = H5Dcreate2(outputFile, dsetPath.c_str(), dataTypeOutH5, fileSpaceH5,H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+		if(true == inputArgs.GetUseH5Chunk()) {
+			hid_t plist_id = H5Pcreate(H5P_DATASET_CREATE);
+			if(create_chunk_comp_plist(plist_id,4,(size_t)trgCellNum,(size_t)outputWidth)<0) {
+				std::cerr << __FUNCTION__ << ":" << __LINE__ <<  "> Error: create_chunk_comp_plist failed.\n";
+				H5Pclose(plist_id);
+				return FAILED;
+			}
+			misr_dataset = H5Dcreate2(outputFile, dsetPath.c_str(), dataTypeOutH5, fileSpaceH5,H5P_DEFAULT, plist_id, H5P_DEFAULT);
+			H5Pclose(plist_id);
+		}
+		else 
+			misr_dataset = H5Dcreate2(outputFile, dsetPath.c_str(), dataTypeOutH5, fileSpaceH5,H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
 		if(misr_dataset < 0) {
 			std::cerr << __FUNCTION__ << ":" << __LINE__ <<  "> Error: H5Dcreate2 target data in output file.\n";
 			return FAILED;
