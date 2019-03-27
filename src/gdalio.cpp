@@ -246,8 +246,10 @@ double getMaxRadiusOfUserdefine(int epsgCode, double cellSize) {
                 maxRadius = earthRadius * cellSize * M_PI / 180;
         }
 
-		// Forgot destroy hSRS-memory leaking. destroy here
-		OSRDestroySpatialReference(hSRS);
+        // Forgot destroy hSRS-memory leaking. destroy here
+        OSRDestroySpatialReference(hSRS);
+        if(SRSWKT!=NULL)
+            CPLFree(SRSWKT);
         return maxRadius;
 }
 
