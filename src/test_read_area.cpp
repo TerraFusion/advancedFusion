@@ -50,7 +50,7 @@ int main(int argc, char ** argv)
 	double* modis_lat = get_modis_lat(file, "_1KM", &geo_size);
 	printf("test size: %d\n", geo_size);
 	return 0;*/
-	int size;
+	int64_t size;
     std::vector<std::string> bands = {"8", "9", "12", "14L", "20"};
 	double* modis_test = get_modis_rad(file, "_1KM", bands, bands.size(), &size);
 	printf("test modis size: %d\n", size);

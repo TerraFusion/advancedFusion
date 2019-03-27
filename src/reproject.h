@@ -46,7 +46,7 @@ void nearestNeighborBlockIndex(double ** psouLat, double ** psouLon, int64_t nSo
  *	int * tarNNSouID:	the output IDs of nearest neighboring source cells 
  *	double * tarNNDis	the output nearest distance for each target cell (input NULL if you don't need this field)
  */ 
-void nearestNeighbor(double ** psouLat, double ** psouLon, int nSou, double * tarLat, double * tarLon, int * tarNNSouID, double * tarNNDis, int nTar, double maxR);
+void nearestNeighbor(double ** psouLat, double ** psouLon, int64_t nSou, double * tarLat, double * tarLon, int64_t * tarNNSouID, double * tarNNDis, int64_t nTar, double maxR);
 
 
 /**

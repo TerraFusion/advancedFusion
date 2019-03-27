@@ -22,7 +22,7 @@ int main(int argc, char ** argv)
 		exit(1);
 	}
 
-	int nCellMISR;
+	int64_t nCellMISR;
 	double * MISRRad;
 	MISRRad = get_misr_rad(src_file, "AN", "L", "Blue_Radiance", &nCellMISR);
 	herr_t ret = af_close(src_file);

@@ -41,7 +41,7 @@ int main(int argc, char ** argv) {
 	
 	gdalIORegister();
 
-	int nPoints = getCellCenterLatLon(outputEPSG, xMin, yMin, xMax, yMax, cellSize, &targetX, &targetY);
+	int64_t nPoints = getCellCenterLatLon(outputEPSG, xMin, yMin, xMax, yMax, cellSize, &targetX, &targetY);
 	int crossTrack = ceil((xMax - xMin) / cellSize);
 
 	printf("%d output cells in total.\n", nPoints);
@@ -71,7 +71,7 @@ int main(int argc, char ** argv) {
 		exit(1);
 	}
 	
-	int nCellsrc;
+	int64_t nCellsrc;
 	double* src_lat;
 	double* src_long;
 
@@ -84,8 +84,8 @@ int main(int argc, char ** argv) {
 	double** p_src_lat = &src_lat;
 	double** p_src_lon = &src_long;
 	
-	int * tarNNSouID;
-	tarNNSouID = (int *)malloc(sizeof(int) * nPoints);
+	int64_t * tarNNSouID;
+	tarNNSouID = (int64_t *)malloc(sizeof(int64_t) * nPoints);
 
 	printf("nearest neighbor\n");
 

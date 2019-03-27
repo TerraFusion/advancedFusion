@@ -33,7 +33,8 @@ void gdalIORegister();
  * Return:
  *	int:	the total number of pixels
  */
-int getCellCenterLatLon(int outputEPSG, double xMin, double yMin, double xMax, double yMax, double cellSize, double ** px, double ** py);
+int64_t getCellCenterLatLon(int outputEPSG, double xMin, double yMin, double xMax, double yMax, double cellSize, double ** px, double ** py);
+//int getCellCenterLatLon(int outputEPSG, double xMin, double yMin, double xMax, double yMax, double cellSize, double ** px, double ** py);
 
 
 /**

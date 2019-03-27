@@ -42,7 +42,7 @@ void gdalIORegister()
  * Return:
  *	int:	the total number of pixels
  */
-int getCellCenterLatLon(int outputEPSG, double xMin, double yMin, double xMax, double yMax, double cellSize, double ** px, double ** py) 
+int64_t getCellCenterLatLon(int outputEPSG, double xMin, double yMin, double xMax, double yMax, double cellSize, double ** px, double ** py) 
 {
 
 	if(yMax <=yMin || xMax <=xMin || cellSize <0)
@@ -54,7 +54,7 @@ int getCellCenterLatLon(int outputEPSG, double xMin, double yMin, double xMax, d
 	yMax = yMin + nRow * cellSize;
 	xMax = xMin + nCol * cellSize;
 
-	int nPoints = nRow * nCol;
+	int64_t nPoints = nRow * nCol;
 
 	if(NULL == (*px = (double *)malloc(sizeof(double) * nPoints))) 
 	{
@@ -101,8 +101,8 @@ int getCellCenterLatLon(int outputEPSG, double xMin, double yMin, double xMax, d
 			int threadID = omp_get_thread_num();
 
 
-			int start = nPoints / nThreads * threadID;
-			int nPointsThread;
+			int64_t start = nPoints / nThreads * threadID;
+			int64_t nPointsThread;
 			if(threadID != nThreads - 1)
 			{
 			 	nPointsThread = nPoints / nThreads;
@@ -246,8 +246,10 @@ double getMaxRadiusOfUserdefine(int epsgCode, double cellSize) {
                 maxRadius = earthRadius * cellSize * M_PI / 180;
         }
 
-		// Forgot destroy hSRS-memory leaking. destroy here
-		OSRDestroySpatialReference(hSRS);
+        // Forgot destroy hSRS-memory leaking. destroy here
+        OSRDestroySpatialReference(hSRS);
+        if(SRSWKT!=NULL)
+            CPLFree(SRSWKT);
         return maxRadius;
 }
 

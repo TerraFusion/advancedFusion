@@ -31,13 +31,13 @@ int main(int argc, char ** argv)
 		exit(1);
 	}
 	
-	int nCellsrc;
+	int64_t nCellsrc;
 	double* src_lat;
 	double* src_long;
 	src_lat = get_ast_lat_by_gran(src_file, "TIR", "ImageData10", "granule_01042013010101", &nCellsrc);
 	src_long = get_ast_long_by_gran(src_file, "TIR", "ImageData10", "granule_01042013010101", &nCellsrc);
 	
-	int nCelldest;
+	int64_t nCelldest;
 	double* dest_lat;
 	double* dest_long;
 	
@@ -54,13 +54,13 @@ int main(int argc, char ** argv)
 	}
 
 	double* projected_Rad_Out;
-	int * tarNNSouID;
+	int64_t * tarNNSouID;
 	//double** p_src_lat = &src_lat;
 	//double** p_src_lon = &src_long;
 	double** p_dest_lat = &dest_lat;
 	double** p_dest_lon = &dest_long;
 	
-	tarNNSouID = (int *)malloc(sizeof(int) * nCellsrc);
+	tarNNSouID = (int64_t *)malloc(sizeof(int64_t) * nCellsrc);
 	
 	printf("nearest neighbor\n");
 	//nearestNeighbor(p_src_lat, p_src_lon, nCellsrc, dest_lat, dest_long, tarNNSouID, nCelldest, 1000);
@@ -79,7 +79,7 @@ int main(int argc, char ** argv)
 	
 	src_rad = get_ast_rad_by_gran(src_file, "TIR", "ImageData10", "granule_01042013010101", &nCellsrc);
 	
-	int nCelldest_rad;
+	int64_t nCelldest_rad;
 	double* dest_rad;
 	std::vector<std::string> bands = {"8"};
 	dest_rad = get_modis_rad(src_file, "_1KM", bands, bands.size(), &nCelldest_rad);
@@ -87,13 +87,13 @@ int main(int argc, char ** argv)
 	double* src_rad_out = (double *)malloc(sizeof(double) * nCelldest);
 	int new_ast_size = nCelldest;
 	//Interpolating
-	int * nsrcPixels;
+	int64_t * nsrcPixels;
 	printf("interpolating\n");
-	nsrcPixels = (int *) malloc(sizeof(int) * nCelldest);
+	nsrcPixels = (int64_t *) malloc(sizeof(int64_t) * nCelldest);
 	summaryInterpolate(src_rad, tarNNSouID, nCellsrc, src_rad_out, NULL, nsrcPixels, nCelldest);
 
 	printf("No nodata values: \n");
-	for(int i = 0; i < nCelldest; i++) {
+	for(int64_t i = 0; i < nCelldest; i++) {
 		if(nsrcPixels[i] > 0) {
 			printf("%d,\t%lf\n", nsrcPixels[i], src_rad_out[i]);
 		}

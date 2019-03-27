@@ -26,13 +26,13 @@ int main(int argc, char ** argv)
 		exit(1);
 	}
 	
-	int nCellsrc;
+	int64_t nCellsrc;
 	double* src_lat;
 	double* src_long;
 	src_lat = get_ast_lat(src_file, "TIR", "ImageData11", &nCellsrc);
 	src_long = get_ast_long(src_file, "TIR", "ImageData11", &nCellsrc);
 	
-	int nCelldest;
+	int64_t nCelldest;
 	double* dest_lat;
 	double* dest_long;
 	
@@ -49,13 +49,13 @@ int main(int argc, char ** argv)
 	}
 
 	double* projected_Rad_Out;
-	int * tarNNSouID;
+	int64_t * tarNNSouID;
 	//double** p_src_lat = &src_lat;
 	//double** p_src_lon = &src_long;
 	double** p_dest_lat = &dest_lat;
 	double** p_dest_lon = &dest_long;
 	
-	tarNNSouID = (int *)malloc(sizeof(int) * nCellsrc);
+	tarNNSouID = (int64_t *)malloc(sizeof(int64_t) * nCellsrc);
 	
 	printf("nearest neighbor\n");
 	//nearestNeighbor(p_src_lat, p_src_lon, nCellsrc, dest_lat, dest_long, tarNNSouID, nCelldest, 1000);
@@ -74,17 +74,17 @@ int main(int argc, char ** argv)
 	
 	src_rad = get_ast_rad(src_file, "TIR", "ImageData11", &nCellsrc);
 	
-	int nCelldest_rad;
+	int64_t nCelldest_rad;
 	double* dest_rad;
 	std::vector<std::string> bands = {"8"};
 	dest_rad = get_modis_rad(src_file, "_1KM", bands, bands.size(), &nCelldest_rad);
 	
 	double* src_rad_out = (double *)malloc(sizeof(double) * nCelldest);
-	int new_ast_size = nCelldest;
+	int64_t new_ast_size = nCelldest;
 	//Interpolating
-	int * nsrcPixels; //Number of contributing ASTER pixel to each new MODIS pixel
+	int64_t * nsrcPixels; //Number of contributing ASTER pixel to each new MODIS pixel
 	double * sd; //The standard deviation of all contributing ASTER cell's value 
-	nsrcPixels = (int *) malloc(sizeof(int) * nCelldest);
+	nsrcPixels = (int64_t *) malloc(sizeof(int64_t) * nCelldest);
 	sd = (double *) malloc(sizeof(double) * nCelldest);
 	printf("interpolating\n");
 	

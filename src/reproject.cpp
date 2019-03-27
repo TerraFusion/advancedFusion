@@ -179,6 +179,94 @@ struct LonBlocks * pointIndexOnLatLon(double ** plat, double ** plon, int64_t * 
 
 
 
+int64_t * pointIndexOnLat(double ** plat, double ** plon,  int64_t * oriID, int64_t count, int nBlockY) {
+
+	double *lat = *plat;
+	double *lon = *plon;
+
+	double blockR = M_PI/nBlockY;
+
+	int64_t * index;
+	int * pointsInB;
+	
+	double * newLon;
+	double * newLat;
+
+	if(NULL == (index = (int64_t *)malloc(sizeof(int64_t) * (nBlockY + 1))))
+	{
+		printf("ERROR: Out of memory at line %d in file %s\n", __LINE__, __FILE__);
+		exit(1);
+	}
+
+	if(NULL == (pointsInB = (int *)malloc(sizeof(int) * nBlockY)))
+	{
+		printf("ERROR: Out of memory at line %d in file %s\n", __LINE__, __FILE__);
+		exit(1);
+	}
+
+	for(int i = 0; i < nBlockY; i++)
+	{
+		pointsInB[i] = 0;
+	}
+
+	int blockID;
+		
+	for(int64_t i = 0; i < count; i++) {
+	
+		blockID = (int)((lat[i] + M_PI/2) / blockR);
+		
+		if(blockID >= 0 && blockID < nBlockY) {
+			pointsInB[blockID] ++;
+		}
+	}
+
+	index[0] = 0;
+	for(int i = 1; i < nBlockY + 1; i++) {
+		index[i] = index[i - 1] + pointsInB[i - 1];
+	}
+
+	if(NULL == (newLon = (double *)malloc(sizeof(double) * index[nBlockY]))) {
+		printf("ERROR: Out of memory at line %d in file %s\n", __LINE__, __FILE__);
+		exit(1);
+	} 
+	if(NULL == (newLat = (double *)malloc(sizeof(double) * index[nBlockY]))) {
+		printf("ERROR: Out of memory at line %d in file %s\n", __LINE__, __FILE__);
+		exit(1);
+	}
+	
+	pointsInB[0] = 0;
+	for(int i = 1; i < nBlockY; i++) {
+		pointsInB[i] = index[i];
+	}
+	
+	for(int64_t i = 0; i < count; i++) {
+		
+		blockID = (int)((lat[i] + M_PI/2) / blockR);
+		if(blockID >= 0 && blockID < nBlockY) {
+			newLon[pointsInB[blockID]] = lon[i];
+			newLat[pointsInB[blockID]] = lat[i];
+			oriID[pointsInB[blockID]] = i;
+			pointsInB[blockID] ++;
+	
+		}
+	}
+	
+
+
+	free(pointsInB);
+	free(lon);
+	free(lat);
+
+	count = index[nBlockY];
+	*plon = newLon;
+	*plat = newLat;
+
+//	printf("%0x\n", lat);
+
+	return index;
+}
+
+#if 0
 int * pointIndexOnLat(double ** plat, double ** plon,  int * oriID, int count, int nBlockY) {
 
 	double *lat = *plat;
@@ -265,6 +353,7 @@ int * pointIndexOnLat(double ** plat, double ** plon,  int * oriID, int count, i
 
 	return index;
 }
+#endif
 
  /**
  * NAME:	nearestNeighborBlockIndex
@@ -301,8 +390,9 @@ void nearestNeighborBlockIndex(double ** psouLat, double ** psouLon, int64_t nSo
 
 	double latBlockR = M_PI / nBlockY;
 
-	int i, j, k, kk, l;
-	int64_t li;
+	//int i, j, k, kk, l;
+	int  i,j, k, kk;
+	int64_t li,ll;
 #pragma omp parallel for
 	for(li = 0; li < nSou; li++) {
 		
@@ -348,7 +438,8 @@ void nearestNeighborBlockIndex(double ** psouLat, double ** psouLon, int64_t nSo
 		int rowID, colID;
 		double pDis;
 		double nnDis;
-		int nnSouID;
+		//int nnSouID;
+		int64_t nnSouID;
 /*
 		if(i == 0) {
 			printf("%d\n", omp_get_num_threads());
@@ -365,17 +456,17 @@ void nearestNeighborBlockIndex(double ** psouLat, double ** psouLon, int64_t nSo
 			colID = (tLon + M_PI) / souIndex[j].blockSizeR;
 
 			if(souIndex[j].nBlocks == 1) {
-				for(l = souIndex[j].indexID[0]; l < souIndex[j].indexID[1]; l++) {
+				for(ll = souIndex[j].indexID[0]; ll < souIndex[j].indexID[1]; ll++) {
 					
-					sLat = souLat[l];
-					sLon = souLon[l];
+					sLat = souLat[ll];
+					sLon = souLon[ll];
 
 					pDis = acos(sin(tLat) * sin(sLat) + cos(tLat) * cos(sLat) * cos(tLon - sLon));
 
 					if((nnDis < 0 || nnDis > pDis) && pDis <= maxradian) {
 
 						nnDis = pDis;
-						nnSouID = souID[l];
+						nnSouID = souID[ll];
 					}
 				}
 			} 
@@ -388,17 +479,17 @@ void nearestNeighborBlockIndex(double ** psouLat, double ** psouLon, int64_t nSo
 					if(kk >= souIndex[j].nBlocks) {
 						kk = 0;
 					}
-					for(l = souIndex[j].indexID[kk]; l < souIndex[j].indexID[kk+1]; l++) {
+					for(ll = souIndex[j].indexID[kk]; ll < souIndex[j].indexID[kk+1]; ll++) {
 						
-						sLat = souLat[l];
-						sLon = souLon[l];
+						sLat = souLat[ll];
+						sLon = souLon[ll];
 
 						pDis = acos(sin(tLat) * sin(sLat) + cos(tLat) * cos(sLat) * cos(tLon - sLon));
 
 						if((nnDis < 0 || nnDis > pDis) && pDis <= maxradian) {
 
 							nnDis = pDis;
-							nnSouID = souID[l];
+							nnSouID = souID[ll];
 						}
 				
 					}
@@ -450,7 +541,7 @@ void nearestNeighborBlockIndex(double ** psouLat, double ** psouLon, int64_t nSo
  *	int * tarNNSouID:	the output IDs of nearest neighboring source cells 
  *	double * tarNNDis	the output nearest distance for each target cell (input NULL if you don't need this field)
  */ 
-void nearestNeighbor(double ** psouLat, double ** psouLon, int nSou, double * tarLat, double * tarLon, int * tarNNSouID, double * tarNNDis, int nTar, double maxR) {
+void nearestNeighbor(double ** psouLat, double ** psouLon, int64_t nSou, double * tarLat, double * tarLon, int64_t * tarNNSouID, double * tarNNDis, int64_t nTar, double maxR) {
 
 	//printf("%0x\n", souLat);
 	double * souLat = *psouLat;
@@ -462,39 +553,44 @@ void nearestNeighbor(double ** psouLat, double ** psouLon, int nSou, double * ta
 
 	double blockR = M_PI / nBlockY;
 	
-	int i, j;
+	//int i, j;
+	int64_t li,lj;
 #pragma omp parallel for
-	for(i = 0; i < nSou; i++) {
-		souLat[i] = souLat[i] * M_PI / 180;
-		souLon[i] = souLon[i] * M_PI / 180;
+	for(li = 0; li < nSou; li++) {
+		souLat[li] = souLat[li] * M_PI / 180;
+		souLon[li] = souLon[li] * M_PI / 180;
 	}
 
 #pragma omp parallel for
-	for(i = 0; i < nTar; i++) {
-		tarLat[i] = tarLat[i] * M_PI / 180;
-		tarLon[i] = tarLon[i] * M_PI / 180;
+	for(li = 0; li < nTar; li++) {
+		tarLat[li] = tarLat[li] * M_PI / 180;
+		tarLon[li] = tarLon[li] * M_PI / 180;
 	}
 
-	int * souID;
-	if(NULL == (souID = (int *)malloc(sizeof(double) * nSou))) {
+	//int * souID;
+	int64_t * souID;
+	//if(NULL == (souID = (int *)malloc(sizeof(double) * nSou))) {
+	if(NULL == (souID = (int64_t *)malloc(sizeof(int64_t) * nSou))) {
 		printf("ERROR: Out of memory at line %d in file %s\n", __LINE__, __FILE__);
 		exit(1);
 	}
-	int * souIndex = pointIndexOnLat(psouLat, psouLon, souID, nSou, nBlockY);
+	//int * souIndex = pointIndexOnLat(psouLat, psouLon, souID, nSou, nBlockY);
+	int64_t * souIndex = pointIndexOnLat(psouLat, psouLon, souID, nSou, nBlockY);
 	souLat = *psouLat;
 	souLon = *psouLon;
 
 
 #pragma omp parallel for private(j)
-	for(i = 0; i < nTar; i ++) {
+	for(li = 0; li < nTar; li ++) {
 
-		double tLat = tarLat[i];
-		double tLon = tarLon[i];
+		double tLat = tarLat[li];
+		double tLon = tarLon[li];
 		double sLat, sLon;
 		
 		double pDis;	
 		double nnDis;
-		int nnSouID;
+		//int nnSouID;
+		int64_t nnSouID;
 
 		int blockID = (tLat + M_PI / 2) / blockR;
 		int startBlock = blockID - 1;
@@ -509,30 +605,30 @@ void nearestNeighbor(double ** psouLat, double ** psouLon, int nSou, double * ta
 
 		nnDis = -1;
 		
-		for(j = souIndex[startBlock]; j < souIndex[endBlock+1]; j++) {
+		for(lj = souIndex[startBlock]; lj < souIndex[endBlock+1]; lj++) {
 			
-			sLat = souLat[j];
-			sLon = souLon[j];
+			sLat = souLat[lj];
+			sLon = souLon[lj];
 
 			pDis = acos(sin(tLat) * sin(sLat) + cos(tLat) * cos(sLat) * cos(tLon - sLon));
 				
 			if((nnDis < 0 || nnDis > pDis) && pDis <= maxradian) {
 				nnDis = pDis;
-				nnSouID = souID[j];
+				nnSouID = souID[lj];
 			}
 				
 		}
 
 		if(nnDis < 0) {
-			tarNNSouID[i] = -1;
+			tarNNSouID[li] = -1;
 			if(tarNNDis != NULL) {
-				tarNNDis[i] = -1;
+				tarNNDis[li] = -1;
 			}
 		}
 		else {
-			tarNNSouID[i] = nnSouID;
+			tarNNSouID[li] = nnSouID;
 			if(tarNNDis != NULL) {
-				tarNNDis[i] = nnDis * earthRadius;
+				tarNNDis[li] = nnDis * earthRadius;
 			}
 		}
 	
