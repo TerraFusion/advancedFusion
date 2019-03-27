@@ -35,6 +35,7 @@ AF_InputParmeterFile::AF_InputParmeterFile()
 	misr_Shift = "ON"; // if not specified, but only effective when MISR is target
 
 	use_chunk = false;
+	geotiff_output = false;
 
 	/*------------------------------
 	 * init multi-value variables

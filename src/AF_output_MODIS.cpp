@@ -454,7 +454,7 @@ int af_GenerateOutputCumulative_ModisAsTrg(AF_InputParmeterFile &inputArgs, hid_
 // T_IN : input data type
 // T_OUT : output data type
 template <typename T_IN, typename T_OUT>
-static int af_WriteSingleRadiance_ModisAsSrc(AF_InputParmeterFile &inputArgs,hid_t outputFile, hid_t dataTypeH5, hid_t fileSpaceH5, T_IN* processedData, int64_t trgCellNum, int outputWidth, int bandIdx,bool has_refsb,const strVec_t bands, hid_t ctrackDset,hid_t atrackDset,hid_t bandDset)
+static int af_WriteSingleRadiance_ModisAsSrc(AF_InputParmeterFile &inputArgs,hid_t outputFile, hid_t dataTypeH5, hid_t fileSpaceH5, T_IN* processedData, int64_t trgCellNum, int outputWidth, int bandIdx,bool has_refsb,const strVec_t bands, hid_t ctrackDset,hid_t atrackDset,hid_t bandDset) {
 //static int af_WriteSingleRadiance_ModisAsSrc(hid_t outputFile, hid_t dataTypeH5, hid_t fileSpaceH5, T_IN* processedData, int trgCellNum, int outputWidth, int bandIdx,bool has_refsb,const strVec_t bands, hid_t ctrackDset,hid_t atrackDset,hid_t bandDset)
 #if DEBUG_TOOL
 	std::cout << "DBG_TOOL " << __FUNCTION__ << "> BEGIN \n";

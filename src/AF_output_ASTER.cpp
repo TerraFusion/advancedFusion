@@ -612,7 +612,6 @@ printf("after datasize \n");
 		//ret = af_WriteSingleRadiance_AsterAsSrc<int, int>(outputFile, ASTER_COUNT_DSET, dataTypeIntH5, asterDataspace,	srcPixelCountDataPtr, numCells /*processed size*/, srcOutputWidth, i /*bandIdx*/,bands,ctrackDset,atrackDset,bandDset);
 		//ret = af_WriteSingleRadiance_AsterAsSrc<int64_t, int64_t>(outputFile, ASTER_COUNT_DSET, dataTypeIntH5, asterDataspace,	srcPixelCountDataPtr, numCells /*processed size*/, srcOutputWidth, i /*bandIdx*/,bands,ctrackDset,atrackDset,bandDset);
 		ret = af_WriteSingleRadiance_AsterAsSrc<int64_t, int>(inputArgs,outputFile, ASTER_COUNT_DSET, H5T_STD_I64LE, asterDataspace,	srcPixelCountDataPtr, numCells /*processed size*/, srcOutputWidth, i /*bandIdx*/,bands,ctrackDset,atrackDset,bandDset);
-		ret = af_WriteSingleRadiance_AsterAsSrc<int, int>(inputArgs,outputFile, ASTER_COUNT_DSET, dataTypeIntH5, asterDataspace,	srcPixelCountDataPtr, numCells /*processed size*/, srcOutputWidth, i /*bandIdx*/,bands,ctrackDset,atrackDset,bandDset);
 		if (ret == FAILED) {
 			std::cerr << __FUNCTION__ << "> Error: returned fail.\n";
 		}
