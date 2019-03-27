@@ -23,9 +23,13 @@
 #include "reproject.h"
 #include "misrutil.h"
 #include <algorithm>
+#include "gdalio.h"
 
 //const char* ref_band_list[22] = {"1","2","3", "4", "5", "6", "7","8", "9", "10", "11", "12", "13L", "13H", "14L", "14H", "15", "16", "17", "18", "19", "26"};
 strVec_t ref_band_list = {"1","2","3", "4", "5", "6", "7","8", "9", "10", "11", "12", "13L", "13H", "14L", "14H", "15", "16", "17", "18", "19", "26"};
+const std::string All_bands_1km = "1,2,3,4,5,6,7,8,9,10,11,12,13L,13H,14L,14H,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36";
+const std::string All_bands_500m = "1,2,3,4,5,6,7";
+const std::string All_bands_250m = "1,2";
 /*#############################################################################
  *
  * MODIS as Target instrument, functions to generate radiance data
@@ -58,7 +62,7 @@ strVec_t ref_band_list = {"1","2","3", "4", "5", "6", "7","8", "9", "10", "11", 
 // T_IN : input data type
 // T_OUT : output data type
 template <typename T_IN, typename T_OUT>
-static int af_WriteSingleRadiance_ModisAsTrg(hid_t outputFile, hid_t dataTypeH5, hid_t fileSpaceH5, T_IN* modisData, int64_t modisDataSize, int outputWidth, int bandIdx,bool has_refsb,const strVec_t bands,hid_t ctrackDset, hid_t atrackDset, hid_t bandDset)
+static int af_WriteSingleRadiance_ModisAsTrg(AF_InputParmeterFile &inputArgs,hid_t outputFile, hid_t dataTypeH5, hid_t fileSpaceH5, T_IN* modisData, int64_t modisDataSize, int outputWidth, int bandIdx,bool has_refsb,const strVec_t bands,hid_t ctrackDset, hid_t atrackDset, hid_t bandDset)
 //static int af_WriteSingleRadiance_ModisAsTrg(hid_t outputFile, hid_t dataTypeH5, hid_t fileSpaceH5, T_IN* modisData, int modisDataSize, int outputWidth, int bandIdx,bool has_refsb,const strVec_t bands,hid_t ctrackDset, hid_t atrackDset, hid_t bandDset)
 {
 	#if DEBUG_TOOL
@@ -101,7 +105,18 @@ static int af_WriteSingleRadiance_ModisAsTrg(hid_t outputFile, hid_t dataTypeH5,
 	 * otherwise, open existing one
 	 */
 	if(bandIdx==0) { // means new
-		modis_dataset = H5Dcreate2(outputFile, dsetPath.c_str(), dataTypeOutH5, fileSpaceH5,H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+		if(true == inputArgs.GetUseH5Chunk()) {
+			hid_t plist_id = H5Pcreate(H5P_DATASET_CREATE);
+			if(create_chunk_comp_plist(plist_id,3,(size_t)modisDataSize,(size_t)outputWidth)<0) {
+				std::cerr << __FUNCTION__ << ":" << __LINE__ <<  "> Error: create_chunk_comp_plist failed.\n";
+				H5Pclose(plist_id);
+				return FAILED;
+			}
+			modis_dataset = H5Dcreate2(outputFile, dsetPath.c_str(), dataTypeOutH5, fileSpaceH5,H5P_DEFAULT, plist_id, H5P_DEFAULT);
+			H5Pclose(plist_id);
+		}
+		else
+			modis_dataset = H5Dcreate2(outputFile, dsetPath.c_str(), dataTypeOutH5, fileSpaceH5,H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
 		if(modis_dataset < 0) {
 			std::cerr << __FUNCTION__ << ":" << __LINE__ <<  "> Error: H5Dcreate2 target data in output file.\n";
 			return FAILED;
@@ -140,6 +155,75 @@ static int af_WriteSingleRadiance_ModisAsTrg(hid_t outputFile, hid_t dataTypeH5,
 			if(af_write_cf_attributes(modis_dataset, units, _FillValue,valid_min,valid_max,0) < 0) {
 				std::cerr << __FUNCTION__ << ":" << __LINE__ <<  "> Error: af_write_cf_attributes" << std::endl;
 			}
+
+			// Add CF long_name 
+			const char* long_name = "long_name";
+ 			if(H5LTset_attribute_string(outputFile,dsetPath.c_str(),long_name,"MODIS Level 1B Radiance")<0) {
+					H5Dclose(modis_dataset);
+				std::cerr << __FUNCTION__ << ":" << __LINE__ << "> Error: cannot generate long_name attribute for ASTER Radiance" << std::endl;
+				return FAILED;
+			}
+ 				
+			std::string modis_resolution = inputArgs.GetMODIS_Resolution();
+			std::string band_name_values;
+			std::vector<std::string> band_name_vec = inputArgs.GetMODIS_Bands();
+			//Check if 'ALL' is in bands
+			bool isAllBands = inputArgs.IsMODIS_AllBands();
+			if(true == isAllBands) {
+				if("_1KM" == modis_resolution) 
+					band_name_values = All_bands_1km;
+				else if("_500m" == modis_resolution) 
+					band_name_values = All_bands_500m;
+				else
+					band_name_values = All_bands_250m;
+			}
+			else {
+				for(int i = 0; i<band_name_vec.size();i++) 
+					band_name_values = band_name_values + band_name_vec[i] +',';
+				band_name_values = band_name_values.erase(band_name_values.size()-1,1);
+			}
+
+			if(H5LTset_attribute_string(outputFile,dsetPath.c_str(),"band_names",band_name_values.c_str())<0) {
+				H5Dclose(modis_dataset);
+				std::cerr << __FUNCTION__ << ":" << __LINE__ << "> Error: cannot generate band_names" << std::endl;
+				return FAILED;
+			}
+
+
+			// Add resolution as a number.
+			float modis_resolution_value = inputArgs.GetInstrumentResolutionValue(MODIS_STR);
+
+			if(H5LTset_attribute_float(outputFile,dsetPath.c_str(),"spatial_resolution",&modis_resolution_value, 1 ) <0) {
+            	std::cerr << __FUNCTION__ << ":" << __LINE__ << "> Error: cannot generate resolution attribute." << std::endl;
+            	return FAILED;
+        	}
+
+			if(H5LTset_attribute_string(outputFile,dsetPath.c_str(),"spatial_resolution_units","meter")<0) {
+				H5Dclose(modis_dataset);
+				std::cerr << __FUNCTION__ << ":" << __LINE__ << "> Error: cannot generate spatial_resolution_units" << std::endl;
+				return FAILED;
+			}
+
+			std::vector<int> modis_radiance_type_list = inputArgs.GetMODIS_Radiance_TypeList();
+			if(H5LTset_attribute_int(outputFile,dsetPath.c_str(),"MODIS_radiance_type",&modis_radiance_type_list[0],modis_radiance_type_list.size())<0) {
+				H5Dclose(modis_dataset);
+				std::cerr << __FUNCTION__ << ":" << __LINE__ << "> Error: cannot generate MODIS radiance type" << std::endl;
+				return FAILED;
+			}
+			
+			std::string comment_for_radiance_type ="Description for Attribute MODIS_radiance_type. \n" ;
+			comment_for_radiance_type += " There are seven radiance types depending on different MODIS Bands.";
+			comment_for_radiance_type +=" The corresponding band number can be found in attribute band_names.";
+			comment_for_radiance_type +=" They are represented by numerical number from 1 to 7. \n";
+			comment_for_radiance_type +=" 1: 1KM_Emissive, 2: 1KM_RefSB, 3: 500_Aggr1km_RefSB, 4: 250_Aggr1km_RefSB \n";
+			comment_for_radiance_type +=" 5: 500_RefSB, 6: 250_Aggr500_RefSB, 7: 250_RefSB";
+
+			if(H5LTset_attribute_string(outputFile,dsetPath.c_str(),"comments_for_radiance_type",comment_for_radiance_type.c_str())<0) {
+				H5Dclose(modis_dataset);
+				std::cerr << __FUNCTION__ << ":" << __LINE__ << "> Error: cannot generate spatial_resolution_units" << std::endl;
+				return FAILED;
+			}
+
 		}
 	}
 	else {
@@ -195,7 +279,7 @@ static int af_WriteSingleRadiance_ModisAsTrg(hid_t outputFile, hid_t dataTypeH5,
 	}
 done:
 	H5Dclose(modis_dataset);
-
+	
 	#if DEBUG_TOOL
 	std::cout << "DBG_TOOL " << __FUNCTION__ << "> END \n";
 	#endif
@@ -316,7 +400,7 @@ int af_GenerateOutputCumulative_ModisAsTrg(AF_InputParmeterFile &inputArgs, hid_
 		#if DEBUG_ELAPSE_TIME
 		StartElapseTime();
 		#endif
-		af_WriteSingleRadiance_ModisAsTrg<double,float>(outputFile, modisDatatype, modisDataspace,modisSingleData, numCells, targetOutputWidth, i,has_refsb,bands,ctrackDset,atrackDset,bandDset);
+		af_WriteSingleRadiance_ModisAsTrg<double,float>(inputArgs,outputFile, modisDatatype, modisDataspace,modisSingleData, numCells, targetOutputWidth, i,has_refsb,bands,ctrackDset,atrackDset,bandDset);
 		#if DEBUG_ELAPSE_TIME
 		StopElapseTimeAndShow("DBG_TIME> Write target MODIS single band data  DONE.");
 		#endif
@@ -370,9 +454,8 @@ int af_GenerateOutputCumulative_ModisAsTrg(AF_InputParmeterFile &inputArgs, hid_
 // T_IN : input data type
 // T_OUT : output data type
 template <typename T_IN, typename T_OUT>
-static int af_WriteSingleRadiance_ModisAsSrc(hid_t outputFile, hid_t dataTypeH5, hid_t fileSpaceH5, T_IN* processedData, int64_t trgCellNum, int outputWidth, int bandIdx,bool has_refsb,const strVec_t bands, hid_t ctrackDset,hid_t atrackDset,hid_t bandDset)
+static int af_WriteSingleRadiance_ModisAsSrc(AF_InputParmeterFile &inputArgs,hid_t outputFile, hid_t dataTypeH5, hid_t fileSpaceH5, T_IN* processedData, int64_t trgCellNum, int outputWidth, int bandIdx,bool has_refsb,const strVec_t bands, hid_t ctrackDset,hid_t atrackDset,hid_t bandDset)
 //static int af_WriteSingleRadiance_ModisAsSrc(hid_t outputFile, hid_t dataTypeH5, hid_t fileSpaceH5, T_IN* processedData, int trgCellNum, int outputWidth, int bandIdx,bool has_refsb,const strVec_t bands, hid_t ctrackDset,hid_t atrackDset,hid_t bandDset)
-{
 #if DEBUG_TOOL
 	std::cout << "DBG_TOOL " << __FUNCTION__ << "> BEGIN \n";
 	std::cout << "MODIS bands: ";
@@ -413,7 +496,20 @@ static int af_WriteSingleRadiance_ModisAsSrc(hid_t outputFile, hid_t dataTypeH5,
 	 * otherwise, open existing one
 	 */
 	if(bandIdx==0) { // means new
-		modis_dataset = H5Dcreate2(outputFile, dsetPath.c_str(), dataTypeOutH5, fileSpaceH5,H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+
+		if(true == inputArgs.GetUseH5Chunk()) {
+			hid_t plist_id = H5Pcreate(H5P_DATASET_CREATE);
+			if(create_chunk_comp_plist(plist_id,3,(size_t)trgCellNum,(size_t)outputWidth)<0) {
+				std::cerr << __FUNCTION__ << ":" << __LINE__ <<  "> Error: create_chunk_comp_plist failed.\n";
+				H5Pclose(plist_id);
+				return FAILED;
+			}
+			modis_dataset = H5Dcreate2(outputFile, dsetPath.c_str(), dataTypeOutH5, fileSpaceH5,H5P_DEFAULT, plist_id, H5P_DEFAULT);
+			H5Pclose(plist_id);
+		}
+		else
+			modis_dataset = H5Dcreate2(outputFile, dsetPath.c_str(), dataTypeOutH5, fileSpaceH5,H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+		
 		if(modis_dataset < 0) {
 			std::cerr << __FUNCTION__ << ":" << __LINE__ <<  "> Error: H5Dcreate2 target data in output file.\n";
 			return FAILED;
@@ -450,9 +546,117 @@ static int af_WriteSingleRadiance_ModisAsSrc(hid_t outputFile, hid_t dataTypeH5,
 				valid_max = 900.0;
 			
 			if(af_write_cf_attributes(modis_dataset, units, _FillValue,valid_min,valid_max,0) < 0) {
+				H5Dclose(modis_dataset);
 				std::cerr << __FUNCTION__ << ":" << __LINE__ <<	"> Error: af_write_cf_attributes" << std::endl;
+				return FAILED;
 			}
+
+			// Add CF long_name 
+			const char* long_name = "long_name";
+ 			if(H5LTset_attribute_string(outputFile,dsetPath.c_str(),long_name,"MODIS Level 1B Radiance")<0) {
+					H5Dclose(modis_dataset);
+				std::cerr << __FUNCTION__ << ":" << __LINE__ << "> Error: cannot generate long_name attribute for ASTER Radiance" << std::endl;
+				return FAILED;
+			}
+ 				
+			std::string modis_resolution = inputArgs.GetMODIS_Resolution();
+			std::string band_name_values;
+			std::vector<std::string> band_name_vec = inputArgs.GetMODIS_Bands();
+			//Check if 'ALL' is in bands
+			bool isAllBands = inputArgs.IsMODIS_AllBands();
+			if(true == isAllBands) {
+				if("_1KM" == modis_resolution) 
+					band_name_values = All_bands_1km;
+				else if("_500m" == modis_resolution) 
+					band_name_values = All_bands_500m;
+				else
+					band_name_values = All_bands_250m;
+			}
+			else {
+				for(int i = 0; i<band_name_vec.size();i++) 
+					band_name_values = band_name_values + band_name_vec[i] +',';
+				band_name_values = band_name_values.erase(band_name_values.size()-1,1);
+			}
+
+			if(H5LTset_attribute_string(outputFile,dsetPath.c_str(),"band_names",band_name_values.c_str())<0) {
+				H5Dclose(modis_dataset);
+				std::cerr << __FUNCTION__ << ":" << __LINE__ << "> Error: cannot generate band_names" << std::endl;
+				return FAILED;
+			}
+
+
+			// Add resolution as a number.
+			float modis_resolution_value = inputArgs.GetInstrumentResolutionValue(MODIS_STR);
+			if(false == af_AddSrcSpatialResolutionAttrs(outputFile,dsetPath,modis_resolution_value,true)) {
+				H5Dclose(modis_dataset);
+				return FAILED;
+			}
+
+			if(inputArgs.GetTargetInstrument() != "USER_DEFINE") {
+				float target_resolution_value = inputArgs.GetInstrumentResolutionValue(inputArgs.GetTargetInstrument());
+				if(false == af_AddSrcSpatialResolutionAttrs(outputFile,dsetPath,target_resolution_value,false)) {
+					H5Dclose(modis_dataset);
+					return FAILED;
+				}
+				if(H5LTset_attribute_string(outputFile,dsetPath.c_str(),"spatial_resolution_resampled_units","meter")<0) {
+                	H5Dclose(modis_dataset);
+                	std::cerr << __FUNCTION__ << ":" << __LINE__ << "> Error: cannot generate spatial_resolution_units" << std::endl;
+                	return FAILED;
+            	}
+
+			}
+
+			if(H5LTset_attribute_string(outputFile,dsetPath.c_str(),"spatial_resolution_original_units","meter")<0) {
+				H5Dclose(modis_dataset);
+				std::cerr << __FUNCTION__ << ":" << __LINE__ << "> Error: cannot generate spatial_resolution_units" << std::endl;
+				return FAILED;
+			}
+
+			if("USER_DEFINE" == inputArgs.GetTargetInstrument()) {
+				
+				std::string comments_ud = "Check the group attributes under group /Geolocation to find the user-defined ESPG code and resolution information.";
+				if(H5LTset_attribute_string(outputFile,dsetPath.c_str(),"spatial_resolution_resampled_description",comments_ud.c_str())<0) {
+					H5Dclose(modis_dataset);
+					std::cerr << __FUNCTION__ << ":" << __LINE__ << "> Error: cannot generate spatial_resolution_units" << std::endl;
+					return FAILED;
+				}	
+			}
+
+			std::vector<int> modis_radiance_type_list = inputArgs.GetMODIS_Radiance_TypeList();
+			if(H5LTset_attribute_int(outputFile,dsetPath.c_str(),"MODIS_radiance_type",&modis_radiance_type_list[0],modis_radiance_type_list.size())<0) {
+				H5Dclose(modis_dataset);
+				std::cerr << __FUNCTION__ << ":" << __LINE__ << "> Error: cannot generate MODIS radiance type" << std::endl;
+				return FAILED;
+			}
+		
+			std::string comment_for_radiance_type ="Description for Attribute MODIS_radiance_type. \n";
+			comment_for_radiance_type += " There are seven radiance types depending on different MODIS Bands.";
+			comment_for_radiance_type +=" The corresponding band number can be found in attribute band_names.";
+			comment_for_radiance_type +=" They are represented by numerical number from 1 to 7. \n";
+			comment_for_radiance_type +=" 1: 1KM_Emissive, 2: 1KM_RefSB, 3: 500_Aggr1km_RefSB, 4: 250_Aggr1km_RefSB \n";
+			comment_for_radiance_type +=" 5: 500_RefSB, 6: 250_Aggr500_RefSB, 7: 250_RefSB";
+
+			if(H5LTset_attribute_string(outputFile,dsetPath.c_str(),"comments_for_radiance_type",comment_for_radiance_type.c_str())<0) {
+				H5Dclose(modis_dataset);
+				std::cerr << __FUNCTION__ << ":" << __LINE__ << "> Error: cannot generate spatial_resolution_units" << std::endl;
+				return FAILED;
+			}
+
+
+			// Add resample method
+			std::string resample_method_value = "Summary Interpolation";
+			if(inputArgs.GetResampleMethod()=="nnInterpolate")
+				resample_method_value = "Nearest Neighbor Interpolation";
+
+			if(H5LTset_attribute_string(outputFile,dsetPath.c_str(),"resample_method",resample_method_value.c_str())<0) {
+				H5Dclose(modis_dataset);
+				std::cerr << __FUNCTION__ << ":" << __LINE__ << "> Error: cannot generate resample_method attr." << std::endl;
+				return FAILED;
+
+			}
+			
 		}
+
 	}
 	else {
 		modis_dataset = H5Dopen2(outputFile, dsetPath.c_str(), H5P_DEFAULT);
@@ -508,6 +712,25 @@ static int af_WriteSingleRadiance_ModisAsSrc(hid_t outputFile, hid_t dataTypeH5,
 
  done:
 	H5Dclose(modis_dataset);
+//#if 0
+	bool output_geotiff = inputArgs.GetGeoTiffOutput();
+
+	if(true == output_geotiff && ("USER_DEFINE" == inputArgs.GetTargetInstrument())) {
+		std::string op_geotiff_fname = get_gtiff_fname(inputArgs,-1,bandIdx);
+		//std::string op_geotiff_fname = "test.tif";
+		int userOutputEPSG = inputArgs.GetUSER_EPSG();
+		double userXmin = inputArgs.GetUSER_xMin();
+		double userXmax = inputArgs.GetUSER_xMax();
+		double userYmin = inputArgs.GetUSER_yMin();
+		double userYmax = inputArgs.GetUSER_yMax();
+		double userResolution = inputArgs.GetUSER_Resolution();
+		gdalIORegister();
+		writeGeoTiff((char*)op_geotiff_fname.c_str(),processedData, userOutputEPSG, userXmin, userYmin, userXmax, userYmax, userResolution);
+
+
+	}
+//#endif
+
 
 #if DEBUG_TOOL
 	std::cout << "DBG_TOOL " << __FUNCTION__ << "> END \n";
@@ -700,7 +923,7 @@ int af_GenerateOutputCumulative_ModisAsSrc(AF_InputParmeterFile &inputArgs, hid_
 		#if DEBUG_ELAPSE_TIME
 		StartElapseTime();
 		#endif
-		ret = af_WriteSingleRadiance_ModisAsSrc<double, float>(outputFile, modisDatatype, modisDataspace,  srcProcessedDataPtr, numCells /*processed size*/, srcOutputWidth, i /*bandIdx*/,has_refsb/*radiance has refSB*/,bands,ctrackDset,atrackDset,bandDset);
+		ret = af_WriteSingleRadiance_ModisAsSrc<double, float>(inputArgs,outputFile, modisDatatype, modisDataspace,  srcProcessedDataPtr, numCells /*processed size*/, srcOutputWidth, i /*bandIdx*/,has_refsb/*radiance has refSB*/,bands,ctrackDset,atrackDset,bandDset);
 		if (ret == FAILED) {
 			std::cerr << __FUNCTION__ << "> Error: returned fail.\n";
 		}

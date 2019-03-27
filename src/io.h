@@ -82,3 +82,6 @@ double dim_sum_free(hsize_t* dims, int64_t arr_len);
 double float_to_double(float f);
 double misr_averaging(double window[16]);
 hid_t  create_pure_dim_dataset(hid_t loc_id, hsize_t dim_size,char* dim_name);
+bool af_AddSrcSpatialResolutionAttrs(hid_t outputFile, const std::string & dsetPath, float attr_value,bool isSrc);
+int af_write_user_geo_attrs(hid_t outputFile,int outputEPSG, double xMin, double yMin, double xMax, double yMax, double cellSize);
+hid_t create_chunk_comp_plist(hid_t plist_id,const unsigned int rank, const size_t CellNum, const size_t outputwidth);

@@ -555,9 +555,11 @@ int main(int argc, char *argv[])
 	inputArgs.ParseByLine();
 	ret = inputArgs.CheckParsedValues();
 	if (ret < 0) {
+		std:: cout <<"Invalid Input parameters. \n";
+		std:: cout <<"AFtool fails to run. \n";
+		std:: cout <<"Correct the input parameters and re-run. \n";
 		return FAILED;
 	}
-
 	//-------------------------
 	// get instrument names
 	std::string srcInstrument = inputArgs.GetSourceInstrument();
@@ -787,7 +789,25 @@ int main(int argc, char *argv[])
 	if (targetLongitudeShifted)
 		free(targetLongitudeShifted);
 
+	// Add Geolocation attributes for user-defined grid
+	if(inputArgs.GetTargetInstrument() == "USER_DEFINE") { 
 
+		int userOutputEPSG = inputArgs.GetUSER_EPSG();
+		double userXmin = inputArgs.GetUSER_xMin();
+		double userXmax = inputArgs.GetUSER_xMax();
+		double userYmin = inputArgs.GetUSER_yMin();
+		double userYmax = inputArgs.GetUSER_yMax();
+		double userResolution = inputArgs.GetUSER_Resolution();
+		int user_geo_attr_status = af_write_user_geo_attrs(output_file,userOutputEPSG,userXmin,userXmax,userYmin,userYmax,userResolution);
+		
+		// Need to add error handling code later.
+		if(user_geo_attr_status < 0) {
+			std::cerr << "Error: add user-defined geolocation attributes.\n";
+			return FAILED;
+		}
+
+	}
+	
 
 	/* ===========================================================
 	 * Calculate nearest neighbor source over target geolocation

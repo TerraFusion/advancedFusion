@@ -46,7 +46,15 @@ const std::string MISR_STR = "MISR";
 const std::string ASTER_STR = "ASTER";
 const std::string USERGRID_STR = "USER_DEFINE";
 
+/*===================================================================
+ * Use chunking and compression
+ */
+const std::string H5_CHUNK_STR = "USE_HDF5_CHUNK_COMPRESSION";
 
+/*===================================================================
+ * Also have geo-tiff output 
+ */
+const std::string GEO_TIFF_OUTPUT_STR = "GEOTIFF_OUTPUT";
 
 /*-------------------------
  * New types
@@ -80,10 +88,14 @@ class AF_InputParmeterFile
 	// MODIS section -------------------
 	std::string GetMODIS_Resolution();
 	std::vector<std::string>  GetMODIS_Bands();
+	bool IsMODIS_AllBands() { return IsAllMODISBands;}
+	std::vector<int> GetMODIS_Radiance_TypeList() {return modis_Radiance_Type_List;}
+	
 	#if 1 // JK_ASTER2MODIS
 	// ASTER  section ------------------
 	std::string GetASTER_Resolution();
 	std::vector<std::string>  GetASTER_Bands();
+	std::vector<std::string>  GetASTER_Orig_Bands();
 	#endif
 	// USER_DEFINE section ---------
 	int GetUSER_EPSG();
@@ -94,6 +106,9 @@ class AF_InputParmeterFile
 	double GetUSER_Resolution();
 
 
+	bool GetUseH5Chunk(){return use_chunk;}
+	bool GetGeoTiffOutput(){return geotiff_output;}
+	float GetInstrumentResolutionValue(const std::string & instrument);
 	/*===========================================
 	 * Handle multi-value variables
 	 */
@@ -121,14 +136,23 @@ class AF_InputParmeterFile
 	// Common
 	bool CheckInputBFdataPath(const std::string &str);
 	bool IsSourceTargetInstrumentSame();
+	bool IsSourceTargetInstrumentValid();
+	bool IsResampleMethodValid();
+
 	// MODIS
 	bool CheckRevise_MODISresolution(std::string &str);
-	#if 1 // JK_ASTER2MODIS
+	bool CheckMODISband();
+	void BuildMODISRadianceTypeList();
+
 	// ASTER
 	bool CheckRevise_ASTERresolution(std::string &str);
 	bool CheckRevise_ASTERbands(std::vector<std::string> &strVec);
-	#endif
 
+	// MISR
+	bool CheckMISRParameters();
+
+	// User-defined 
+	bool CheckUDParameters();
 
 	private:
 	bool didReadHeaderFile;
@@ -148,11 +172,14 @@ class AF_InputParmeterFile
 	std::vector<std::string> misr_Radiances;
 	std::string misr_Shift;
 	// MODIS section  --------------
+	bool IsAllMODISBands;
 	std::string modis_Resolution;
+	std:: vector<int> modis_Radiance_Type_List;
 	std::vector<std::string> modis_Bands;
 	#if 1 // JK_ASTER2MODIS
 	// ASTER section ------------------
 	std::string aster_Resolution;
+	std::vector<std::string> aster_Orig_Bands;
 	std::vector<std::string> aster_Bands;
 	#endif
 	// USER_DEFINE section -------
@@ -172,6 +199,9 @@ class AF_InputParmeterFile
 	#if 1 // JK_ASTER2MODIS
 	std::vector<std::string> aster_MultiVars;
 	#endif
+
+	bool use_chunk;
+	bool geotiff_output;
 };
 
 #endif // _AF_INPUT_PARAMETER_FILE_H_
