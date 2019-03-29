@@ -645,7 +645,7 @@ double* get_modis_rad_by_band(hid_t file, char* resolution, char* d_name, int* b
 		htri_t status = H5Lexists(file, dataset_name, H5P_DEFAULT);
 
 		if(status <= 0) {
-std::cerr<<"status is 0 "<<std::endl;
+//std::cerr<<"status is 0 "<<std::endl;
 			free(dataset_name);
 			const char* lat_arr[] = {instrument, name, resolution, "Geolocation", "Latitude"};
 			concat_by_sep(&dataset_name, lat_arr, "/", strlen(instrument) + strlen(name) + strlen(resolution) + strlen("Geolocation") + strlen("Latitude"), 5);
@@ -660,8 +660,8 @@ std::cerr<<"status is 0 "<<std::endl;
 			}
 			
 			band_length = curr_dim[0] * curr_dim[1];
-std::cerr<<"lc curr_size is "<<curr_size <<std::endl;
-std::cerr<<"lc band_length is "<<band_length <<std::endl;
+//std::cerr<<"lc curr_size is "<<curr_size <<std::endl;
+//std::cerr<<"lc band_length is "<<band_length <<std::endl;
 
 			for(int64_t li = curr_size; li < curr_size + band_length; li++) {
 				result_data[li] = -999;
@@ -1813,7 +1813,7 @@ double* get_ast_rad(hid_t file, char* subsystem, char* d_name, int64_t *size)
 	printf("DBG_IO %s:%d> Get total_size: %d\n", __FUNCTION__, __LINE__, total_size);
 	#endif
 	
-	printf("Reading values\n");
+	//printf("Reading values\n");
 	double* result_data = (double*)calloc(total_size, sizeof(double));
 	
 	//int curr_size = 0;
@@ -1933,7 +1933,7 @@ double* get_ast_lat(hid_t file, char* subsystem, char* d_name, int64_t *size)
 	}
 
 	//Get total data size
-	printf("Getting total data size\n");
+	//printf("Getting total data size\n");
 	//int total_size = 0;
 	int64_t total_size = 0;
 	for(i = 0; i < num_groups; i++){
@@ -1975,7 +1975,7 @@ double* get_ast_lat(hid_t file, char* subsystem, char* d_name, int64_t *size)
 	printf("DBG_IO %s:%d> Get total_size: %d\n", __FUNCTION__, __LINE__, total_size);
 	#endif
 	
-	printf("Reading values\n");
+	//printf("Reading values\n");
 	double* lat_data = (double*)calloc(total_size, sizeof(double));
 	// Redundant: tackle later if having time.
 	//int curr_lat_size = 0;
@@ -2094,7 +2094,7 @@ double* get_ast_long(hid_t file, char* subsystem, char* d_name, int64_t * size)
 	}
 	
 	//Get total data size
-	printf("Getting total data size\n");
+	//printf("Getting total data size\n");
 	//int total_size = 0;
     int64_t total_size = 0;
 	//int store_count = 0;
@@ -2138,7 +2138,7 @@ double* get_ast_long(hid_t file, char* subsystem, char* d_name, int64_t * size)
 	printf("DBG_IO %s:%d> Get total_size: %d\n", __FUNCTION__, __LINE__, total_size);
 	#endif
 	
-	printf("Reading values\n");
+	//printf("Reading values\n");
 	double* long_data = (double*)calloc(total_size, sizeof(double));
 	//int curr_long_size = 0;
 	int64_t curr_long_size = 0;
