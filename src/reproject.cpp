@@ -424,7 +424,7 @@ void nearestNeighborBlockIndex(double ** psouLat, double ** psouLon, int64_t nSo
 	souLat = *psouLat;
 	souLon = *psouLon;
 
-#pragma omp parallel for private(j, k, kk, l)
+#pragma omp parallel for private(j, k, kk, ll)
 	for(li = 0; li < nTar; li ++) {
 		
 /*		if(i == 0)
@@ -580,7 +580,7 @@ void nearestNeighbor(double ** psouLat, double ** psouLon, int64_t nSou, double 
 	souLon = *psouLon;
 
 
-#pragma omp parallel for private(j)
+#pragma omp parallel for private(lj)
 	for(li = 0; li < nTar; li ++) {
 
 		double tLat = tarLat[li];
