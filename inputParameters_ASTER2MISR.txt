@@ -5,8 +5,8 @@
 #
 # INPUT_FILE_PATH: <specify a full path to BF HDF5 data file>
 # OUTPUT_FILE_PATH: <specify a path to result AF HDF5 file>
-# RESAMPLE_METHOD: one of < nnInterpolate or summaryInterpolate >
-#
+# RESAMPLE_METHOD:  summaryInterpolate
+#                
 # SOURCE_INSTRUMENT: ASTER 
 # TARGET_INSTRUMENT: MISR
 #
@@ -15,7 +15,12 @@
 #
 # MISR_RESOLUTION: one of < L or H >
 # MISR_CAMERA_ANGLE: any of < DF CF BF AF AN AA BA CA DA >
-# MISR_RADIANCE: any of < Blue_Radiance Green_Radiance Red_Radiance NIR_Radiance >
+# MISR_RADIANCE: 
+#  If MISR_RESOLUTION is L: any of < Blue_Radiance Green_Radiance Red_Radiance NIR_Radiance >
+#  If MISR_RESOLUTION is H: 
+#	any of < Blue_Radiance Green_Radiance Red_Radiance NIR_Radiance > for AN
+#       Red_Radiance for any other cameras
+#
 # MISR_TARGET_BLOCKUNSTACK: one of < ON or OFF >      (optional. default is ON. only effective if MISR is target.)
 #=============================================================
 
