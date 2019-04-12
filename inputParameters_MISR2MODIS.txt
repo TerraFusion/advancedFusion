@@ -11,11 +11,19 @@
 # SOURCE_INSTRUMENT: MISR
 # MISR_RESOLUTION: one of < L or H >
 # MISR_CAMERA_ANGLE: any of < DF CF BF AF AN AA BA CA DA >
-# MISR_RADIANCE: any of < Blue_Radiance Green_Radiance Red_Radiance NIR_Radiance >
+# MISR_RADIANCE: 
+#  If MISR_RESOLUTION is L: any of < Blue_Radiance Green_Radiance Red_Radiance NIR_Radiance >
+#  If MISR_RESOLUTION is H: 
+#	any of < Blue_Radiance Green_Radiance Red_Radiance NIR_Radiance > for AN
+#       Red_Radiance for any other cameras
 #
+
 # TARGET_INSTRUMENT: MODIS
 # MODIS_RESOLUTION: one of < 1KM 500M or 250M >
-# MODIS_BANDS: any of < 1~12 13L 13H 14L 14H 15~36 > or ALL
+# MODIS_BANDS: 
+# If MODIS_RESOLUTION is 1KM, any of < 1~12 13L 13H 14L 14H 15~36 > or ALL
+# If MODIS_RESOLUTION is 500M, any of <1-7> or ALL
+# If MODIS_RESOLUTION is 250M, any of <1-2> or ALL
 #=============================================================
 
 INPUT_FILE_PATH: /projects/sciteam/jq0/TerraFusion/testFiles/TERRA_BF_L1B_O69400_20130104000439_F000_V000.h5

@@ -11,8 +11,11 @@
 # TARGET_INSTRUMENT: USER_DEFINE 
 
 # MODIS_RESOLUTION: one of < 1KM 500M or 250M >
-# MODIS_BANDS: any of < 1~12 13L 13H 14L 14H 15~36 > or ALL
-#
+# MODIS_BANDS: 
+# If MODIS_RESOLUTION is 1KM, any of < 1~12 13L 13H 14L 14H 15~36 > or ALL
+# If MODIS_RESOLUTION is 500M, any of <1-7> or ALL
+# If MODIS_RESOLUTION is 250M, any of <1-2> or ALL
+
 # USER_OUTPUT_EPSG: <EPSG code of output spatial reference system>
 # USER_X_MIN: <west boundary of output area> 
 # USER_X_MAX: <east boundary of output area>
