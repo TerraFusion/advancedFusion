@@ -591,7 +591,6 @@ int main(int argc, char *argv[])
 	std::cout << "DBG_TOOL main> outputFile: " << outputFile << std::endl;
 	#endif
 
-	hid_t output_file = H5Fcreate(outputFile.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
 
 
 	/* ===================================================
@@ -607,8 +606,14 @@ int main(int argc, char *argv[])
 		exit(1);
 	}
 
+	std::string granule_name = inputDataPath;
+	size_t granule_name_pos = inputDataPath.find_last_of("/");
+	if(granule_name_pos !=std::string::npos) 
+		granule_name = inputDataPath.substr(granule_name_pos+1);
 
+	hid_t output_file = H5Fcreate(outputFile.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
 	
+	H5LTset_attribute_string(output_file,"/","InputGranules",granule_name.c_str());   
 	/* ===================================================
 	 * Get Source instrument latitude and longitude
 	 */
