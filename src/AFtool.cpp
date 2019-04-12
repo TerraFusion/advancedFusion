@@ -606,14 +606,23 @@ int main(int argc, char *argv[])
 		exit(1);
 	}
 
+	hid_t output_file = H5Fcreate(outputFile.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
+	if(output_file <0) {
+		H5Fclose(inputFile);
+		std::cerr << "Cannot create AF HDF5 file.  " << outputFile << std::endl;
+		exit(1);
+	}
+
 	std::string granule_name = inputDataPath;
 	size_t granule_name_pos = inputDataPath.find_last_of("/");
 	if(granule_name_pos !=std::string::npos) 
 		granule_name = inputDataPath.substr(granule_name_pos+1);
 
-	hid_t output_file = H5Fcreate(outputFile.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
-	
-	H5LTset_attribute_string(output_file,"/","InputGranules",granule_name.c_str());   
+	if(H5LTset_attribute_string(output_file,"/","InputGranule",granule_name.c_str())<0) {
+		std::cerr << "Error: cannot add global attribute. "<<std::endl;
+		H5Fclose(inputFile);
+		H5Fclose(output_file);
+	}  
 	/* ===================================================
 	 * Get Source instrument latitude and longitude
 	 */
