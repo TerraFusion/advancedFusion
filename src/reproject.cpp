@@ -280,7 +280,8 @@ void nearestNeighborBlockIndex(double ** psouLat, double ** psouLon, int nSou, d
 	double * souLat = *psouLat;
 	double * souLon = *psouLon;
 
-	const double earthRadius = 6367444;
+	const double earthRadius = 6371009;
+	//const double earthRadius = 6367444;
 	double maxradian = maxR / earthRadius;
 
 	double blockSizeRadian = maxradian;
@@ -444,7 +445,8 @@ void nearestNeighbor(double ** psouLat, double ** psouLon, int nSou, double * ta
 	double * souLat = *psouLat;
 	double * souLon = *psouLon;
 
-	const double earthRadius = 6367444;
+	const double earthRadius = 6371009;
+	//const double earthRadius = 6367444;
 	double maxradian = maxR / earthRadius;
 	int nBlockY = M_PI / maxradian;
 

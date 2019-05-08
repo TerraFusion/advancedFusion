@@ -217,7 +217,8 @@ void writeGeoTiff(char * fileName, double * grid, int outputEPSG, double xMin, d
  */
 double getMaxRadiusOfUserdefine(int epsgCode, double cellSize) {
 
-        const double earthRadius = 6367444;
+        //const double earthRadius = 6367444;
+        const double earthRadius = 6371009;
 
         OGRSpatialReferenceH hSRS = OSRNewSpatialReference(NULL);
         OSRImportFromEPSG(hSRS, epsgCode);
