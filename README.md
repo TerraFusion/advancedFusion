@@ -4,6 +4,7 @@ Terra Data Fusion Project - University of Illinois
 # Contributers
 Yizhao Gao (ygao29@illinois.edu)  
 Ya Long Lo (yllo2@illinois.edu)
+
 Staff at NCSA and The HDF Group
 
 # Introduction
