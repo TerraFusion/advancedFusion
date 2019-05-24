@@ -51,6 +51,8 @@
 # USER_Y_MIN: <south boundary of output area>
 # USER_Y_MAX: <north boundary of output area>
 # USER_RESOLUTION: <output raste cell size>
+### USE HDF5 CHUNK and compression: this can greatly reduce the file size
+#USE_HDF5_CHUNK_COMPRESSION: true
 #=============================================================
 
 #
@@ -74,4 +76,5 @@ MISR_RESOLUTION: L
 MISR_CAMERA_ANGLE: AN AF
 MISR_RADIANCE: Blue_Radiance Green_Radiance
 MISR_TARGET_BLOCKUNSTACK: ON
-
+# Uncomment the following line to use HDF5 chunk and compression.
+#USE_HDF5_CHUNK_COMPRESSION: true

@@ -22,6 +22,9 @@
 #       Red_Radiance for any other cameras
 #
 # MISR_TARGET_BLOCKUNSTACK: one of < ON or OFF >      (optional. default is ON. only effective if MISR is target.)
+
+### USE HDF5 CHUNK and compression: this can greatly reduce the file size
+#USE_HDF5_CHUNK_COMPRESSION: true
 #=============================================================
 
 INPUT_FILE_PATH : /projects/sciteam/jq0/TerraFusion/testFiles/TERRA_BF_L1B_O69400_20130104000439_F000_V000.h5
@@ -39,3 +42,5 @@ MISR_CAMERA_ANGLE: AF
 MISR_RADIANCE: Blue_Radiance
 MISR_TARGET_BLOCKUNSTACK: ON 
 
+# Uncomment the following line to use HDF5 chunk and compression to reduce file size.
+#USE_HDF5_CHUNK_COMPRESSION: true

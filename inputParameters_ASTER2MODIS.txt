@@ -19,6 +19,8 @@
 # If MODIS_RESOLUTION is 1KM, any of < 1~12 13L 13H 14L 14H 15~36 > or ALL
 # If MODIS_RESOLUTION is 500M, any of <1-7> or ALL
 # If MODIS_RESOLUTION is 250M, any of <1-2> or ALL
+### USE HDF5 CHUNK and compression: this can greatly reduce the file size
+#USE_HDF5_CHUNK_COMPRESSION: true
 #=============================================================
 
 INPUT_FILE_PATH: /projects/sciteam/jq0/TerraFusion/testFiles/TERRA_BF_L1B_O69400_20130104000439_F000_V000.h5
@@ -34,3 +36,5 @@ ASTER_BANDS: 10 11
 MODIS_RESOLUTION: 1KM
 MODIS_BANDS: 8 9
 
+# Uncomment the following line to use HDF5 chunk and compression.
+#USE_HDF5_CHUNK_COMPRESSION: true
