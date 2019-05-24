@@ -33,13 +33,21 @@ cd $PBS_O_WORKDIR
 
 # To add certain modules that you do not have added via ~/.modules
 . /opt/modules/default/init/bash # NEEDED to add module commands to shell
-#module load craype-hugepages2M  perftools
+
+#Load HDF5 1.8.16 
 module load cray-hdf5/1.8.16
+
+#To load HDF5 1.10, comment out the above line and uncomment out the following line
+#module load cray-hdf5/1.10.2
+
 # export APRUN_XFER_LIMITS=1  # to transfer shell limits to the executable
 
 ### launch the application
 ### redirecting stdin and stdout if needed
 
+#To run the AF tool, needs to add the GDAL library to the LD_LIBRARY_PATH
+#Specify the GDAL library at your own system
+export LD_LIBRARY_PATH="/projects/sciteam/jq0/TerraFusion/gdal/lib:$LD_LIBRARY_PATH"
 # if run with OMP
 #export OMP_NUM_THREADS=2
 #aprun -n 1 -d 2  ./AFtool ./inputParameters_MISR2MODIS.txt
