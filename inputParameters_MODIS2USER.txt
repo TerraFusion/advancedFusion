@@ -48,6 +48,8 @@ USER_Y_MAX: 10000000
 USER_RESOLUTION: 2000
 #if also want to generate geotiff file per band, uncomment the following line
 #GEOTIFF_OUTPUT: true
+#Turning on the HDF5 chunk and compression option can greatly reduce the file size
+#USE_HDF5_CHUNK_COMPRESSION: true
 
 #------
 # These can be another set of test instead of the above entries.
