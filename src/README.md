@@ -18,7 +18,7 @@ BW, Linux and Mac
 
 # Testing
 
-Keep obsolete testing code as is for reference and future development. All the files named as test???.cpp are obsolete and for this purpose.
+Keep obsolete testing code as is for reference and future development. All the files named as test???.cpp are obsolete and are kept just for this purpose.
 
 # Limitations
 
