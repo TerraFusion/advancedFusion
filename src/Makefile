@@ -1,4 +1,7 @@
-
+#This Makefile template can be used to compile the AF tool on Linux
+#To make this work on your own Linux, you need to install HDF5(either 1.8 or 1.10) and GDAL. 
+#Replace /mnt/wrk/myang6/terra-fusion/af/hdf5-1.8.16 with your own HDF5 path
+#Replace /mnt/wrk/myang6/terra-fusion/af/gdalbin with your own GDAL path
 CXXFLAGS=-std=c++11 -Wno-write-strings -I/mnt/wrk/myang6/terra-fusion/af/hdf5-1.8.16/hdf5/include -L/mnt/wrk/myang6/terra-fusion/af/hdf5-1.8.16/hdf5/lib -lhdf5 -lhdf5_hl -lz
 #CXXFLAGS=-std=c++11 -Wno-write-strings -fopenmp
 #CC=/mnt/wrk/myang6/terra-fusion/af/hdf5-1.8.16/hdf5/bin/h5cc
