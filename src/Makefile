@@ -9,7 +9,7 @@ GDALDIR = /mnt/wrk/myang6/terra-fusion/af/gdalbin
 #If you want to use openmp and your system doesn't install openmp at the default location, you can add openmp path and modify the line with -fopenmp. Check Makefile.mac for hints.
 #OMPDIR=....
 
-CXXFLAGS=-std=c++11 -Wno-write-strings -I($HDF5DIR)/include -L($HDF5DIR)/lib -lhdf5 -lhdf5_hl -lz
+CXXFLAGS=-std=c++11 -Wno-write-strings -I$(HDF5DIR)/include -L$(HDF5DIR)/lib -lhdf5 -lhdf5_hl -lz
 
 # Use this on BW
 #CXX=CC ${CXXFLAGS}
