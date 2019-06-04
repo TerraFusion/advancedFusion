@@ -13,7 +13,6 @@
 # $ make clean;  make
 # =======================================
 
-
 # gdal and openmp lib path
 GDALDIR=/usr/local/opt/gdal2
 OMPDIR=/usr/local/opt/libomp
