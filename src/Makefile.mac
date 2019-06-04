@@ -13,12 +13,15 @@
 # $ make clean;  make
 # =======================================
 
-# gdal and openmp lib path
-GDALDIR=/usr/local/opt/gdal2
-OMPDIR=/usr/local/opt/libomp
 
-CXXFLAGS=-std=c++11 -Wno-write-strings -I/opt/local/include -L/opt/local/lib -lhdf5 -lz
-CXX=g++ -g
+# gdal and openmp lib path
+# change GDALDIR to your gdal path, OMPDIR to your omp path, HDF5DIR to your HDF5 path.
+GDALDIR=/usr/local/opt/gdal
+OMPDIR=/usr/local/opt/libomp
+HDF5DIR=/Users/myang6/hdf5-rel/hdf5-1.10.4/hdf5
+
+CXXFLAGS=-std=c++11 -Wno-write-strings -I$(HDF5DIR)/include -L$(HDF5DIR)/lib -lhdf5 -lhdf5_hl -lz
+CXX=g++ -g -std=c++11 -Wno-write-strings
 H5CXX=g++ -g $(CXXFLAGS)
 
 all: AFtool test_aster test_aster_allOrbit test_MISR_MODIS test_modis2aster test_Clipping_MISR_MODIS test_userdefinedgrids test_MISR_offset
@@ -49,7 +52,7 @@ test_MISR_offset.o: test_MISR_offset.cpp
 	$(H5CXX) -c $< -o $@
 
 reproject.o: reproject.cpp
-	$(CXX) -I$(OMPDIR)/include -o $@ -c $<
+	$(H5CXX) -I$(OMPDIR)/include -o $@ -c $<
 
 io.o: io.cpp
 	$(H5CXX) -c $< -o $@

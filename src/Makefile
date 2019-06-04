@@ -1,10 +1,15 @@
 #This Makefile template can be used to compile the AF tool on Linux
 #To make this work on your own Linux, you need to install HDF5(either 1.8 or 1.10) and GDAL. 
 
-#Replace /mnt/wrk/myang6/terra-fusion/af/hdf5-1.8.16 with your own HDF5 path
-#Replace /mnt/wrk/myang6/terra-fusion/af/gdalbin with your own GDAL path
+#Replace HDF5DIR with your own HDF5 path
+#Replace GDALDIR with your own GDAL path
+HDF5DIR = /mnt/wrk/myang6/terra-fusion/af/hdf5-1.8.16/hdf5
+GDALDIR = /mnt/wrk/myang6/terra-fusion/af/gdalbin
 
-CXXFLAGS=-std=c++11 -Wno-write-strings -I/mnt/wrk/myang6/terra-fusion/af/hdf5-1.8.16/hdf5/include -L/mnt/wrk/myang6/terra-fusion/af/hdf5-1.8.16/hdf5/lib -lhdf5 -lhdf5_hl -lz
+#If you want to use openmp and your system doesn't install openmp at the default location, you can add openmp path and modify the line with -fopenmp. Check Makefile.mac for hints.
+#OMPDIR=....
+
+CXXFLAGS=-std=c++11 -Wno-write-strings -I($HDF5DIR)/include -L($HDF5DIR)/lib -lhdf5 -lhdf5_hl -lz
 
 # Use this on BW
 #CXX=CC ${CXXFLAGS}
@@ -12,7 +17,6 @@ CXXFLAGS=-std=c++11 -Wno-write-strings -I/mnt/wrk/myang6/terra-fusion/af/hdf5-1.
 
 # Use this set for local build
 CXX=g++ -g -std=c++11 -Wno-write-strings
-GDALDIR = /mnt/wrk/myang6/terra-fusion/af/gdalbin
 H5CXX=g++ -g $(CXXFLAGS)
 
 
