@@ -1,0 +1,41 @@
+Below are the steps for building AFtool from the command line in a terminal with ‘$’ representing the prompt. 
+
+1. How to build AFtool on Blue Waters
+
+1)	Prepare GNU build environment
+	$ module   swap  PrgEnv-cray   PrgEnv-gnu
+2)	Enable HDF5 to be used
+	$ module   load  cray-hdf5/1.8.16
+	Note: the tool was developed based on HDF5 version 1.8.16, 
+              the latest HDF5 1.8 version at Blue Waters as this document was written. 
+              We also tested the tool with HDF5 1.10.2, the latest HDF5 1.10 version at Blue Waters.
+3)	$ cd advancedFusion/src
+4)	$ export CRAYPE_LINK_TYPE=dynamic
+	$ make
+Or
+	$ CRAYPE_LINK_TYPE=dynamic   make
+
+5)	Executable AFtool is generated under the directory advancedFusion.
+
+2. How to build AFtool on Linux
+The gdal ,openmp, and hdf5 libraries are required to build AF tool on Linux.
+
+1)	$ cd advancedFusion/src
+2)	Edit Makefile, Replace the gdal,openmp and hdf5 path with the corresponding path at your system
+3)	$make 	
+4)	Executable AFtool is generated under the directory advancedFusion.
+
+
+3. How to build AFtool on Mac(Not thoroughly tested)
+The gdal2, libomp and hdf5 libraries are required to build AF tool on Mac.
+Homebrew package manager can be used to install these libraries on the Mac.  
+
+1)	$ cd  advancedFusion/src/
+2)	$ cp Makefile Makefile.ori
+3)	$ cp Makefile.mac  Makefile
+4)	May need to edit Makefile.mac with your own gdal2,libomp and hdf5 path.
+5)	$make 	
+6)	Executable AFtool is generated under the directory advancedFusion.
+
+
+
