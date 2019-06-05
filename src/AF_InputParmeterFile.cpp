@@ -771,13 +771,14 @@ bool AF_InputParmeterFile::IsResampleMethodValid()
 		ret = false;
 	}
 
- 	if(ret == false)
+ 	if(ret == false){
 		return ret;
+	}
 	else if(sourceInstrument == "ASTER" && resampleMethod== "nnInterpolate") {
 		std::cerr <<"For ASTER, resample method must be summaryInterpolate. \n";
-        ret = false;
+		ret = false;
 	}
-    return ret;
+	return ret;
 
 
 }

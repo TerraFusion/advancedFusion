@@ -905,8 +905,10 @@ int af_GenerateOutputCumulative_MisrAsSrc(AF_InputParmeterFile &inputArgs, hid_t
 				free(misrSingleData);
 			if(srcProcessedData)
 				delete [] srcProcessedData;
-			if (nsrcPixels)
+			if (nsrcPixels) {
 				delete [] nsrcPixels;
+                                nsrcPixels = NULL;
+                        }
 		} // i loop
 	} // j loop
 

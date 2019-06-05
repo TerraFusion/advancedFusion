@@ -471,7 +471,7 @@ double* get_modis_rad(hid_t file, char* resolution, std::vector<std::string> &ba
 	//Start reading data
 	int n;
 	for(n = 0; n < band_size; n++){
-		int file_size;
+		int file_size = 0;
 		double * MODIS_rad = get_modis_rad_by_band(file, resolution, dnames[n], &band_indices[n], &file_size);
 		memcpy(&result_data[start_point], MODIS_rad, file_size*sizeof(double));
 		free(MODIS_rad);
@@ -773,8 +773,8 @@ double* get_modis_lat(hid_t file, char* resolution, int* size)
 	#endif
 	
 	int h;
-	double* lat_data;
-	double curr_lat_size;
+	double* lat_data = NULL;
+	double curr_lat_size= 0;
 	int read_first = -1;
 	for(h = 0; h < store_count; h++){
 		//Path formation
@@ -817,6 +817,8 @@ double* get_modis_lat(hid_t file, char* resolution, int* size)
 
 	if(H5Gclose(group) < 0) {
 		std::cerr << __FUNCTION__ <<  "> Error: H5Gclose in output file.\n";
+		if(lat_data)
+			free(lat_data);
 		return NULL;
 	}
 	
@@ -891,8 +893,8 @@ double* get_modis_long(hid_t file, char* resolution, int* size)
 	
 	int h;
 	int valid_granule_count = 0;
-	double* long_data;
-	double curr_long_size;
+	double* long_data = NULL;
+	double curr_long_size = 0;
 	int read_first = -1;
 	for(h = 0; h < store_count; h++){
 		//Path formation
@@ -936,6 +938,8 @@ double* get_modis_long(hid_t file, char* resolution, int* size)
 
 	if(H5Gclose(group) < 0) {
 		std::cerr << __FUNCTION__ <<  "> Error: H5Gclose in output file.\n";
+		if(long_data != NULL)
+			free(long_data);
 		return NULL;
 	}
 	
@@ -984,7 +988,7 @@ void* get_modis_attr(hid_t file, char* resolution, char* d_name, char* attr_name
 	}
 	hsize_t num_groups;
 	herr_t err = H5Gget_num_objs(group, &num_groups);
-	char* rad_dataset_name;
+	char* rad_dataset_name = NULL;
 	char* name = (char*) malloc(50*sizeof(char));
 	int h;
 	for(h = 0; h < num_groups; h++){
@@ -1169,7 +1173,7 @@ double* get_ceres_rad(hid_t file, char* camera, char* d_name, int* size)
 		free(name);
 	}
 	int h;
-	double* data;
+	double* data = NULL;
 	double curr_size;
 	int read_first = -1;
 	for(h = 0; h < num_groups; h++){
@@ -1262,8 +1266,8 @@ double* get_ceres_lat(hid_t file, char* camera, char* d_name, int* size)
 		free(name);
 	}
 	int h;
-	double* lat_data;
-	double curr_lat_size;
+	double* lat_data = NULL;
+	double curr_lat_size = 0.;
 	int read_first = -1;
 	for(h = 0; h < num_groups; h++){
 		//Path formation
@@ -1361,8 +1365,8 @@ double* get_ceres_long(hid_t file, char* camera, char* d_name, int* size)
 		free(name);
 	}
 	int h;
-	double* long_data;
-	double curr_long_size;
+	double* long_data = NULL;
+	double curr_long_size = 0;
 	int read_first = -1;
 	for(h = 0; h < num_groups; h++){
 		//Path formation
@@ -1456,8 +1460,8 @@ double* get_mop_rad(hid_t file, int* size)
 		free(name);
 	}
 	int h;
-	double* data;
-	double curr_size;
+	double* data = NULL;
+	double curr_size =0;
 	int read_first = -1;
 	for(h = 0; h < num_groups; h++){
 		//Path formation
@@ -1550,8 +1554,8 @@ double* get_mop_lat(hid_t file, int* size)
 	}
 	
 	int h;
-	double* lat_data;
-	double curr_lat_size;
+	double* lat_data = NULL;
+	double curr_lat_size = 0;
 	int read_first = -1;
 	for(h = 0; h < num_groups; h++){
 		//Path formation
@@ -1648,8 +1652,8 @@ double* get_mop_long(hid_t file, int* size)
 	}
 	
 	int h;
-	double* long_data;
-	double curr_long_size;
+	double* long_data = NULL;
+	double curr_long_size = 0;
 	int read_first = -1;
 	for(h = 0; h < num_groups; h++){
 		//Path formation
@@ -2197,6 +2201,12 @@ double* get_ast_rad_by_gran(hid_t file, char* subsystem, char* d_name, char* gra
 	double* data = af_read(file, dataset_name);
 	if(data == NULL){
 		printf("Read error\n");
+                if(result_data)
+			free(result_data);
+		if(data)
+			free(data);
+		if(curr_dim)
+			free(curr_dim);
 		return NULL;
 	}
 	memcpy(&result_data[0], data, sizeof(double)*(curr_dim[0]*curr_dim[1]));
@@ -2637,8 +2647,8 @@ int af_write_mm_geo(hid_t output_file, int geo_flag, double* geo_data, int geo_s
 			return -1;
 		}
 	}
-	char* d_name;
-	char* a_value;        
+	char* d_name = NULL;
+	char* a_value = NULL;        
 	if(geo_flag == 0){
 		d_name = "/Geolocation/Latitude";
 		a_value = "degrees_north";                

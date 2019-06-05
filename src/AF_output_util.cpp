@@ -30,7 +30,6 @@
  */
 int af_GetWidthAndHeightForOutputDataSize(std::string instrument, AF_InputParmeterFile &inputArgs, int &crossTrackWidth /*OUT*/, int &alongTrackHeight /*OUT*/)
 {
-	int ret = 0;
 	crossTrackWidth = 0;
 	alongTrackHeight = 0;
 	std::string misrShift = inputArgs.GetMISR_Shift();

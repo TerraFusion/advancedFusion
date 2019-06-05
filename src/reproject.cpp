@@ -337,7 +337,7 @@ void nearestNeighborBlockIndex(double ** psouLat, double ** psouLon, int nSou, d
 		int rowID, colID;
 		double pDis;
 		double nnDis;
-		int nnSouID;
+		int nnSouID = -1;
 /*
 		if(i == 0) {
 			printf("%d\n", omp_get_num_threads());
@@ -480,11 +480,10 @@ void nearestNeighbor(double ** psouLat, double ** psouLon, int nSou, double * ta
 
 		double tLat = tarLat[i];
 		double tLon = tarLon[i];
-		double sLat, sLon;
 		
 		double pDis;	
 		double nnDis;
-		int nnSouID;
+		int nnSouID =-1;
 
 		int blockID = (tLat + M_PI / 2) / blockR;
 		int startBlock = blockID - 1;
@@ -501,8 +500,8 @@ void nearestNeighbor(double ** psouLat, double ** psouLon, int nSou, double * ta
 		
 		for(j = souIndex[startBlock]; j < souIndex[endBlock+1]; j++) {
 			
-			sLat = souLat[j];
-			sLon = souLon[j];
+		        double sLat = souLat[j];
+			double sLon = souLon[j];
 
 			pDis = acos(sin(tLat) * sin(sLat) + cos(tLat) * cos(sLat) * cos(tLon - sLon));
 				
