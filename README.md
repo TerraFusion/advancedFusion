@@ -15,5 +15,11 @@ For example, this tool can be used to resample:
 
 # Key Features
 1. All calculatations are based on spherical (great circle) distances using the latitude and longtitude of pixels
-2. The input pixels are assumned to be irregularily spaced, which is especially true for MODIS
+2. The input pixels are assumed to be irregularily spaced, which is especially true for MODIS
 3. The granule for analysis is an entire orbit (one circle of the Terra satallite around the earth)
+
+# Usage
+1. Build the tool according to INSTALL.txt.
+2. The Input parameter template files can be found under the top directory with the file name starting with inputParameters(inputParameters_MISR2MODIS.txt etc.). Check the comments of the inputParameters_???.txt on how to provide the parameters.
+3. Run at NCSA Bluewaters or the similar system, follow AFtest.pbs.
+5. Run on General Linux or MacOS, under the top directory, ./AFtool inputParameters_MISR2MODIS.txt.
